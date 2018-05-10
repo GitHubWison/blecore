@@ -128,6 +128,7 @@ public class Ble {
     public void release(Context context) {
         if (isInited) {
             stopScan();
+            scanListeners.clear();
             releaseAllConnections();//释放所有连接
             context.getApplicationContext().unregisterReceiver(receiver);//取消注册蓝牙状态广播接收者
             config.getObservable().clearObservers();//移除所有观察者
