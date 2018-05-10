@@ -142,9 +142,7 @@ public class Ble {
             if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(intent.getAction())) {//蓝牙开关状态变化                 
                 if (bluetoothAdapter != null) {
                     if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {//蓝牙关闭了
-                        for (BleScanListener listener : scanListeners) {
-                            listener.onScanStop();//回调扫描停止
-                        }
+                        handleScanCallback(false, null, null);
                         //主动断开，停止定时器、重连尝试
                         for (BleConnection connection : connectionMap.values()) {
                             connection.disconnect();
@@ -266,12 +264,27 @@ public class Ble {
             bluetoothAdapter.startLeScan(leScanCallback);
         }
         scanning = true;
-        for (BleScanListener listener : scanListeners) {
-            listener.onScanStart();
-        }
+        handleScanCallback(true, null, null);       
         handler.postDelayed(stopScanRunnable, config.getScanPeriodMillis());
     }
 
+    private void handleScanCallback(final boolean start, final Device device, final byte[] scanRecord) {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                for (BleScanListener listener : scanListeners) {
+                    if (device != null) {
+                        listener.onScanResult(device, scanRecord);
+                    } else if (start) {
+                        listener.onScanStart();
+                    } else {
+                        listener.onScanStop();
+                    }
+                }
+            }
+        });
+    }
+    
     private Runnable stopScanRunnable = new Runnable() {
         @Override
         public void run() {
@@ -320,9 +333,7 @@ public class Ble {
         if (leScanCallback != null) {
             bluetoothAdapter.stopLeScan(leScanCallback);
         }
-        for (BleScanListener listener : scanListeners) {
-            listener.onScanStop();
-        }
+        handleScanCallback(false, null, null);
         for (BleConnection connection : connectionMap.values()) {
             connection.onScanStop();
         }
@@ -345,26 +356,22 @@ public class Ble {
     }
 
     //解析广播字段
-    private void parseScanResult(BluetoothDevice device, int rssi, byte[] scanRecord) {
+    private void parseScanResult(BluetoothDevice device, int rssi, final byte[] scanRecord) {
         for (BleConnection connection : connectionMap.values()) {
             connection.onScanResult(device.getAddress());
         }
         //生成
-        Device dev = createDevice();
+        final Device dev = createDevice();
         dev.name = TextUtils.isEmpty(device.getName()) ? "unknown device" : device.getName();
         dev.addr = device.getAddress();
         dev.rssi = rssi;
         if (config.getScanHandler() != null) {
             //只在指定的过滤器通知
             if (config.getScanHandler().handle(dev, scanRecord)) {
-                for (BleScanListener listener : scanListeners) {
-                    listener.onScanResult(dev, scanRecord);
-                }
+                handleScanCallback(false, dev, scanRecord);
             }
         } else {
-            for (BleScanListener listener : scanListeners) {
-                listener.onScanResult(dev, scanRecord);
-            }
+            handleScanCallback(false, dev, scanRecord);
         }
         println(Ble.class, Log.DEBUG, "扫描到设备：" + dev.name + "  " + dev.addr);
     }
