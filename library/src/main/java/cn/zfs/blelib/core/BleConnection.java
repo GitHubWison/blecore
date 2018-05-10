@@ -237,7 +237,15 @@ public class BleConnection extends Connection {
             if (device.connectionState != STATE_DISCONNECTED) {
                 connStartTime = System.currentTimeMillis();
                 Ble.println(BleConnection.class, Log.ERROR, "连接超时, " + device.name + ", " + device.addr);
-                Ble.getInstance().getObservable().notifyConnectTimeout(device);
+                int type;
+                if (device.connectionState == STATE_RECONNECTING) {
+                    type = TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE;
+                } else if (device.connectionState == STATE_CONNECTING) {
+                    type = TIMEOUT_TYPE_CANNOT_CONNECT;
+                } else {
+                    type = TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES;
+                }
+                Ble.getInstance().getObservable().notifyConnectTimeout(device, type);
             }
             if (autoReconnEnable) {
                 doDisconnect(true, false);

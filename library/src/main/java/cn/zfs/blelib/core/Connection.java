@@ -25,13 +25,20 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public abstract class Connection extends BluetoothGattCallback {
     private static final UUID CLIENT_CHARACTERISTIC_CONFIG = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
-    //蓝牙连接状态    
+    //----------蓝牙连接状态-------------   
     public static final int STATE_DISCONNECTED = 0;
     public static final int STATE_CONNECTING = 1;
     public static final int STATE_RECONNECTING = 2;
     public static final int STATE_CONNECTED = 3;
     public static final int STATE_SERVICE_DISCORVERING = 4;
     public static final int STATE_SERVICE_DISCORVERED = 5;
+    //----------连接超时类型---------
+    /**搜索不到设备*/
+    public static final int TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE = 0;
+    /**能搜到，连接不上*/
+    public static final int TIMEOUT_TYPE_CANNOT_CONNECT = 1;
+    /**能连接上，无法发现服务*/
+    public static final int TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES = 2;
 
     @IntDef({STATE_DISCONNECTED, STATE_CONNECTING, STATE_RECONNECTING, STATE_CONNECTED, STATE_SERVICE_DISCORVERING, STATE_SERVICE_DISCORVERED})
     @Retention(RetentionPolicy.SOURCE)

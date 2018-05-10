@@ -28,8 +28,10 @@ public class BleObserver {
 	/**
 	 * 设备连接超时
 	 * @param device 蓝牙设备
+     * @param type 超时类型<br> {@link Connection#TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE}<br>
+     *     {@link Connection#TIMEOUT_TYPE_CANNOT_CONNECT}<br> {@link Connection#TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES}  
 	 */
-	public void onConnectTimeout(@NonNull Device device) {}
+	public void onConnectTimeout(@NonNull Device device, int type) {}
 	    
     /**
      * 收到设备信号强度RSSI
@@ -37,12 +39,6 @@ public class BleObserver {
      * @param rssi 信号强度
      */
     public void onRssiRead(@NonNull Device device, int rssi) {}
-
-    /**
-     * 无法发现蓝牙服务
-     * @param device 设备
-     */
-    public void onUnableFindService(@NonNull Device device) {}
 
     /**
      * 数据发送结果

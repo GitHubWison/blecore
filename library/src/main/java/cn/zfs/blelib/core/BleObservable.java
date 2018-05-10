@@ -59,9 +59,9 @@ public class BleObservable {
         }
     }
 
-	public void notifyConnectTimeout(@NonNull Device device) {
+	public void notifyConnectTimeout(@NonNull Device device, int type) {
 		for (Object o : getObservers()) {
-            ((BleObserver) o).onConnectTimeout(device);
+            ((BleObserver) o).onConnectTimeout(device, type);
 		}
 	}
     
@@ -71,12 +71,6 @@ public class BleObservable {
         }
     }
     
-    public void notifyUnableFindService(@NonNull Device device) {
-        for (Object o : getObservers()) {
-            ((BleObserver) o).onUnableFindService(device);
-        }
-    }
-
     public void notifyWriteCharacteristicResult(@NonNull Device device, String requestId, boolean result, byte[] value) {
         for (Object o : getObservers()) {
             ((BleObserver) o).onWriteCharacteristicResult(device, requestId, result, value);
