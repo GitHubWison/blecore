@@ -328,6 +328,9 @@ public class Ble {
      * 停止搜索蓝牙设备
      */
     public void stopScan() {
+        if (!scanning) {
+            return;
+        }
         checkIfInit();
         scanning = false;
         handler.removeCallbacks(stopScanRunnable);
