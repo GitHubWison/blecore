@@ -1,4 +1,4 @@
-package cn.zfs.blelib.core;
+package cn.zfs.blelib.data;
 
 import android.support.annotation.NonNull;
 

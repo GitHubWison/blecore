@@ -2,6 +2,8 @@ package cn.zfs.blelib.core;
 
 import android.support.annotation.NonNull;
 
+import cn.zfs.blelib.data.Device;
+
 /**
  * 描述: 蓝牙搜索过滤器
  * 时间: 2018/4/13 10:42

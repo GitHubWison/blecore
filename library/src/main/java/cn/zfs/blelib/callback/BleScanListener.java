@@ -1,6 +1,8 @@
-package cn.zfs.blelib.core;
+package cn.zfs.blelib.callback;
 
 import android.support.annotation.NonNull;
+
+import cn.zfs.blelib.data.Device;
 
 /**
  * 描述: 蓝牙扫描回调

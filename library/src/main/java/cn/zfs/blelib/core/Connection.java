@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.IntDef;
@@ -14,9 +15,13 @@ import android.support.annotation.IntDef;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import cn.zfs.blelib.callback.RequestCallback;
+import cn.zfs.blelib.util.BleUtils;
 
 /**
  * 描述: 蓝牙连接基类
@@ -67,6 +72,8 @@ public abstract class Connection extends BluetoothGattCallback {
     }
 
     protected abstract int getWriteDelayMillis();
+    
+    protected abstract int getPackageSize();
 
     /*
      * Clears the internal cache and forces a refresh of the services from the
@@ -211,6 +218,20 @@ public abstract class Connection extends BluetoothGattCallback {
         }
     }
 
+    
+    public void requestMtu(final String requestId, final int mtu, final RequestCallback callback) {
+        requestHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (currentRequest == null) {
+                    performRequestMtu(requestId, mtu, callback);
+                } else {
+                    requestQueue.add(new Request(Request.RequestType.SET_MTU, requestId, null, null, null, callback, BleUtils.numberToBytes(mtu, false)));
+                }
+            }
+        });
+    }
+    
     /*
      * 请求读取characteristic的值
      * @param requestId 请求码
@@ -328,11 +349,34 @@ public abstract class Connection extends BluetoothGattCallback {
                     case READ_RSSI:
                         performRssiValueRequest(request.requestId, request.callback);
                         break;
+                    case SET_MTU:
+                        performRequestMtu(request.requestId, (int) BleUtils.bytesToLong(request.value, false), request.callback);
+                        break;
                 }
             }
         });
     }
 
+    private void performRequestMtu(String requestId, int mtu, RequestCallback callback) {
+        if (bluetoothAdapter.isEnabled()) {
+            currentRequest = new Request(Request.RequestType.SET_MTU, requestId, null, null, null, callback);
+            if (bluetoothGatt != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    if (!bluetoothGatt.requestMtu(mtu)) {
+                        performFaildCallback(callback, currentRequest.requestId, currentRequest.type, RequestCallback.NONE, currentRequest.value);
+                        processNextRequest();
+                    }
+                } else {
+                    performFaildCallback(callback, currentRequest.requestId, currentRequest.type, RequestCallback.API_LEVEL_TOO_LOW, currentRequest.value);
+                    processNextRequest();
+                }
+            } else {
+                performFaildCallback(callback, currentRequest.requestId, currentRequest.type, RequestCallback.GATT_IS_NULL, currentRequest.value);
+                processNextRequest();
+            }
+        }
+    }
+    
     private void performRssiValueRequest(String requestId, RequestCallback callback) {
         if (bluetoothAdapter.isEnabled()) {
             currentRequest = new Request(Request.RequestType.READ_RSSI, requestId, null, null, null, callback);
@@ -386,7 +430,14 @@ public abstract class Connection extends BluetoothGattCallback {
         requestHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                doWrite(requestId, service, characteristic, callback, value);
+                if (value.length > getPackageSize()) {
+                    List<byte[]> list = BleUtils.splitPackage(value, getPackageSize());
+                    for (byte[] bytes : list) {
+                        doWrite(requestId, service, characteristic, callback, bytes);
+                    }
+                } else {
+                    doWrite(requestId, service, characteristic, callback, value);
+                }
             }
         }, getWriteDelayMillis());
     }

@@ -20,6 +20,8 @@ package cn.zfs.blelib.core;
 
 import java.util.UUID;
 
+import cn.zfs.blelib.callback.RequestCallback;
+
 /**
  * 描述: 用作请求队列
  * 时间: 2018/4/11 15:15
@@ -28,7 +30,7 @@ import java.util.UUID;
 public class Request {
     
     public enum RequestType {
-        CHARACTERISTIC_NOTIFICATION, CHARACTERISTIC_INDICATION, READ_CHARACTERISTIC, READ_DESCRIPTOR, READ_RSSI, WRITE_CHARACTERISTIC, WRITE_DESCRIPTOR
+        CHARACTERISTIC_NOTIFICATION, CHARACTERISTIC_INDICATION, READ_CHARACTERISTIC, READ_DESCRIPTOR, READ_RSSI, WRITE_CHARACTERISTIC, WRITE_DESCRIPTOR, SET_MTU
     }
 
     public RequestType type;

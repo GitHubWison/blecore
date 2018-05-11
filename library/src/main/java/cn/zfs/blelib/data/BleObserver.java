@@ -1,6 +1,8 @@
-package cn.zfs.blelib.core;
+package cn.zfs.blelib.data;
 
 import android.support.annotation.NonNull;
+
+import cn.zfs.blelib.core.Connection;
 
 /**
  * 描述: 蓝牙设备状态、数据观察者，观察设备状态、数据变化

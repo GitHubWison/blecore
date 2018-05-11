@@ -17,9 +17,9 @@ import cn.zfs.bledebuger.entity.MyBleObservable
 import cn.zfs.bledebuger.entity.MyRequestCallback
 import cn.zfs.bledebuger.util.ToastUtils
 import cn.zfs.blelib.core.Ble
-import cn.zfs.blelib.core.BleScanListener
-import cn.zfs.blelib.core.Device
-import cn.zfs.blelib.core.InitCallback
+import cn.zfs.blelib.callback.BleScanListener
+import cn.zfs.blelib.data.Device
+import cn.zfs.blelib.callback.InitCallback
 import kotlinx.android.synthetic.main.activity_main.*
 
 

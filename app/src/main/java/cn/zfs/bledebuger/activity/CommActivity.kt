@@ -12,6 +12,9 @@ import cn.zfs.bledebuger.R
 import cn.zfs.bledebuger.entity.MyBleObserver
 import cn.zfs.bledebuger.util.ToastUtils
 import cn.zfs.blelib.core.*
+import cn.zfs.blelib.data.BleObserver
+import cn.zfs.blelib.data.Device
+import cn.zfs.blelib.util.BleUtils
 import kotlinx.android.synthetic.main.activity_comm.*
 import java.text.SimpleDateFormat
 import java.util.*

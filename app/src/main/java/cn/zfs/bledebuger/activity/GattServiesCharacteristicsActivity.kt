@@ -14,6 +14,8 @@ import cn.zfs.bledebuger.entity.Item
 import cn.zfs.bledebuger.entity.MyBleObserver
 import cn.zfs.bledebuger.util.ToastUtils
 import cn.zfs.blelib.core.*
+import cn.zfs.blelib.data.BleObserver
+import cn.zfs.blelib.data.Device
 import kotlinx.android.synthetic.main.activity_gatt_services_characteristics.*
 
 /**

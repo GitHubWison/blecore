@@ -1,4 +1,4 @@
-package cn.zfs.blelib.core;
+package cn.zfs.blelib.callback;
 
 /**
  * 描述: 初始化回调

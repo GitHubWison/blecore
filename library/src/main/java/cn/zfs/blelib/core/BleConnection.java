@@ -14,6 +14,9 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
+import cn.zfs.blelib.callback.ConnectionCallback;
+import cn.zfs.blelib.data.Device;
+
 /**
  * 描述: 蓝牙连接
  * 时间: 2018/4/11 15:29
@@ -77,6 +80,11 @@ public class BleConnection extends Connection {
     @Override
     protected int getWriteDelayMillis() {
         return Ble.getInstance().getConfig().getWriteDelayMillis();
+    }
+
+    @Override
+    protected int getPackageSize() {
+        return Ble.getInstance().getConfig().getPackageSize();
     }
 
     /**

@@ -3,7 +3,7 @@ package cn.zfs.bledebuger.entity;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 
-import cn.zfs.blelib.core.BleObserver;
+import cn.zfs.blelib.data.BleObserver;
 import cn.zfs.blelib.core.Request;
 
 /**

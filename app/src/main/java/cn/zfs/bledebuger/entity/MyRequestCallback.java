@@ -5,9 +5,9 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.support.annotation.NonNull;
 
 import cn.zfs.blelib.core.Ble;
-import cn.zfs.blelib.core.Device;
+import cn.zfs.blelib.data.Device;
 import cn.zfs.blelib.core.Request;
-import cn.zfs.blelib.core.RequestCallback;
+import cn.zfs.blelib.callback.RequestCallback;
 
 /**
  * 描述:

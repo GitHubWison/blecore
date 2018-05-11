@@ -1,6 +1,9 @@
-package cn.zfs.blelib.core;
+package cn.zfs.blelib.callback;
 
 import android.support.annotation.NonNull;
+
+import cn.zfs.blelib.core.Connection;
+import cn.zfs.blelib.data.Device;
 
 /**
  * 描述: 连接状态变化回调

@@ -21,8 +21,10 @@ package cn.zfs.blelib.core;
 import java.util.HashMap;
 import java.util.UUID;
 
+import cn.zfs.blelib.callback.RequestCallback;
+
 /**
- * 描述: handler容器
+ * 描述: Callback容器
  * 时间: 2018/4/17 17:02
  * 作者: zengfansheng
  */

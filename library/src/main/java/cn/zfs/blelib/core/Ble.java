@@ -28,6 +28,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import cn.zfs.blelib.callback.BleScanListener;
+import cn.zfs.blelib.callback.ConnectionCallback;
+import cn.zfs.blelib.callback.InitCallback;
+import cn.zfs.blelib.callback.RequestCallback;
+import cn.zfs.blelib.data.BleObservable;
+import cn.zfs.blelib.data.BleObserver;
+import cn.zfs.blelib.data.Device;
+
 /**
  * 描述: 蓝牙操作
  * 时间: 2018/4/11 15:29

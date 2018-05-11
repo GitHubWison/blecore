@@ -1,8 +1,10 @@
-package cn.zfs.blelib.core;
+package cn.zfs.blelib.data;
 
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
+
+import cn.zfs.blelib.core.Connection;
 
 /**
  * 描述: 蓝牙设备

@@ -1,4 +1,4 @@
-package cn.zfs.blelib.core;
+package cn.zfs.blelib.callback;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
@@ -8,6 +8,11 @@ import android.util.Log;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+
+import cn.zfs.blelib.core.Ble;
+import cn.zfs.blelib.util.BleUtils;
+import cn.zfs.blelib.data.Device;
+import cn.zfs.blelib.core.Request;
 
 /**
  * 描述: 接收蓝牙数据消息
@@ -21,6 +26,7 @@ public class RequestCallback {
     public static final int NULL_SERVICE = 3;
     public static final int GATT_STATUS_REQUEST_NOT_SUPPORTED = 4;
     public static final int GATT_IS_NULL = 5;
+    public static final int API_LEVEL_TOO_LOW = 6;
 
     @IntDef({NONE, NULL_CHARACTERISTIC, NULL_DESCRIPTOR, NULL_SERVICE, GATT_STATUS_REQUEST_NOT_SUPPORTED, GATT_IS_NULL})
     @Retention(RetentionPolicy.SOURCE)

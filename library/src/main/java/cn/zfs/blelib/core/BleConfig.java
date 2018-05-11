@@ -2,6 +2,11 @@ package cn.zfs.blelib.core;
 
 import android.util.Log;
 
+import cn.zfs.blelib.callback.ConnectionCallback;
+import cn.zfs.blelib.callback.RequestCallback;
+import cn.zfs.blelib.data.BleObservable;
+import cn.zfs.blelib.data.Device;
+
 /**
  * 描述: 蓝牙配置
  * 时间: 2018/4/17 17:02
@@ -22,6 +27,7 @@ public class BleConfig {
     private int writeDelayMillis;
     private int scanPeriodMillis = 10000;
     private boolean useBluetoothLeScanner = true;
+    private int packageSize = 20;//发送数据时的分包大小
     
     public Class<? extends Device> getDeviceClass() {
         return deviceClass;
@@ -159,5 +165,18 @@ public class BleConfig {
      */
     public void setUseBluetoothLeScanner(boolean useBluetoothLeScanner) {
         this.useBluetoothLeScanner = useBluetoothLeScanner;
+    }
+
+    public int getPackageSize() {
+        return packageSize;
+    }
+
+    /**
+     * 发送数据时的分包大小
+     * @param packageSize 包大小，字节
+     */
+    public BleConfig setPackageSize(int packageSize) {
+        this.packageSize = packageSize;
+        return this;
     }
 }
