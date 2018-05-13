@@ -13,7 +13,7 @@ import java.util.Vector;
  */
 public class BleObservable {
     private Vector<BleObserver> obs;
-    private Handler handler;
+    protected Handler handler;
 
     public BleObservable() {
         obs = new Vector<>();
@@ -62,7 +62,7 @@ public class BleObservable {
         });
 	}
 	
-	public void nofityUnableConnect(final @NonNull Device device, final String error) {
+	public void nofityUnableConnect(final Device device, final String error) {
         handler.post(new Runnable() {
             @Override
             public void run() {
