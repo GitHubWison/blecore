@@ -187,7 +187,7 @@ public class Ble {
             throw new RuntimeException("BLE实例未初始化，请先调用init(Context context, InitCallback callback)初始化");
         }
     }
-
+    
     /**
      * 获取蓝牙状态、数据传输被观察者实例
      */
