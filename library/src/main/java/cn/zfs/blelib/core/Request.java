@@ -18,6 +18,8 @@
 
 package cn.zfs.blelib.core;
 
+import android.support.annotation.NonNull;
+
 import java.util.UUID;
 
 import cn.zfs.blelib.callback.RequestCallback;
@@ -42,7 +44,7 @@ public class Request {
     public byte[] value;
     public long requestTime;//开始请求的时间
 
-    public Request(RequestType type, String requestId, UUID service, UUID characteristic, UUID descriptor, RequestCallback callback) {
+    public Request(@NonNull RequestType type, String requestId, UUID service, UUID characteristic, UUID descriptor, RequestCallback callback) {
         this.type = type;
         this.requestId = requestId;
         this.service = service;
@@ -53,7 +55,7 @@ public class Request {
         requestTime = System.currentTimeMillis();
     }
 
-    public Request(RequestType type, String requestId, UUID service, UUID characteristic, UUID descriptor, RequestCallback callback, byte[] value) {
+    public Request(@NonNull RequestType type, String requestId, UUID service, UUID characteristic, UUID descriptor, RequestCallback callback, byte[] value) {
         this.type = type;
         this.requestId = requestId;
         this.service = service;
