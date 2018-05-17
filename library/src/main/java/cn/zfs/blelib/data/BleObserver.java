@@ -1,5 +1,6 @@
 package cn.zfs.blelib.data;
 
+import android.bluetooth.BluetoothAdapter;
 import android.support.annotation.NonNull;
 
 import cn.zfs.blelib.core.Connection;
@@ -11,6 +12,16 @@ import cn.zfs.blelib.core.Connection;
  */
 public class BleObserver {
 
+    /**
+     * 蓝牙状态变化
+     * @param state 当前状态
+     * <br>{@link BluetoothAdapter#STATE_OFF}
+     * <br>{@link BluetoothAdapter#STATE_TURNING_ON}
+     * <br>{@link BluetoothAdapter#STATE_ON}
+     * <br>{@link BluetoothAdapter#STATE_TURNING_OFF}
+     */
+    public void onBluetoothStateChange(int state) {}
+    
 	/**
 	 * 设备连接状态变化
 	 * @param device 蓝牙设备

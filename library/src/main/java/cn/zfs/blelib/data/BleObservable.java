@@ -50,6 +50,17 @@ public class BleObservable {
 	public synchronized void clearObservers() {
 		obs.removeAllElements();
 	}
+
+    public void notifyBluetoothStateChange(final int state) {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                for (Object o : getObservers()) {
+                    ((BleObserver) o).onBluetoothStateChange(state);
+                }
+            }
+        });
+    }
 		
 	public void notifyConnectionStateChange(final @NonNull Device device, final int state) {
 		handler.post(new Runnable() {
