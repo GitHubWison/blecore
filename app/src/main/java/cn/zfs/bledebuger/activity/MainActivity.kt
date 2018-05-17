@@ -36,7 +36,7 @@ class MainActivity : CheckPermissionsActivity() {
         initViews()
         Ble.getInstance().config.setDiscoverServicesDelayMillis(2000)
                 .setRequestCallbackClass(MyRequestCallback::class.java)
-                .observable = MyBleObservable()
+                .setBleObservableClass(MyBleObservable::class.java)
         
         Ble.getInstance().setLogPrintLevelControl(LogController.ALL)//输出日志
         Ble.getInstance().addScanListener(scanListener)

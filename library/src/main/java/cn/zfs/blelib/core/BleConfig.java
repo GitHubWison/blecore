@@ -1,9 +1,7 @@
 package cn.zfs.blelib.core;
 
-import android.util.Log;
-
 import cn.zfs.blelib.callback.ConnectionCallback;
-import cn.zfs.blelib.callback.RequestCallback;
+import cn.zfs.blelib.callback.IRequestCallback;
 import cn.zfs.blelib.data.BleObservable;
 import cn.zfs.blelib.data.Device;
 
@@ -19,8 +17,8 @@ public class BleConfig {
     private IScanHandler scanHandler;    
     private long discoverServicesDelayMillis = DEFAULT_DISCOVER_SERVICES_DELAY_MILLIS;
     private int connectTimeoutMillis = DEFAULT_CONN_TIMEOUT_MILLIS;
-    private BleObservable observable = new BleObservable();
-    private Class<? extends RequestCallback> requestCallbackClass;
+    private Class<? extends BleObservable> observaleClass;
+    private Class<? extends IRequestCallback> requestCallbackClass;
     private Class<? extends ConnectionCallback> connectionCallbackClass;
     private Class<? extends Device> deviceClass;
     private int tryReconnectTimes = TRY_RECONNECT_TIMES_INFINITE;
@@ -28,19 +26,18 @@ public class BleConfig {
     private int scanPeriodMillis = 10000;
     private boolean useBluetoothLeScanner = true;
     private int packageSize = 20;//发送数据时的分包大小
+    private boolean postObserverMsgMainThread = true;
     
     public Class<? extends Device> getDeviceClass() {
         return deviceClass;
     }
 
+    /**
+     * 设置设备字节码，扫描回调返回的Device实例根据此字节码实例化
+     */
     public BleConfig setDeviceClass(Class<? extends Device> deviceClass) {
         this.deviceClass = deviceClass;
-        Ble.println(this.getClass(), Log.DEBUG, "setDeviceClass");
         return this;
-    }
-
-    public BleObservable getObservable() {
-        return observable;
     }
 
     /**
@@ -56,11 +53,18 @@ public class BleConfig {
         return scanHandler;
     }
 
-    public BleConfig setObservable(BleObservable observable) {
-        this.observable = observable;
+    public Class<? extends BleObservable> getBleObservaleClass() {
+        return observaleClass;
+    }
+    
+    public BleConfig setBleObservableClass(Class<? extends BleObservable> observaleClass) {
+        this.observaleClass = observaleClass;
         return this;
     }
 
+    /**
+     * 连接状态回调
+     */
     public Class<? extends ConnectionCallback> getConnectionCallbackClass() {
         return connectionCallbackClass;
     }
@@ -73,14 +77,14 @@ public class BleConfig {
         return this;
     }
 
-    public Class<? extends RequestCallback> getRequestCallbackClass() {
+    public Class<? extends IRequestCallback> getRequestCallbackClass() {
         return requestCallbackClass;
     }
 
     /**
      * 设置请求回调，数据交互
      */
-    public BleConfig setRequestCallbackClass(Class<? extends RequestCallback> requestCallbackClass) {
+    public BleConfig setRequestCallbackClass(Class<? extends IRequestCallback> requestCallbackClass) {
         this.requestCallbackClass = requestCallbackClass;
         return this;
     }
@@ -177,6 +181,18 @@ public class BleConfig {
      */
     public BleConfig setPackageSize(int packageSize) {
         this.packageSize = packageSize;
+        return this;
+    }
+
+    public boolean isPostObserverMsgMainThread() {
+        return postObserverMsgMainThread;
+    }
+
+    /**
+     * 是否将观察者的消息post到UI线程，默认是true
+     */
+    public BleConfig setPostObserverMsgMainThread(boolean postObserverMsgMainThread) {
+        this.postObserverMsgMainThread = postObserverMsgMainThread;
         return this;
     }
 }
