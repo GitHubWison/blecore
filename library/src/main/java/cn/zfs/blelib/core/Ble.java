@@ -33,8 +33,8 @@ import cn.zfs.blelib.callback.ConnectionCallback;
 import cn.zfs.blelib.callback.InitCallback;
 import cn.zfs.blelib.callback.RequestCallback;
 import cn.zfs.blelib.data.BleObservable;
-import cn.zfs.blelib.data.BleObserver;
 import cn.zfs.blelib.data.Device;
+import cn.zfs.blelib.data.IBleObserver;
 
 /**
  * 描述: 蓝牙操作
@@ -200,7 +200,7 @@ public class Ble {
      * 注册观察者，开始监听蓝牙状态及数据
      * @param observer 观察者
      */
-    public void registerObserver(BleObserver observer) {
+    public void registerObserver(IBleObserver observer) {
         config.getObservable().addObserver(observer);
     }
 
@@ -208,7 +208,7 @@ public class Ble {
      * 取消注册观察者，停止监听蓝牙状态及数据
      * @param observer 观察者
      */
-    public void unregisterObserver(BleObserver observer) {
+    public void unregisterObserver(IBleObserver observer) {
         config.getObservable().removeObserver(observer);
     }
 
