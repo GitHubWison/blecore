@@ -61,8 +61,9 @@ public abstract class Connection extends BluetoothGattCallback {
     private HandlerThread handlerThread;
     private Handler requestHandler;
 
-    Connection() {
-        handlerThread = new HandlerThread("ConnectionThread");
+    Connection(BluetoothDevice bluetoothDevice) {
+        this.bluetoothDevice = bluetoothDevice;
+        handlerThread = new HandlerThread("ConnectionThread_" + bluetoothDevice.getAddress());
         handlerThread.start();
         requestHandler = new Handler(handlerThread.getLooper());
     }

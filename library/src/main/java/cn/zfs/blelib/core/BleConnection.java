@@ -1,6 +1,7 @@
 package cn.zfs.blelib.core;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
@@ -46,7 +47,8 @@ public class BleConnection extends Connection {
 	private int refreshTimes;//记录刷新次数，如果成功发现服务器，则清零
     private int tryReconnectTimes;
 	    
-    private BleConnection() {
+    private BleConnection(BluetoothDevice bluetoothDevice) {
+        super(bluetoothDevice);
         handler = new ConnHandler(this);
     }
 
@@ -62,10 +64,9 @@ public class BleConnection extends Connection {
 			return null;
 		}
 		//初始化并建立连接
-		BleConnection conn = new BleConnection();
+		BleConnection conn = new BleConnection(bluetoothAdapter.getRemoteDevice(device.addr));
 		conn.bluetoothAdapter = bluetoothAdapter;
 		conn.device = device;
-		conn.bluetoothDevice = conn.bluetoothAdapter.getRemoteDevice(device.addr);
 		conn.context = context.getApplicationContext();
 		conn.connectionCallback = connectionCallback;
 		//连接蓝牙设备        
