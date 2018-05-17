@@ -216,7 +216,8 @@ public class Ble {
                     //通过反射创建回调
                     observable = cls.getConstructor(Looper.class).newInstance(getBackgroundLooper(cls));
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    //如果反射不成功，实例化默认的
+                    observable = new BleObservable(getBackgroundLooper(BleObservable.class));
                 }
             }
         }
