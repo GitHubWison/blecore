@@ -5,6 +5,8 @@ import android.os.Looper;
 import android.support.annotation.NonNull;
 
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import cn.zfs.blelib.core.Ble;
 
@@ -15,13 +17,12 @@ import cn.zfs.blelib.core.Ble;
  */
 public class BleObservable {
     private Vector<IBleObserver> obs;
-    private Looper backgroundLooper;
     protected Handler handler;
+    protected ExecutorService threadPool = Executors.newCachedThreadPool();
 
-    public BleObservable(Looper looper) {
-        backgroundLooper = looper;
+    public BleObservable() {
         obs = new Vector<>();        
-        handler = new Handler(looper);
+        handler = new Handler(Looper.getMainLooper());
     }
 
     public synchronized void addObserver(IBleObserver o) {
@@ -54,22 +55,18 @@ public class BleObservable {
 	public synchronized void clearObservers() {
 		obs.removeAllElements();
 	}
-
-	private synchronized void checkIfRightThread() {
+	
+    protected void execute(Runnable task) {
+        //如果设置post到UI线程则使用handler执行post，否则使用线程池执行
         if (Ble.getInstance().getConfig().isPostObserverMsgMainThread()) {
-            if (handler.getLooper() != Looper.getMainLooper()) {
-                handler = new Handler(Looper.getMainLooper());
-            }
+            handler.post(task);
         } else {
-            if (handler.getLooper() == Looper.getMainLooper()) {
-                handler = new Handler(backgroundLooper);
-            }
+            threadPool.execute(task);
         }
     }
-	
+    
     public void notifyBluetoothStateChange(final int state) {
-        checkIfRightThread();
-        handler.post(new Runnable() {
+        execute(new Runnable() {
             @Override
             public void run() {
                 for (Object o : getObservers()) {
@@ -80,8 +77,7 @@ public class BleObservable {
     }
 		
 	public void notifyConnectionStateChange(final @NonNull Device device, final int state) {
-        checkIfRightThread();
-		handler.post(new Runnable() {
+        execute(new Runnable() {
             @Override
             public void run() {
                 for (Object o : getObservers()) {
@@ -92,8 +88,7 @@ public class BleObservable {
 	}
 	
 	public void nofityUnableConnect(final Device device, final String error) {
-        checkIfRightThread();
-        handler.post(new Runnable() {
+        execute(new Runnable() {
             @Override
             public void run() {
                 for (Object o : getObservers()) {
@@ -104,8 +99,7 @@ public class BleObservable {
     }
 
 	public void notifyConnectTimeout(final @NonNull Device device, final int type) {
-        checkIfRightThread();
-        handler.post(new Runnable() {
+        execute(new Runnable() {
             @Override
             public void run() {
                 for (Object o : getObservers()) {
@@ -116,8 +110,7 @@ public class BleObservable {
 	}
     
     public void notifyRssiRead(final @NonNull Device device, final int rssi) {
-        checkIfRightThread();
-        handler.post(new Runnable() {
+        execute(new Runnable() {
             @Override
             public void run() {
                 for (Object o : getObservers()) {
@@ -129,8 +122,7 @@ public class BleObservable {
     
     public void notifyWriteCharacteristicResult(final @NonNull Device device, final String requestId, 
                                                 final boolean result, final byte[] value) {
-        checkIfRightThread();
-        handler.post(new Runnable() {
+        execute(new Runnable() {
             @Override
             public void run() {
                 for (Object o : getObservers()) {

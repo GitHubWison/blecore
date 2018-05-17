@@ -17,7 +17,7 @@ public class BleConfig {
     private IScanHandler scanHandler;    
     private long discoverServicesDelayMillis = DEFAULT_DISCOVER_SERVICES_DELAY_MILLIS;
     private int connectTimeoutMillis = DEFAULT_CONN_TIMEOUT_MILLIS;
-    private Class<? extends BleObservable> observaleClass;
+    private BleObservable observable = new BleObservable();
     private Class<? extends IRequestCallback> requestCallbackClass;
     private Class<? extends ConnectionCallback> connectionCallbackClass;
     private Class<? extends Device> deviceClass;
@@ -53,12 +53,15 @@ public class BleConfig {
         return scanHandler;
     }
 
-    public Class<? extends BleObservable> getBleObservaleClass() {
-        return observaleClass;
+    public BleObservable getObservable() {
+        return observable;
     }
-    
-    public BleConfig setBleObservableClass(Class<? extends BleObservable> observaleClass) {
-        this.observaleClass = observaleClass;
+
+    /**
+     * 设置被观察者，消息发布者
+     */
+    public BleConfig setObservable(BleObservable observable) {
+        this.observable = observable;
         return this;
     }
 

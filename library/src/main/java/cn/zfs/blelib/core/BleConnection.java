@@ -46,8 +46,7 @@ public class BleConnection extends Connection {
 	private int refreshTimes;//记录刷新次数，如果成功发现服务器，则清零
     private int tryReconnectTimes;
 	    
-    private BleConnection(Looper looper) {
-        super(looper);
+    private BleConnection() {
         handler = new ConnHandler(this);
     }
 
@@ -56,14 +55,14 @@ public class BleConnection extends Connection {
      * @param device 蓝牙设备
      */
 	synchronized static BleConnection newInstance(BluetoothAdapter bluetoothAdapter, Context context, Device device, 
-                                                  long connectDelay, Looper looper, ConnectionCallback connectionCallback) {
+                                                  long connectDelay, ConnectionCallback connectionCallback) {
 		if (bluetoothAdapter == null || device == null || device.addr == null || !device.addr.matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
 			Ble.println(BleConnection.class, Log.ERROR, "BluetoothAdapter not initialized or unspecified address.");
 			Ble.getInstance().getObservable().nofityUnableConnect(device, "BluetoothAdapter not initialized or unspecified address.");
 			return null;
 		}
 		//初始化并建立连接
-		BleConnection conn = new BleConnection(looper);
+		BleConnection conn = new BleConnection();
 		conn.bluetoothAdapter = bluetoothAdapter;
 		conn.device = device;
 		conn.bluetoothDevice = conn.bluetoothAdapter.getRemoteDevice(device.addr);
@@ -361,7 +360,9 @@ public class BleConnection extends Connection {
 	/**
 	 * 销毁连接，停止定时器
 	 */
-	public synchronized void release() {
+	@Override
+	public void release() {
+	    super.release();
 	    handler.removeCallbacksAndMessages(null);//主动断开，停止定时器
 		handler.sendEmptyMessage(MSG_RELEASE);
 	}

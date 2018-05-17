@@ -9,7 +9,7 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.os.Build;
 import android.os.Handler;
-import android.os.Looper;
+import android.os.HandlerThread;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 
@@ -58,12 +58,19 @@ public abstract class Connection extends BluetoothGattCallback {
     private BluetoothGattCharacteristic pendingCharacteristic;
     private RequestCallbackContainer requestCallbackContainer = new RequestCallbackContainer();
     protected BluetoothAdapter bluetoothAdapter;
+    private HandlerThread handlerThread;
     private Handler requestHandler;
 
-    Connection(Looper looper) {
-        requestHandler = new Handler(looper);
+    Connection() {
+        handlerThread = new HandlerThread("ConnectionThread");
+        handlerThread.start();
+        requestHandler = new Handler(handlerThread.getLooper());
     }
 
+    public void release() {
+        handlerThread.quit();//移除所有消息，停止线程
+    }
+    
     protected abstract int getWriteDelayMillis();
     
     protected abstract int getPackageSize();

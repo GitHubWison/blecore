@@ -16,7 +16,6 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.Looper;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
@@ -48,7 +47,6 @@ public class Ble {
     private BluetoothAdapter bluetoothAdapter;
     private Map<String, BleConnection> connectionMap;
     private Map<String, IRequestCallback> requestCallbackMap;
-    private Map<String, HandlerThread> handlerThreadMap;
     private boolean isInited;
     private boolean scanning;
     private BluetoothLeScanner bleScanner;
@@ -57,7 +55,6 @@ public class Ble {
     private BleConfig config;
     private List<BleScanListener> scanListeners;
     private Handler mainThreadHandler;
-    private BleObservable observable;
 
     private Ble() {
         config = new BleConfig();
@@ -65,7 +62,6 @@ public class Ble {
         requestCallbackMap = new ConcurrentHashMap<>();
         mainThreadHandler = new Handler(Looper.getMainLooper());
         scanListeners = new ArrayList<>();
-        handlerThreadMap = new ConcurrentHashMap<>();
     }
 
     private static class Holder {
@@ -95,14 +91,7 @@ public class Ble {
     public void setConfig(BleConfig config) {
         this.config = config;
     }
-
-    /**
-     * 如果在中途修改了配置，需要调用一下更新，否则可能收不到到数据
-     */
-    public void updateConfig() {
-        observable = null;        
-    }
-
+    
     /**
      * 必须先初始化
      * @param context 上下文
@@ -209,19 +198,7 @@ public class Ble {
      * 获取蓝牙状态、数据传输被观察者实例
      */
     public BleObservable getObservable() {
-        if (observable == null) {
-            Class<? extends BleObservable> cls = config.getBleObservaleClass();
-            if (cls != null) {
-                try {
-                    //通过反射创建回调
-                    observable = cls.getConstructor(Looper.class).newInstance(getBackgroundLooper(cls));
-                } catch (Exception e) {
-                    //如果反射不成功，实例化默认的
-                    observable = new BleObservable(getBackgroundLooper(BleObservable.class));
-                }
-            }
-        }
-        return observable;
+        return config.getObservable();
     }
 
     /**
@@ -454,19 +431,6 @@ public class Ble {
         }
         return null;
     }
-
-    /**
-     * 获取子线程Looper
-     * @param cls 字节码
-     */
-    public Looper getBackgroundLooper(Class cls) {
-        HandlerThread handlerThread = handlerThreadMap.get(cls.getName());
-        if (handlerThread == null) {
-            handlerThread = new HandlerThread(cls.getName());
-            handlerThread.start();
-        }
-        return handlerThread.getLooper();
-    }
     
     /**
      * 建立连接
@@ -491,13 +455,13 @@ public class Ble {
             if (config.isBondWhenConnect(device)) {
                 BluetoothDevice bd = bluetoothAdapter.getRemoteDevice(device.addr);
                 if (bd.getBondState() == BluetoothDevice.BOND_BONDED) {
-                    connection = BleConnection.newInstance(bluetoothAdapter, context, device, 0, getBackgroundLooper(BleConnection.class), callback);
+                    connection = BleConnection.newInstance(bluetoothAdapter, context, device, 0, callback);
                 } else {
                     createBond(device.addr);//配对
-                    connection = BleConnection.newInstance(bluetoothAdapter, context, device, 1500, getBackgroundLooper(BleConnection.class), callback);
+                    connection = BleConnection.newInstance(bluetoothAdapter, context, device, 1500, callback);
                 }                
             } else {
-                connection = BleConnection.newInstance(bluetoothAdapter, context, device, 0, getBackgroundLooper(BleConnection.class), callback);
+                connection = BleConnection.newInstance(bluetoothAdapter, context, device, 0, callback);
             }            
             if (connection != null) {
                 connection.setAutoReconnectEnable(autoReconnect);
@@ -574,12 +538,8 @@ public class Ble {
         for (IRequestCallback callback : requestCallbackMap.values()) {
             callback.onDestroy();
         }
-        for (HandlerThread thread : handlerThreadMap.values()) {
-            thread.quit();
-        }
         connectionMap.clear();
         requestCallbackMap.clear();
-        handlerThreadMap.clear();
     }
 
     /**
