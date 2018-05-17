@@ -7,8 +7,8 @@ android {
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 14
-        versionName "1.13"
+        versionCode 15
+        versionName "1.14"
 
     }
 
@@ -25,6 +25,10 @@ android {
 task sourcesJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
     classifier = 'sources'
+}
+
+artifacts {
+    archives sourcesJar
 }
 
 dependencies {
