@@ -12,7 +12,7 @@ import java.util.Vector;
  * 作者: zengfansheng
  */
 public class BleObservable {
-    private Vector<BleObserver> obs;
+    private Vector<IBleObserver> obs;
     protected Handler handler;
 
     public BleObservable() {
@@ -20,7 +20,7 @@ public class BleObservable {
         handler = new Handler(Looper.getMainLooper());
     }
 
-    public synchronized void addObserver(BleObserver o) {
+    public synchronized void addObserver(IBleObserver o) {
 		if (o == null) {
 			return;
 		}
@@ -35,7 +35,7 @@ public class BleObservable {
 		return obs.size();
 	}
 
-	public synchronized void removeObserver(BleObserver o) {
+	public synchronized void removeObserver(IBleObserver o) {
 		obs.removeElement(o);
 	}
 	
@@ -56,7 +56,7 @@ public class BleObservable {
             @Override
             public void run() {
                 for (Object o : getObservers()) {
-                    ((BleObserver) o).onBluetoothStateChange(state);
+                    ((IBleObserver) o).onBluetoothStateChange(state);
                 }
             }
         });
@@ -67,7 +67,7 @@ public class BleObservable {
             @Override
             public void run() {
                 for (Object o : getObservers()) {
-                    ((BleObserver) o).onConnectionStateChange(device, state);
+                    ((IBleObserver) o).onConnectionStateChange(device, state);
                 }
             }
         });
@@ -78,7 +78,7 @@ public class BleObservable {
             @Override
             public void run() {
                 for (Object o : getObservers()) {
-                    ((BleObserver) o).onUnableConnect(device, error);
+                    ((IBleObserver) o).onUnableConnect(device, error);
                 }
             }
         });        
@@ -89,7 +89,7 @@ public class BleObservable {
             @Override
             public void run() {
                 for (Object o : getObservers()) {
-                    ((BleObserver) o).onConnectTimeout(device, type);
+                    ((IBleObserver) o).onConnectTimeout(device, type);
                 }
             }
         });		
@@ -100,7 +100,7 @@ public class BleObservable {
             @Override
             public void run() {
                 for (Object o : getObservers()) {
-                    ((BleObserver) o).onRssiRead(device, rssi);
+                    ((IBleObserver) o).onRssiRead(device, rssi);
                 }
             }
         });        
@@ -112,7 +112,7 @@ public class BleObservable {
             @Override
             public void run() {
                 for (Object o : getObservers()) {
-                    ((BleObserver) o).onWriteCharacteristicResult(device, requestId, result, value);
+                    ((IBleObserver) o).onWriteCharacteristicResult(device, requestId, result, value);
                 }
             }
         });        
