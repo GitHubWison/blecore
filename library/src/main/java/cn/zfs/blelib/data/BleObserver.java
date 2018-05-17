@@ -35,7 +35,7 @@ public class BleObserver implements IBleObserver {
     }
 
     @Override
-    public void onWriteCharacteristicResult(@NonNull Device device, String requestId, boolean result, byte[] value) {
+    public void onWriteCharacteristicResult(@NonNull Device device, @NonNull String requestId, boolean result, byte[] value) {
 
     }
 }
