@@ -89,10 +89,16 @@ public class Ble {
         return config;
     }
 
+    /**
+     * 替换默认配置
+     */
     public void setConfig(BleConfig config) {
         this.config = config;
     }
-    
+
+    /**
+     * 如果在中途修改了配置，需要调用一下更新，否则可能收不到到数据
+     */
     public void updateConfig() {
         observable = null;        
     }
@@ -215,13 +221,6 @@ public class Ble {
             }
         }
         return observable;
-    }
-
-    /**
-     * 如果更新了BleObservable，调用
-     */
-    public void updateObservable() {
-        
     }
 
     /**
