@@ -17,7 +17,7 @@ import cn.zfs.blelib.core.Ble;
  */
 public class BleObservable {
     private Vector<IBleObserver> obs;
-    protected Handler handler;
+    private Handler handler;
     protected ExecutorService threadPool = Executors.newCachedThreadPool();
 
     public BleObservable() {
