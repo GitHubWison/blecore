@@ -35,6 +35,7 @@ import cn.zfs.blelib.callback.RequestCallback;
 import cn.zfs.blelib.data.BleObservable;
 import cn.zfs.blelib.data.Device;
 import cn.zfs.blelib.data.IBleObserver;
+import cn.zfs.blelib.util.LogController;
 
 /**
  * 描述: 蓝牙操作
@@ -50,8 +51,7 @@ public class Ble {
     private BluetoothLeScanner bleScanner;
     private ScanCallback scanCallback;
     private BluetoothAdapter.LeScanCallback leScanCallback;    
-    private BleConfig config;    
-    private boolean isDebug;
+    private BleConfig config;
     private List<BleScanListener> scanListeners;
     private Handler handler;
 
@@ -72,11 +72,12 @@ public class Ble {
     }
 
     /**
-     * 设置是否调试模式，默认关闭
-     * @param debug 为ture是输出日志，否则关闭日志输出
+     * 设置日志输出级别控制
+     * @param logPrintLevel <br>{@link LogController#NONE}, {@link LogController#VERBOSE}, 
+     * {@link LogController#DEBUG}, {@link LogController#INFO}, {@link LogController#WARN}, {@link LogController#ERROR}
      */
-    public void setDebugMode(boolean debug) {
-        this.isDebug = debug;
+    public void setLogPrintLevelControl(int logPrintLevel) {
+        LogController.printLevelControl = logPrintLevel;
     }
         
     public BleConfig getConfig() {
@@ -677,7 +678,7 @@ public class Ble {
     }
 
     public static void println(Class cls, int priority, String msg) {
-        if (Holder.BLE.isDebug) {
+        if (LogController.accept(priority)) {
             Log.println(priority, "blelib:" + cls.getSimpleName(), "blelib--" + msg);
         }
     }

@@ -16,10 +16,11 @@ import cn.zfs.bledebuger.base.BaseListAdapter
 import cn.zfs.bledebuger.entity.MyBleObservable
 import cn.zfs.bledebuger.entity.MyRequestCallback
 import cn.zfs.bledebuger.util.ToastUtils
-import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.callback.BleScanListener
-import cn.zfs.blelib.data.Device
 import cn.zfs.blelib.callback.InitCallback
+import cn.zfs.blelib.core.Ble
+import cn.zfs.blelib.data.Device
+import cn.zfs.blelib.util.LogController
 import kotlinx.android.synthetic.main.activity_main.*
 
 
@@ -37,7 +38,7 @@ class MainActivity : CheckPermissionsActivity() {
                 .setRequestCallbackClass(MyRequestCallback::class.java)
                 .observable = MyBleObservable()
         
-        Ble.getInstance().setDebugMode(true)//输出日志
+        Ble.getInstance().setLogPrintLevelControl(LogController.ALL)//输出日志
         Ble.getInstance().addScanListener(scanListener)
     }
 

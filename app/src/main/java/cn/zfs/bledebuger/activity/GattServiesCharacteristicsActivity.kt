@@ -1,6 +1,7 @@
 package cn.zfs.bledebuger.activity
 
-import android.app.AlertDialog
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import android.content.Intent
 import android.os.Bundle
@@ -13,7 +14,9 @@ import cn.zfs.bledebuger.adapter.BleServiceListAdapter
 import cn.zfs.bledebuger.entity.Item
 import cn.zfs.bledebuger.entity.MyBleObserver
 import cn.zfs.bledebuger.util.ToastUtils
-import cn.zfs.blelib.core.*
+import cn.zfs.blelib.core.Ble
+import cn.zfs.blelib.core.Connection
+import cn.zfs.blelib.core.Request
 import cn.zfs.blelib.data.BleObserver
 import cn.zfs.blelib.data.Device
 import kotlinx.android.synthetic.main.activity_gatt_services_characteristics.*
@@ -48,28 +51,35 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     private fun initViews() {
         adapter = BleServiceListAdapter(this, lv, itemList)
         lv.adapter = adapter
-        adapter!!.setOnInnerItemClickListener { item, _, _, _ -> 
-            if (item.hasNotifyProperty) {
-                AlertDialog.Builder(this).setItems(arrayOf("开启Notification", "关闭Notification")) { _, which ->
-                    if (which == 0) {
-                        Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("1", item.service!!.uuid,
-                                item.characteristic!!.uuid, Ble.getInstance().getRequestCallback(device), true)
-                    } else {
-                        Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("2", item.service!!.uuid,
-                                item.characteristic!!.uuid, Ble.getInstance().getRequestCallback(device), false)
+        adapter?.itemClickCallback = object : BleServiceListAdapter.OnItemClickCallback {
+            override fun onItemClick(type: Int, node: Item) {
+                when (type) {
+                    BleServiceListAdapter.READ -> {
+                        Ble.getInstance().getConnection(device)?.requestCharacteristicValue(node.toString(), node.service!!.uuid, 
+                                node.characteristic!!.uuid, Ble.getInstance().getRequestCallback(device))
                     }
-                }.show()
-            } else if (item.hasWriteProperty) {
-                val i = Intent(this, CommActivity::class.java)
-                i.putExtra("device", device)
-                i.putExtra("writeService", ParcelUuid(item.service!!.uuid))
-                i.putExtra("writeCharacteristic", ParcelUuid(item.characteristic!!.uuid))
-                if (notifyService != null && notifyCharacteristic != null) {
-                    i.putExtra("notifyService", notifyService)
-                    i.putExtra("notifyCharacteristic", notifyCharacteristic)
+                    BleServiceListAdapter.SEND -> {
+                        val i = Intent(this@GattServiesCharacteristicsActivity, CommActivity::class.java)
+                        i.putExtra("device", device)
+                        i.putExtra("writeService", ParcelUuid(node.service!!.uuid))
+                        i.putExtra("writeCharacteristic", ParcelUuid(node.characteristic!!.uuid))
+                        if (notifyService != null && notifyCharacteristic != null) {
+                            i.putExtra("notifyService", notifyService)
+                            i.putExtra("notifyCharacteristic", notifyCharacteristic)
+                        }
+                        startActivity(i)
+                    }
+                    BleServiceListAdapter.START_NOTI -> {
+                        Ble.getInstance().getConnection(device)?.requestCharacteristicNotification(node.toString(), node.service!!.uuid,
+                                node.characteristic!!.uuid, Ble.getInstance().getRequestCallback(device), true)
+                    }
+                    BleServiceListAdapter.STOP_NOTI -> {
+                        Ble.getInstance().getConnection(device)?.requestCharacteristicNotification(node.toString(), node.service!!.uuid,
+                                node.characteristic!!.uuid, Ble.getInstance().getRequestCallback(device), false)
+                    }
                 }
-                startActivity(i)
             }
+
         }
     }
 
@@ -123,23 +133,36 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
             }
         }
 
-        override fun onNotificationRegistered(requestId: String?, descriptor: BluetoothGattDescriptor?) {
-            ToastUtils.showShort("Notification开启成功")
+        override fun onNotificationRegistered(requestId: String, descriptor: BluetoothGattDescriptor?) {
             if (descriptor != null && descriptor.characteristic != null && descriptor.characteristic.service != null) {
                 notifyService = ParcelUuid(descriptor.characteristic.service.uuid)
                 notifyCharacteristic = ParcelUuid(descriptor.characteristic.uuid)
-            }         
+            }
+            runOnUiThread {
+                itemList.firstOrNull { requestId == it.toString() }?.notification = true
+                adapter?.notifyDataSetChanged()
+            }
         }
 
-        override fun onNotificationUnregistered(requestId: String?, descriptor: BluetoothGattDescriptor?) {
-            ToastUtils.showShort("Notification关闭成功")
+        override fun onNotificationUnregistered(requestId: String, descriptor: BluetoothGattDescriptor?) {
             notifyService = null
             notifyCharacteristic = null
+            runOnUiThread {
+                itemList.firstOrNull { requestId == it.toString() }?.notification = false
+                adapter?.notifyDataSetChanged()
+            }
         }
         
         override fun onRequestFialed(requestId: String, requestType: Request.RequestType?, failType: Int) {
             if (requestType == Request.RequestType.CHARACTERISTIC_NOTIFICATION) {
                 ToastUtils.showShort(if (requestId == "1") "Notification开启失败" else "Notification关闭失败")
+            }
+        }
+
+        override fun onCharacteristicRead(requestId: String, gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
+            runOnUiThread {
+                itemList.firstOrNull { requestId == it.toString() }?.value = characteristic?.value
+                adapter?.notifyDataSetChanged()
             }
         }
     }
@@ -164,6 +187,8 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
             R.id.menuConnect -> {//连接
                 Ble.getInstance().connect(this, device, true)
             }
+            R.id.menuHex -> adapter?.setShowInHex(true)
+            R.id.menuUtf8 -> adapter?.setShowInHex(false)
         }
         invalidateOptionsMenu()
         return true

@@ -1,10 +1,11 @@
 package cn.zfs.bledebuger.entity;
 
+import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 
-import cn.zfs.blelib.data.BleObserver;
 import cn.zfs.blelib.core.Request;
+import cn.zfs.blelib.data.BleObserver;
 
 /**
  * 描述:
@@ -26,4 +27,9 @@ public class MyBleObserver extends BleObserver {
      * @param requestId 请求ID
      */
     public void onNotificationUnregistered(String requestId, BluetoothGattDescriptor descriptor) {}
+
+    /**
+     * 读取到值
+     */
+    public void onCharacteristicRead(String requestId, BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {}
 }

@@ -1,6 +1,7 @@
 package cn.zfs.bledebuger.activity
 
 import android.bluetooth.BluetoothGattCharacteristic
+import android.content.Intent
 import android.os.Bundle
 import android.os.ParcelUuid
 import android.support.v7.app.AppCompatActivity
@@ -11,7 +12,8 @@ import android.widget.ScrollView
 import cn.zfs.bledebuger.R
 import cn.zfs.bledebuger.entity.MyBleObserver
 import cn.zfs.bledebuger.util.ToastUtils
-import cn.zfs.blelib.core.*
+import cn.zfs.blelib.core.Ble
+import cn.zfs.blelib.core.Connection
 import cn.zfs.blelib.data.BleObserver
 import cn.zfs.blelib.data.Device
 import cn.zfs.blelib.util.BleUtils
@@ -85,7 +87,7 @@ class CommActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.connection, menu)
+        menuInflater.inflate(R.menu.comm, menu)
         if (device != null && !device!!.isDisconnected) {
             menu?.findItem(R.id.menuDisconnect)?.isVisible = true
             menu?.findItem(R.id.menuConnect)?.isVisible = false
@@ -103,6 +105,13 @@ class CommActivity : AppCompatActivity() {
             }
             R.id.menuConnect -> {//连接
                 Ble.getInstance().connect(this, device, true)
+            }
+            R.id.menuRequestMtu -> {//请求修改mtu
+                val intent = Intent(this, RequestMtuActivity::class.java)
+                intent.putExtra("device", device)
+                intent.putExtra("writeService", ParcelUuid(writeService!!.uuid))
+                intent.putExtra("writeCharacteristic", ParcelUuid(writeCharacteristic!!.uuid))
+                startActivity(intent)
             }
         }
         invalidateOptionsMenu()

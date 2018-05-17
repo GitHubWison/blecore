@@ -21,7 +21,7 @@ package cn.zfs.blelib.core;
 import java.util.HashMap;
 import java.util.UUID;
 
-import cn.zfs.blelib.callback.RequestCallback;
+import cn.zfs.blelib.callback.IRequestCallback;
 
 /**
  * 描述: Callback容器
@@ -29,11 +29,11 @@ import cn.zfs.blelib.callback.RequestCallback;
  * 作者: zengfansheng
  */
 class RequestCallbackContainer {
-	private HashMap<UUID, HashMap<UUID, RequestCallback>> mHandlers = new HashMap<>();
+	private HashMap<UUID, HashMap<UUID, IRequestCallback>> mHandlers = new HashMap<>();
 
-	void addCallback(UUID service, UUID characteristic, RequestCallback callback) {
+	void addCallback(UUID service, UUID characteristic, IRequestCallback callback) {
 	    if (callback != null) {
-            HashMap<UUID, RequestCallback> subMap = mHandlers.get(service);
+            HashMap<UUID, IRequestCallback> subMap = mHandlers.get(service);
             if (subMap == null) {
                 subMap = new HashMap<>();
                 mHandlers.put(service, subMap);
@@ -43,14 +43,14 @@ class RequestCallbackContainer {
 	}
 
 	void removeCallback(UUID service, UUID characteristic) {
-		HashMap<UUID, RequestCallback> subMap = mHandlers.get(service);
+		HashMap<UUID, IRequestCallback> subMap = mHandlers.get(service);
 		if (subMap != null) {
 			subMap.remove(characteristic);
 		}
 	}
 
-	RequestCallback getCallback(UUID service, UUID characteristic) {
-		HashMap<UUID, RequestCallback> subMap = mHandlers.get(service);
+    IRequestCallback getCallback(UUID service, UUID characteristic) {
+		HashMap<UUID, IRequestCallback> subMap = mHandlers.get(service);
 		if (subMap == null) {
 			return null;
 		}

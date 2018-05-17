@@ -22,7 +22,7 @@ import android.support.annotation.NonNull;
 
 import java.util.UUID;
 
-import cn.zfs.blelib.callback.RequestCallback;
+import cn.zfs.blelib.callback.IRequestCallback;
 
 /**
  * 描述: 用作请求队列
@@ -39,12 +39,12 @@ public class Request {
     public UUID service;
     public UUID characteristic;
     public UUID descriptor;
-    public RequestCallback callback;
+    public IRequestCallback callback;
     public String requestId;
     public byte[] value;
     public long requestTime;//开始请求的时间
 
-    public Request(@NonNull RequestType type, String requestId, UUID service, UUID characteristic, UUID descriptor, RequestCallback callback) {
+    public Request(@NonNull RequestType type, @NonNull String requestId, UUID service, UUID characteristic, UUID descriptor, IRequestCallback callback) {
         this.type = type;
         this.requestId = requestId;
         this.service = service;
@@ -55,7 +55,7 @@ public class Request {
         requestTime = System.currentTimeMillis();
     }
 
-    public Request(@NonNull RequestType type, String requestId, UUID service, UUID characteristic, UUID descriptor, RequestCallback callback, byte[] value) {
+    public Request(@NonNull RequestType type, @NonNull String requestId, UUID service, UUID characteristic, UUID descriptor, IRequestCallback callback, byte[] value) {
         this.type = type;
         this.requestId = requestId;
         this.service = service;

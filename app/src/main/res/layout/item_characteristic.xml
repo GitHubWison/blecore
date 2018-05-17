@@ -2,59 +2,124 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="80dp"
-    android:gravity="center_vertical"
-    android:minHeight="80dp"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
     android:paddingEnd="10dp"
     android:paddingStart="10dp">
 
-    <TextView
-        android:id="@+id/tvName"
-        android:text="Unknown Characteristic"
-        android:layout_marginStart="40dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textColor="#404040"
-        android:textStyle="bold"
-        android:textSize="16dp"/>
+    <LinearLayout
+        android:id="@+id/root"
+        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:layout_width="match_parent"
+        android:layout_height="80dp">
+        <LinearLayout
+            android:layout_marginStart="25dp"
+            android:gravity="center_vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/tvName"
+                android:text="Unknown Characteristic"
+                android:lines="1"
+                android:ellipsize="end"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:textColor="#404040"
+                android:textStyle="bold"
+                android:textSize="16dp"/>
+            <ImageView
+                android:id="@+id/btnRead"
+                android:background="@drawable/read_bg"
+                android:visibility="gone"
+                android:layout_width="26dp"
+                android:layout_height="26dp"/>
+            <ImageView
+                android:id="@+id/btnSend"
+                android:visibility="gone"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/write_bg"
+                android:layout_width="26dp"
+                android:layout_height="26dp"/>
+            <ImageView
+                android:id="@+id/btnStartNoti"
+                android:layout_marginStart="8dp"
+                android:visibility="gone"
+                android:background="@drawable/start_notification_bg"
+                android:layout_width="26dp"
+                android:layout_height="26dp"/>
+            <ImageView
+                android:id="@+id/btnStopNoti"
+                android:layout_marginStart="8dp"
+                android:visibility="gone"
+                android:background="@drawable/stop_notification_bg"
+                android:layout_width="26dp"
+                android:layout_height="26dp"/>
+        </LinearLayout>
 
-    <LinearLayout
-        android:layout_marginStart="40dp"
-        android:gravity="center_vertical"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-        <TextView
-            android:text="UUID: "
-            android:textSize="12dp"            
-            android:textColor="#909090"
+        <LinearLayout
+            android:layout_marginStart="25dp"
+            android:gravity="center_vertical"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-        <TextView
-            android:id="@+id/tvUuid"
-            android:textSize="12dp"            
-            android:text="00002902-0000-1000-8000-00805f9b34fb"
-            android:textColor="#404040"
+            android:layout_height="wrap_content">
+            <TextView
+                android:text="UUID: "
+                android:textSize="12dp"
+                android:textColor="#909090"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+            <TextView
+                android:id="@+id/tvUuid"
+                android:textSize="12dp"
+                android:text="00002902-0000-1000-8000-00805f9b34fb"
+                android:textColor="#404040"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_marginStart="25dp"
+            android:gravity="center_vertical"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content">
+            <TextView
+                android:text="Properties: "
+                android:textSize="12dp"
+                android:textColor="#909090"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+            <TextView
+                android:id="@+id/tvProperty"
+                android:textSize="12dp"
+                android:text="READ,NOTIFY"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#404040"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutValue"
+            android:visibility="gone"
+            android:layout_marginStart="25dp"
+            android:gravity="center_vertical"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <TextView
+                android:text="Value: "
+                android:textSize="12dp"
+                android:textColor="#909090"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+            <TextView
+                android:id="@+id/tvValue"
+                android:textSize="12dp"
+                android:text="0x1A"
+                android:lines="1"
+                android:ellipsize="end"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#404040"/>
+        </LinearLayout>
     </LinearLayout>
-    <LinearLayout
-        android:layout_marginStart="40dp"
-        android:gravity="center_vertical"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-        <TextView
-            android:text="Properties: "
-            android:textSize="12dp"
-            android:textColor="#909090"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-        <TextView
-            android:id="@+id/tvProperty"
-            android:textSize="12dp"
-            android:text="READ,NOTIFY"            
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#404040"/>
-    </LinearLayout>
+    
 </LinearLayout>

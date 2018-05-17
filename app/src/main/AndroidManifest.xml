@@ -25,7 +25,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".activity.CommActivity" android:screenOrientation="portrait"/>
-        <activity android:name=".activity.GattServiesCharacteristicsActivity"/>
+        <activity android:name=".activity.GattServiesCharacteristicsActivity"  android:screenOrientation="portrait"/>
+        <activity android:name=".activity.RequestMtuActivity"  android:screenOrientation="portrait"/>
     </application>
 
 </manifest>

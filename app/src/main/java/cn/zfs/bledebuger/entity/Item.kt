@@ -13,4 +13,7 @@ class Item(id: Int, pId: Int, level: Int, isExpand: Boolean, var isService: Bool
            var service: BluetoothGattService?, var characteristic: BluetoothGattCharacteristic?) : Node<Item>(id, pId, level, isExpand) {
     var hasNotifyProperty = false
     var hasWriteProperty = false
+    var hasReadProperty = false
+    var notification = false
+    var value: ByteArray? = null
 }

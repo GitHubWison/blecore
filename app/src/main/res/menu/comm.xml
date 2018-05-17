@@ -13,13 +13,8 @@
         app:showAsAction="ifRoom|withText"/>
     
     <item
-        android:id="@+id/menuHex"
-        android:title="以hex显示"
-        android:orderInCategory="102"
-        app:showAsAction="never"/>
-    <item
-        android:id="@+id/menuUtf8"
-        android:title="以utf8显示"
+        android:id="@+id/menuRequestMtu"
+        android:title="修改MTU"
         android:orderInCategory="102"
         app:showAsAction="never"/>
 </menu>

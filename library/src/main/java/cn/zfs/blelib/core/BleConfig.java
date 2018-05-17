@@ -14,7 +14,7 @@ import cn.zfs.blelib.data.Device;
  */
 public class BleConfig {
     private static final int DEFAULT_DISCOVER_SERVICES_DELAY_MILLIS = 500;
-    private static final int DEFAULT_CONN_TIMEOUT_MILLIS = 5000;//连接超时时间
+    private static final int DEFAULT_CONN_TIMEOUT_MILLIS = 8000;//连接超时时间
     public static final int TRY_RECONNECT_TIMES_INFINITE = -1;//无限重连
     private IScanHandler scanHandler;    
     private long discoverServicesDelayMillis = DEFAULT_DISCOVER_SERVICES_DELAY_MILLIS;
