@@ -1,18 +1,19 @@
 package cn.zfs.bledebuger.activity
 
-import android.bluetooth.BluetoothGattCharacteristic
 import android.content.Intent
 import android.os.Bundle
 import android.os.ParcelUuid
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.ScrollView
 import cn.zfs.bledebuger.R
 import cn.zfs.bledebuger.util.ToastUtils
-import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.BaseConnection
+import cn.zfs.blelib.core.Ble
+import cn.zfs.blelib.core.Request
 import cn.zfs.blelib.data.*
 import cn.zfs.blelib.util.BleUtils
 import kotlinx.android.synthetic.main.activity_comm.*
@@ -31,6 +32,12 @@ class CommActivity : AppCompatActivity() {
     private var notifyService: ParcelUuid? = null
     private var notifyCharacteristic: ParcelUuid? = null
     private var pause = false
+    private var loop = false
+    private var delay = 0L
+    private var run = true
+    private var lastUpdateTime = 0L
+    private var successCount = 0
+    private var failCount = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,9 +84,53 @@ class CommActivity : AppCompatActivity() {
                 }
                 Ble.getInstance().getConnection(device)?.writeCharacteristicValue("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes,
                         Ble.getInstance().getRequestCallback(device))
+                while (run && loop) {
+                    Ble.getInstance().getConnection(device)?.writeCharacteristicValue("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes,
+                            Ble.getInstance().getRequestCallback(device))
+                    Thread.sleep(delay)
+                    if (System.currentTimeMillis() - lastUpdateTime > 500) {
+                        lastUpdateTime = System.currentTimeMillis()
+                        runOnUiThread {
+                            tvSuccessCount.text = "成功:$successCount"
+                            tvFailCount.text = "失败$failCount"
+                        }
+                    }
+                }
+                runOnUiThread {
+                    tvSuccessCount.text = "成功:$successCount"
+                    tvFailCount.text = "失败$failCount"
+                }
+                Ble.getInstance().getConnection(device)?.clearRequestQueue()
             } catch (e: Exception) {
                 ToastUtils.showShort("输入格式错误")
             }
+        }
+        chk.setOnCheckedChangeListener { _, isChecked ->
+            loop = isChecked
+        }
+        etDelay.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+                var d = 0L
+                val delayStr = etDelay.text.toString()
+                if (!delayStr.isEmpty()) {
+                    d = delayStr.toLong()
+                }
+                delay = d
+            }
+        })
+        btnClearCont.setOnClickListener {
+            successCount = 0
+            failCount = 0
+            tvSuccessCount.text = "成功:$successCount"
+            tvFailCount.text = "失败$failCount"
         }
     }
 
@@ -116,51 +167,50 @@ class CommActivity : AppCompatActivity() {
     }
 
     @Observe(threadMode = ThreadMode.MAIN)
-    fun onConnectionStateChange(e: SingleIntEvent) {
+    fun handleSingleIntEvent(e: SingleIntEvent) {
         when (e.eventType) {
             EventType.ON_CONNECTION_STATE_CHANGED -> updateState(e.value)
         }
     }
 
     @Observe(threadMode = ThreadMode.MAIN)
-    fun onConnectionCreateFailed(e: SingleStringEvent) {
+    fun handleSingleStringEvent(e: SingleStringEvent) {
         when (e.eventType) {
             EventType.ON_CONNECTION_CREATE_FAILED -> tvState.text = "无法建立连接： ${e.value}"
         }
     }
-    
-    
-    
-    private inner class MyObserver : MyBleObserver() {
 
-        override fun onUnableConnect(device: Device?, error: String?) {
-            runOnUiThread {
-                tvState.text = "无法连接： $error"
-            }
-        }
-
-        override fun onConnectionStateChange(device: Device, state: Int) {
-            runOnUiThread {
-                updateState(state)
-            }
-        }
-
-        override fun onCharacteristicChanged(characteristic: BluetoothGattCharacteristic) {
-            Log.d("CommActivity", "bledebuger--" + BleUtils.bytesToHexString(characteristic.value))
-            runOnUiThread {
+    @Observe(threadMode = ThreadMode.MAIN)
+    fun handleSingleByteArrayEvent(e: SingleByteArrayEvent) {
+        when (e.eventType) {
+            EventType.ON_CHARACTERISTIC_CHANGED -> {
                 if (!pause) {
                     if (tvLogs.text.length > 1024 * 1024) {
                         tvLogs.text = ""
                     }
                     tvLogs.append(SimpleDateFormat("mm:ss.SSS").format(Date()))
                     tvLogs.append("> ")
-                    tvLogs.append(BleUtils.bytesToHexString(characteristic.value))
+                    tvLogs.append(BleUtils.bytesToHexString(e.value))
                     tvLogs.append("\n")
                     scrollView.post {
                         scrollView.fullScroll(ScrollView.FOCUS_DOWN)
                     }
                 }
             }
+        }
+    }
+
+    @Observe(threadMode = ThreadMode.BACKGROUND)
+    fun handleRequestEvent(e: RequestEvent) {
+        if (e.eventType == EventType.ON_WRITE_CHARACTERISTIC) {
+            successCount++
+        }
+    }
+
+    @Observe(threadMode = ThreadMode.BACKGROUND)
+    fun handleRequestFailedEvent(e: RequestFailedEvent) {
+        if (e.requestType == Request.RequestType.WRITE_CHARACTERISTIC) {
+            failCount++
         }
     }
 

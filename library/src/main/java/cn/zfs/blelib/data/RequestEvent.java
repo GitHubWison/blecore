@@ -2,26 +2,46 @@ package cn.zfs.blelib.data;
 
 import android.support.annotation.NonNull;
 
+import cn.zfs.blelib.core.Request;
+
 /**
  * 描述: 请求事件
  * 时间: 2018/5/18 10:37
  * 作者: zengfansheng
  */
 public class RequestEvent extends Event {
-    protected String requestId;
+    @NonNull
+    public String requestId = "";    
+    @NonNull
+    public Request.RequestType requestType = Request.RequestType.WRITE_CHARACTERISTIC;    
+    /** 请求时带的数据 */
+    public byte[] src;    
 
     public RequestEvent() {}
 
-    public RequestEvent(int type, Device device, @NonNull String requestId) {
-        super(type, device);
+    public RequestEvent(int eventType, @NonNull String requestId, @NonNull Request.RequestType requestType) {
+        super(eventType);
         this.requestId = requestId;
+        this.requestType = requestType;
     }
 
-    public String getRequestId() {
-        return requestId;
+    public RequestEvent(int eventType, @NonNull String requestId, @NonNull Request.RequestType requestType, byte[] src) {
+        super(eventType);
+        this.requestId = requestId;
+        this.requestType = requestType;
+        this.src = src;
     }
 
-    public void setRequestId(@NonNull String requestId) {
+    public RequestEvent(int eventType, Device device, @NonNull String requestId, @NonNull Request.RequestType requestType) {
+        super(eventType, device);
         this.requestId = requestId;
+        this.requestType = requestType;
+    }
+    
+    public RequestEvent(int eventType, Device device, @NonNull String requestId, @NonNull Request.RequestType requestType, byte[] src) {
+        super(eventType, device);
+        this.requestId = requestId;
+        this.requestType = requestType;
+        this.src = src;
     }
 }

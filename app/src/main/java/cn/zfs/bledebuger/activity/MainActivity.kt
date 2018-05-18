@@ -13,7 +13,6 @@ import android.widget.TextView
 import cn.zfs.bledebuger.R
 import cn.zfs.bledebuger.base.BaseHolder
 import cn.zfs.bledebuger.base.BaseListAdapter
-import cn.zfs.bledebuger.entity.MyRequestCallback
 import cn.zfs.bledebuger.util.ToastUtils
 import cn.zfs.blelib.callback.InitCallback
 import cn.zfs.blelib.callback.ScanListener
@@ -34,7 +33,6 @@ class MainActivity : CheckPermissionsActivity() {
         setContentView(R.layout.activity_main)
         initViews()
         Ble.getInstance().config.setDiscoverServicesDelayMillis(2000)
-                .setRequestCallbackClass(MyRequestCallback::class.java)
         
         Ble.getInstance().setLogPrintLevelControl(LogController.ALL)//输出日志
         Ble.getInstance().addScanListener(scanListener)
@@ -170,8 +168,6 @@ class MainActivity : CheckPermissionsActivity() {
             Ble.getInstance().init(this, object : InitCallback {
                 override fun onSuccess() {
                     ToastUtils.showShort("初始化成功")
-//                    val state = FyBle.getBondState("D3:18:FC:EE:38:42")
-//                    Log.d("d", "blelib--绑定状态：$state")
 
                 }
 

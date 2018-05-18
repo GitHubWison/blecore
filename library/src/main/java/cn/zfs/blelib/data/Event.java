@@ -22,6 +22,10 @@ public class Event {
         this.device = device;
     }
 
+    public Event(int eventType) {
+        this.eventType = eventType;
+    }
+
     public Event(int eventType, Device device) {
         this.eventType = eventType;
         this.device = device;

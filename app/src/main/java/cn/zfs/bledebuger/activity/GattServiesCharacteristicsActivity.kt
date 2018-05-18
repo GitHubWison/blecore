@@ -1,8 +1,5 @@
 package cn.zfs.bledebuger.activity
 
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.BluetoothGattCharacteristic
-import android.bluetooth.BluetoothGattDescriptor
 import android.content.Intent
 import android.os.Bundle
 import android.os.ParcelUuid
@@ -13,10 +10,10 @@ import cn.zfs.bledebuger.R
 import cn.zfs.bledebuger.adapter.BleServiceListAdapter
 import cn.zfs.bledebuger.entity.Item
 import cn.zfs.bledebuger.util.ToastUtils
-import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.BaseConnection
+import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Request
-import cn.zfs.blelib.data.Device
+import cn.zfs.blelib.data.*
 import kotlinx.android.synthetic.main.activity_gatt_services_characteristics.*
 
 /**
@@ -25,7 +22,6 @@ import kotlinx.android.synthetic.main.activity_gatt_services_characteristics.*
  * 作者: zengfansheng
  */
 class GattServiesCharacteristicsActivity : AppCompatActivity() {
-    private var observer: BleObserver? = null
     private var device: Device? = null
     private var itemList = ArrayList<Item>()
     private var adapter: BleServiceListAdapter? = null
@@ -41,8 +37,7 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
             return
         }
         Ble.getInstance().connect(this, device, true)
-        observer = MyObserver()
-        Ble.getInstance().registerObserver(observer)
+        Ble.getInstance().registerObserver(this)
         initViews()
     }
 
@@ -68,11 +63,13 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
                         startActivity(i)
                     }
                     BleServiceListAdapter.START_NOTI -> {
-                        Ble.getInstance().getConnection(device)?.requestCharacteristicNotification(node.toString(), node.service!!.uuid,
+                        notifyService = ParcelUuid(node.service!!.uuid)
+                        notifyCharacteristic = ParcelUuid(node.characteristic!!.uuid)
+                        Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("${node}_1", node.service!!.uuid,
                                 node.characteristic!!.uuid, Ble.getInstance().getRequestCallback(device), true)
                     }
                     BleServiceListAdapter.STOP_NOTI -> {
-                        Ble.getInstance().getConnection(device)?.requestCharacteristicNotification(node.toString(), node.service!!.uuid,
+                        Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("${node}_0", node.service!!.uuid,
                                 node.characteristic!!.uuid, Ble.getInstance().getRequestCallback(device), false)
                     }
                 }
@@ -81,17 +78,11 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
         }
     }
 
-    private inner class MyObserver : MyBleObserver() {
-
-        override fun onUnableConnect(device: Device?, error: String?) {
-            runOnUiThread {
-                ToastUtils.showShort("无法连接")
-            }
-        }
-
-        override fun onConnectionStateChange(device: Device, state: Int) {
-            runOnUiThread {
-                when (state) {
+    @Observe(threadMode = ThreadMode.MAIN)
+    fun handleSingleIntEvent(e: SingleIntEvent) {
+        when (e.eventType) {
+            EventType.ON_CONNECTION_STATE_CHANGED -> {
+                when (e.value) {
                     BaseConnection.STATE_CONNECTED -> {
                         ToastUtils.showShort("连接成功，未搜索服务")
                     }
@@ -130,37 +121,54 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
                 invalidateOptionsMenu()
             }
         }
+    }
 
-        override fun onNotificationRegistered(requestId: String, descriptor: BluetoothGattDescriptor?) {
-            if (descriptor != null && descriptor.characteristic != null && descriptor.characteristic.service != null) {
-                notifyService = ParcelUuid(descriptor.characteristic.service.uuid)
-                notifyCharacteristic = ParcelUuid(descriptor.characteristic.uuid)
+    @Observe(threadMode = ThreadMode.MAIN)
+    fun handleSingleStringEvent(e: SingleStringEvent) {
+        when (e.eventType) {
+            EventType.ON_CONNECTION_CREATE_FAILED -> ToastUtils.showShort("无法建立连接： ${e.value}")
+        }
+    }
+    
+    @Observe(threadMode = ThreadMode.MAIN)
+    fun handleRequestFailedEvent(e: RequestFailedEvent) {
+        when (e.requestType) {
+            Request.RequestType.CHARACTERISTIC_NOTIFICATION -> {
+                if (e.requestId.endsWith("_1")) {
+                    notifyService = null
+                    notifyCharacteristic = null
+                }
+                ToastUtils.showShort(if (e.requestId.endsWith("_1")) "Notification开启失败" else "Notification关闭失败")
             }
-            runOnUiThread {
-                itemList.firstOrNull { requestId == it.toString() }?.notification = true
+            Request.RequestType.READ_CHARACTERISTIC -> ToastUtils.showShort("characteristic读取失败")
+            Request.RequestType.READ_DESCRIPTOR -> ToastUtils.showShort("descriptor读取失败")
+        } 
+    }
+
+    @Observe(threadMode = ThreadMode.MAIN)
+    fun handleRequestByteArrayEvent(e: RequestByteArrayEvent) {
+        when (e.eventType) {
+            EventType.ON_CHARACTERISTIC_READ, EventType.ON_DESCRIPTOR_READ -> {
+                itemList.firstOrNull { e.requestId == it.toString() }?.value = e.result
                 adapter?.notifyDataSetChanged()
             }
         }
+    }
 
-        override fun onNotificationUnregistered(requestId: String, descriptor: BluetoothGattDescriptor?) {
-            notifyService = null
-            notifyCharacteristic = null
-            runOnUiThread {
-                itemList.firstOrNull { requestId == it.toString() }?.notification = false
+    @Observe(threadMode = ThreadMode.MAIN)
+    fun handleRequestEvent(e: RequestEvent) {
+        when (e.eventType) {
+            EventType.ON_NOTIFICATION_REGISTERED, EventType.ON_INDICATION_REGISTERED -> {
+                itemList.firstOrNull { e.requestId == "${it}_1" }?.notification = true
                 adapter?.notifyDataSetChanged()
             }
-        }
-        
-        override fun onRequestFialed(requestId: String, requestType: Request.RequestType?, failType: Int) {
-            if (requestType == Request.RequestType.CHARACTERISTIC_NOTIFICATION) {
-                ToastUtils.showShort(if (requestId == "1") "Notification开启失败" else "Notification关闭失败")
-            }
-        }
-
-        override fun onCharacteristicRead(requestId: String, gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
-            runOnUiThread {
-                itemList.firstOrNull { requestId == it.toString() }?.value = characteristic?.value
+            EventType.ON_NOTIFICATION_UNREGISTERED, EventType.ON_INDICATION_UNREGISTERED -> {
+                itemList.firstOrNull { e.requestId == "${it}_0" }?.notification = false
                 adapter?.notifyDataSetChanged()
+                if (e.eventType == EventType.ON_NOTIFICATION_UNREGISTERED) {
+                    notifyService = null
+                    notifyCharacteristic = null
+                }
             }
         }
     }
@@ -193,7 +201,7 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     }
     
     override fun onDestroy() {
-        Ble.getInstance().unregisterObserver(observer)//取消监听
+        Ble.getInstance().unregisterObserver(this)//取消监听
         Ble.getInstance().releaseConnection(device)
         super.onDestroy()
     }

@@ -155,7 +155,7 @@ class BleServiceListAdapter(context: Context, lv: ListView, nodes: MutableList<I
                     sb.append(", ")
                 }
                 sb.append(propertyStrs[index])
-                if (property == BluetoothGattCharacteristic.PROPERTY_NOTIFY) {
+                if (property == BluetoothGattCharacteristic.PROPERTY_NOTIFY || property == BluetoothGattCharacteristic.PROPERTY_INDICATE) {
                     node.hasNotifyProperty = true
                 }
                 if (property == BluetoothGattCharacteristic.PROPERTY_WRITE || property == BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) {

@@ -83,6 +83,7 @@ class RequestMtuActivity : AppCompatActivity() {
                             writeCharacteristic!!.uuid, data, callback)                    
                     Thread.sleep(delay)
                 }
+                Ble.getInstance().getConnection(device)?.clearRequestQueue()
             }
         }
         etDelay.addTextChangedListener(object : TextWatcher {

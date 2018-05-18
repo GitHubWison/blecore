@@ -14,24 +14,26 @@ public interface EventType {
     int ON_CONNECTION_CREATE_FAILED = 2;
     /** 连接建立失败 */
     int ON_CONNECT_TIMEOUT = 3;
-    /** 读到设备信号强度RSSI */
-    int ON_RSSI_READ = 4;
-    /** 数据发送结果 */
-    int ON_WRITE_CHARACTERISTIC = 5;
+    /** 数据发送成功 */
+    int ON_WRITE_CHARACTERISTIC = 4;
     /** 收到notify数据 */
-    int ON_CHARACTERISTIC_CHANGED = 6;
+    int ON_CHARACTERISTIC_CHANGED = 5;
     /** 读取到characteristic值 */
-    int ON_CHARACTERISTIC_READ = 7;
+    int ON_CHARACTERISTIC_READ = 6;
     /** 读取到到信号强度 */
-    int ON_READ_REMOTE_RSSI = 8;
+    int ON_READ_REMOTE_RSSI = 7;
     /** 读取Descriptor值 */
-    int ON_Descriptor_Read = 9;
+    int ON_DESCRIPTOR_READ = 8;
     /** mtu修改结果 */
-    int ON_MTU_CHANGED = 10;    
+    int ON_MTU_CHANGED = 9;    
     /** 蓝牙请求失败，writeCharacteristic，readCharacteristic等 */
-    int ON_BLE_REQUEST_FIALED = 11;    
-    /** notification注册状态变化 */
-    int ON_NOTIFICATION_REGISTER_STATE_CHANGED = 12;    
-    /** indication注册状态变化 */
-    int ON_INDICATION_REGISTER_STATE_CHANGED = 13;
+    int ON_BLE_REQUEST_FIALED = 10;    
+    /** notification注册成功 */
+    int ON_NOTIFICATION_REGISTERED = 11;
+    /** notification取消注册成功 */
+    int ON_NOTIFICATION_UNREGISTERED = 12;
+    /** indication注册成功 */
+    int ON_INDICATION_REGISTERED = 13;
+    /** indication取消注册成功 */
+    int ON_INDICATION_UNREGISTERED = 14;
 }

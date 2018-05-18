@@ -132,4 +132,49 @@
             android:layout_width="wrap_content"
             android:layout_height="40dp"/>
     </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_marginStart="8dp"
+        android:layout_height="wrap_content">
+        <CheckBox
+            android:id="@+id/chk"
+            android:textSize="14dp"
+            android:text="循环"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <cn.zfs.bledebuger.view.ClearEditText
+            android:id="@+id/etDelay"
+            android:inputType="number"
+            android:hint="延时ms"
+            android:layout_marginStart="6dp"
+            android:textSize="14dp"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_marginStart="8dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <Button
+            android:id="@+id/btnClearCont"
+            android:text="清零"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"/>
+        <TextView
+            android:id="@+id/tvSuccessCount"
+            android:text="成功:0"
+            android:textColor="#008c00"
+            android:layout_marginStart="8dp"
+            android:textSize="14dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:id="@+id/tvFailCount"
+            android:text="失败:0"
+            android:textColor="#cc0000"
+            android:layout_marginStart="8dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
 </LinearLayout>
