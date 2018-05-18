@@ -56,7 +56,6 @@ public class Ble {
     private Configuration config;
     private List<ScanListener> scanListeners;
     private Handler mainThreadHandler;
-    private Observable observable;
 
     private Ble() {
         config = new Configuration();
@@ -64,7 +63,6 @@ public class Ble {
         requestCallbackMap = new ConcurrentHashMap<>();
         mainThreadHandler = new Handler(Looper.getMainLooper());
         scanListeners = new ArrayList<>();
-        observable = Observable.getInstance();
     }
 
     private static class Holder {
@@ -147,7 +145,7 @@ public class Ble {
             scanListeners.clear();
             releaseAllConnections();//释放所有连接
             context.getApplicationContext().unregisterReceiver(receiver);//取消注册蓝牙状态广播接收者
-            getObservable().clearObserversAndCaches();//移除所有观察者
+            Observable.getInstance().clearObserversAndCaches();//移除所有观察者
             isInited = false;
         }
     }
@@ -157,7 +155,7 @@ public class Ble {
         public void onReceive(Context context, Intent intent) {
             if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(intent.getAction())) {//蓝牙开关状态变化                 
                 if (bluetoothAdapter != null) {
-                    getObservable().post(new SingleLongEvent(EventType.ON_BLUETOOTH_STATE_CHANGED, null, bluetoothAdapter.getState()));
+                    Observable.getInstance().post(new SingleLongEvent(EventType.ON_BLUETOOTH_STATE_CHANGED, null, bluetoothAdapter.getState()));
                     if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {//蓝牙关闭了
                         handleScanCallback(false, null, null);
                         //主动断开，停止定时器和重连尝试
@@ -198,18 +196,11 @@ public class Ble {
     }
     
     /**
-     * 获取蓝牙状态、数据传输被观察者实例
-     */
-    public Observable getObservable() {
-        return observable;
-    }
-
-    /**
      * 注册观察者，开始监听蓝牙状态及数据
      * @param observer 观察者
      */
     public void registerObserver(Object observer) {
-        getObservable().register(observer);
+        Observable.getInstance().register(observer);
     }
 
     /**
@@ -217,7 +208,7 @@ public class Ble {
      * @param observer 观察者
      */
     public void unregisterObserver(Object observer) {
-        getObservable().unregister(observer);
+        Observable.getInstance().unregister(observer);
     }
 
     /**

@@ -16,7 +16,7 @@ interface MainThreadSupport {
 
         private final Looper looper;
 
-        public AndroidHandlerMainThreadSupport(Looper looper) {
+        AndroidHandlerMainThreadSupport(Looper looper) {
             this.looper = looper;
         }
 

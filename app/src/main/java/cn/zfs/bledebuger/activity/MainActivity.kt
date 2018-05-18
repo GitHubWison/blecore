@@ -36,6 +36,7 @@ class MainActivity : CheckPermissionsActivity() {
         
         Ble.getInstance().setLogPrintLevelControl(LogController.ALL)//输出日志
         Ble.getInstance().addScanListener(scanListener)
+        Ble.getInstance().registerObserver(this)
     }
 
     private fun initViews() {
@@ -65,7 +66,7 @@ class MainActivity : CheckPermissionsActivity() {
             Ble.getInstance().stopScan()
         }
     }
-
+    
     private class ListAdapter(context: Context?, data: MutableList<Device>?) : BaseListAdapter<Device>(context, data) {
         override fun getHolder(): BaseHolder<Device> {
             return object : BaseHolder<Device>() {

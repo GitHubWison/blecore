@@ -18,6 +18,7 @@ import java.util.List;
 import cn.zfs.blelib.callback.ConnectionCallback;
 import cn.zfs.blelib.data.Device;
 import cn.zfs.blelib.data.EventType;
+import cn.zfs.blelib.data.Observable;
 import cn.zfs.blelib.data.SingleIntEvent;
 import cn.zfs.blelib.data.SingleStringEvent;
 
@@ -63,7 +64,7 @@ public class Connection extends BaseConnection {
                                                long connectDelay, ConnectionCallback connectionCallback) {
 		if (bluetoothAdapter == null || device == null || device.addr == null || !device.addr.matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
 			Ble.println(Connection.class, Log.ERROR, "BluetoothAdapter not initialized or unspecified address.");
-			Ble.getInstance().getObservable().post(new SingleStringEvent(EventType.ON_CONNECTION_CREATE_FAILED, device, 
+			Observable.getInstance().post(new SingleStringEvent(EventType.ON_CONNECTION_CREATE_FAILED, device, 
                     "BluetoothAdapter not initialized or unspecified address."));
 			return null;
 		}
@@ -76,7 +77,7 @@ public class Connection extends BaseConnection {
 		//连接蓝牙设备        
         conn.device.connectionState = STATE_CONNECTING;
         conn.connStartTime = System.currentTimeMillis();
-        Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_CONNECTING));
+        Observable.getInstance().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_CONNECTING));
         conn.handler.sendEmptyMessageDelayed(MSG_CONNECT, connectDelay);//连接
         conn.handler.sendEmptyMessageDelayed(MSG_TIMER, connectDelay + 1000);//启动定时器，用于断线重连
 		return conn;
@@ -112,7 +113,7 @@ public class Connection extends BaseConnection {
     public synchronized void onScanResult(String addr) {
 	    if (device.addr.equals(addr) && device.connectionState == STATE_RECONNECTING) {
             device.connectionState = STATE_CONNECTING;
-            Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_CONNECTING));
+            Observable.getInstance().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_CONNECTING));
             handler.sendEmptyMessage(MSG_CONNECT);
 	    }
     }
@@ -188,7 +189,7 @@ public class Connection extends BaseConnection {
     private void notifyDisconnected() {
         device.connectionState = STATE_DISCONNECTED;
         sendConnectionCallback();
-        Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_DISCONNECTED));
+        Observable.getInstance().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_DISCONNECTED));
     }
     
     private void doOnConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -197,7 +198,7 @@ public class Connection extends BaseConnection {
                     gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress());
             device.connectionState = STATE_CONNECTED;
             sendConnectionCallback();
-            Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_CONNECTED));
+            Observable.getInstance().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_CONNECTED));
             // 进行服务发现，延时
             handler.sendEmptyMessageDelayed(MSG_DISCOVER_SERVICES, Ble.getInstance().getConfig().getDiscoverServicesDelayMillis());
         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
@@ -223,7 +224,7 @@ public class Connection extends BaseConnection {
                 tryReconnectTimes = 0;
                 device.connectionState = STATE_SERVICE_DISCORVERED;
                 sendConnectionCallback();
-                Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_SERVICE_DISCORVERED));
+                Observable.getInstance().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_SERVICE_DISCORVERED));
             }
         } else {
             doClearTaskAndRefresh(true);
@@ -237,7 +238,7 @@ public class Connection extends BaseConnection {
             bluetoothGatt.discoverServices();
             device.connectionState = STATE_SERVICE_DISCORVERING;
             sendConnectionCallback();
-            Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_SERVICE_DISCORVERING));
+            Observable.getInstance().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_SERVICE_DISCORVERING));
         } else {
             notifyDisconnected();
         }
@@ -258,7 +259,7 @@ public class Connection extends BaseConnection {
                 } else {
                     type = TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES;
                 }
-                Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECT_TIMEOUT, device, type));
+                Observable.getInstance().post(new SingleIntEvent(EventType.ON_CONNECT_TIMEOUT, device, type));
             }
             if (autoReconnEnable) {
                 doDisconnect(true, false);
@@ -312,7 +313,7 @@ public class Connection extends BaseConnection {
             tryReconnect();
         }        
         sendConnectionCallback();
-        Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, device.connectionState));
+        Observable.getInstance().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, device.connectionState));
     }
 
     private void tryReconnect() {        
