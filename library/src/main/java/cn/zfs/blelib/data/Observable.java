@@ -78,11 +78,13 @@ public class Observable {
     public void register(Object observer) {
         Class<?> observerClass = observer.getClass();
         List<ObserverMethod> observerMethods = observerMethodFinder.findObserverMethods(observerClass);
-        synchronized (this) {
-            for (ObserverMethod observerMethod : observerMethods) {
-                observe(observer, observerMethod);
+        if (observerMethods != null) {
+            synchronized (this) {
+                for (ObserverMethod observerMethod : observerMethods) {
+                    observe(observer, observerMethod);
+                }
             }
-        }
+        }        
     }
 
     private void observe(Object observer, ObserverMethod observerMethod) {
@@ -170,6 +172,24 @@ public class Observable {
         }
     }
 
+    /**
+     * 取消队列里的事件，只能在同一线程，同时线程模式需要是ThreadMode.POSTING，
+     */
+    public void cancelEventDelivery(Object event) throws BleException {
+        PostingThreadState postingState = currentPostingThreadState.get();
+        if (!postingState.isPosting) {
+            throw new BleException("This method may only be called from inside event handling methods on the posting thread");
+        } else if (event == null) {
+            throw new BleException("Event may not be null");
+        } else if (postingState.event != event) {
+            throw new BleException("Only the currently handled event may be aborted");
+        } else if (postingState.observation.observerMethod.threadMode != ThreadMode.POSTING) {
+            throw new BleException(" event handlers may only abort the incoming event");
+        }
+
+        postingState.canceled = true;
+    }
+    
     public boolean hasObserverForEvent(Class<?> eventClass) {
         List<Class<?>> eventTypes = lookupAllEventTypes(eventClass);
         if (eventTypes != null) {
@@ -225,11 +245,20 @@ public class Observable {
 
     private void postToObservation(Observation observation, Object event, boolean isMainThread) {
         switch (observation.observerMethod.threadMode) {
+            case POSTING:
+                invokeObserver(observation, event);
             case MAIN:
                 if (isMainThread) {
                     invokeObserver(observation, event);
                 } else {
                     mainThreadPoster.enqueue(observation, event);
+                }
+                break;
+            case MAIN_ORDERED:
+                if (mainThreadPoster != null) {
+                    mainThreadPoster.enqueue(observation, event);
+                } else {
+                    invokeObserver(observation, event);
                 }
                 break;
             case BACKGROUND:

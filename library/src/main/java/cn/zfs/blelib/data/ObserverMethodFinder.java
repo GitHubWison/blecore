@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import cn.zfs.blelib.exception.BleException;
-
 /**
  * 描述:
  * 时间: 2018/5/18 14:42
@@ -31,8 +29,7 @@ class ObserverMethodFinder {
 
         observerMethods = findUsingInfo(observerClass);
         if (observerMethods.isEmpty()) {
-            throw new BleException("Observer " + observerClass
-                    + " and its super classes have no public methods with the @Observe annotation");
+            return null;
         } else {
             METHOD_CACHE.put(observerClass, observerMethods);
             return observerMethods;
