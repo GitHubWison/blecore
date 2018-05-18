@@ -3,610 +3,392 @@ package cn.zfs.blelib.core;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
-import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
-import android.os.Build;
+import android.bluetooth.BluetoothProfile;
+import android.content.Context;
 import android.os.Handler;
-import android.os.HandlerThread;
-import android.support.annotation.IntDef;
-import android.support.annotation.NonNull;
+import android.os.Looper;
+import android.os.Message;
+import android.util.Log;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.reflect.Method;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
-import cn.zfs.blelib.callback.IRequestCallback;
-import cn.zfs.blelib.util.BleUtils;
+import cn.zfs.blelib.callback.ConnectionCallback;
+import cn.zfs.blelib.data.Device;
+import cn.zfs.blelib.data.EventType;
+import cn.zfs.blelib.data.SingleIntEvent;
+import cn.zfs.blelib.data.SingleStringEvent;
 
 /**
- * 描述: 蓝牙连接基类
- * 时间: 2018/4/11 16:37
+ * 描述: 蓝牙连接
+ * 时间: 2018/4/11 15:29
  * 作者: zengfansheng
  */
-public abstract class Connection extends BluetoothGattCallback {
-    public static final UUID CLIENT_CHARACTERISTIC_CONFIG = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
-    //----------蓝牙连接状态-------------   
-    public static final int STATE_DISCONNECTED = 0;
-    public static final int STATE_CONNECTING = 1;
-    public static final int STATE_RECONNECTING = 2;
-    public static final int STATE_CONNECTED = 3;
-    public static final int STATE_SERVICE_DISCORVERING = 4;
-    public static final int STATE_SERVICE_DISCORVERED = 5;
-    //----------连接超时类型---------
-    /**搜索不到设备*/
-    public static final int TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE = 0;
-    /**能搜到，连接不上*/
-    public static final int TIMEOUT_TYPE_CANNOT_CONNECT = 1;
-    /**能连接上，无法发现服务*/
-    public static final int TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES = 2;
-
-    @IntDef({STATE_DISCONNECTED, STATE_CONNECTING, STATE_RECONNECTING, STATE_CONNECTED, STATE_SERVICE_DISCORVERING, STATE_SERVICE_DISCORVERED})
-    @Retention(RetentionPolicy.SOURCE)
-    public @interface STATE {}
-
-    private static final short  GATT_REQ_NOT_SUPPORTED = 6;
-    protected BluetoothDevice bluetoothDevice;
-    protected BluetoothGatt bluetoothGatt;
-    protected Queue<Request> requestQueue = new ConcurrentLinkedQueue<>();
-    Request currentRequest;
-    private BluetoothGattCharacteristic pendingCharacteristic;
-    private RequestCallbackContainer requestCallbackContainer = new RequestCallbackContainer();
-    protected BluetoothAdapter bluetoothAdapter;
-    private HandlerThread handlerThread;
-    private Handler requestHandler;
-
-    Connection(BluetoothDevice bluetoothDevice) {
-        this.bluetoothDevice = bluetoothDevice;
-        handlerThread = new HandlerThread("ConnectionThread_" + bluetoothDevice.getAddress());
-        handlerThread.start();
-        requestHandler = new Handler(handlerThread.getLooper());
+public class Connection extends BaseConnection {
+    private static final int MSG_ARG1_NONE = 0;
+    private static final int MSG_ARG1_RELEASE = 1;
+    private static final int MSG_ARG1_RECONNECT = 2;
+    
+    private static final int MSG_CONNECT = 1;
+    private static final int MSG_DISCONNECT = 2;
+    private static final int MSG_REFRESH= 3;
+    private static final int MSG_AUTO_REFRESH = 4;
+    private static final int MSG_TIMER = 5;
+    private static final int MSG_RELEASE = 6;
+    private static final int MSG_DISCOVER_SERVICES = 7;
+    private static final int MSG_ON_CONNECTION_STATE_CHANGE = 8;
+    private static final int MSG_ON_SERVICES_DISCOVERED = 9;
+    
+	private Device device;
+	private Handler handler;
+	private Context context;
+	private ConnectionCallback connectionCallback;
+	private long connStartTime;
+    private boolean autoReconnEnable = true;//重连控制
+	private int refreshTimes;//记录刷新次数，如果成功发现服务器，则清零
+    private int tryReconnectTimes;
+	    
+    private Connection(BluetoothDevice bluetoothDevice) {
+        super(bluetoothDevice);
+        handler = new ConnHandler(this);
     }
 
-    public void release() {
-        handlerThread.quit();//移除所有消息，停止线程
-    }
-    
-    protected abstract int getWriteDelayMillis();
-    
-    protected abstract int getPackageSize();
-
-    /*
-     * Clears the internal cache and forces a refresh of the services from the
-     * remote device.
+    /**
+     * 连接
+     * @param device 蓝牙设备
      */
-    public boolean refresh(BluetoothGatt bluetoothGatt) {
-        try {
-            Method localMethod = bluetoothGatt.getClass().getMethod("refresh");
-            return (Boolean) localMethod.invoke(bluetoothGatt);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
+	synchronized static Connection newInstance(BluetoothAdapter bluetoothAdapter, Context context, Device device,
+                                               long connectDelay, ConnectionCallback connectionCallback) {
+		if (bluetoothAdapter == null || device == null || device.addr == null || !device.addr.matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
+			Ble.println(Connection.class, Log.ERROR, "BluetoothAdapter not initialized or unspecified address.");
+			Ble.getInstance().getObservable().post(new SingleStringEvent(EventType.ON_CONNECTION_CREATE_FAILED, device, 
+                    "BluetoothAdapter not initialized or unspecified address."));
+			return null;
+		}
+		//初始化并建立连接
+		Connection conn = new Connection(bluetoothAdapter.getRemoteDevice(device.addr));
+		conn.bluetoothAdapter = bluetoothAdapter;
+		conn.device = device;
+		conn.context = context.getApplicationContext();
+		conn.connectionCallback = connectionCallback;
+		//连接蓝牙设备        
+        conn.device.connectionState = STATE_CONNECTING;
+        conn.connStartTime = System.currentTimeMillis();
+        Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_CONNECTING));
+        conn.handler.sendEmptyMessageDelayed(MSG_CONNECT, connectDelay);//连接
+        conn.handler.sendEmptyMessageDelayed(MSG_TIMER, connectDelay + 1000);//启动定时器，用于断线重连
+		return conn;
+	}
+
+    @Override
+    protected int getWriteDelayMillis() {
+        return Ble.getInstance().getConfig().getWriteDelayMillis();
     }
 
     @Override
-    public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-        // 读取到值
-        if (currentRequest != null && currentRequest.type == Request.RequestType.READ_CHARACTERISTIC) {
-            if (currentRequest.callback != null) {
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    currentRequest.callback.onCharacteristicRead(currentRequest.requestId, gatt, characteristic);
-                } else {
-                    performFaildCallback(currentRequest.callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                }
-            }
-            processNextRequest();
-        }
+    protected int getPackageSize() {
+        return Ble.getInstance().getConfig().getPackageSize();
     }
 
-    @Override
-    public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-        if (currentRequest != null && currentRequest.type == Request.RequestType.WRITE_CHARACTERISTIC) {
-            if (currentRequest.callback != null) {
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    currentRequest.callback.onCharacteristicWrite(currentRequest.requestId, gatt, characteristic);
-                } else if (status == GATT_REQ_NOT_SUPPORTED) {
-                    performFaildCallback(currentRequest.callback, currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_STATUS_REQUEST_NOT_SUPPORTED, currentRequest.value);
-                } else {
-                    performFaildCallback(currentRequest.callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                }
-            }
-            processNextRequest();
-        }
+    /**
+     * 获取当前连接的设备
+     */
+    public Device getDevice() {
+        return device;
     }
 
-    @Override
-    public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-        // 收到设备notify值 （设备上报值）
-        IRequestCallback callback = requestCallbackContainer.getCallback(characteristic.getService().getUuid(), characteristic.getUuid());
-        if (callback != null) {
-            callback.onCharacteristicChanged(gatt, characteristic);
-        }
-    }
-
-    @Override
-    public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
-        if (currentRequest != null && currentRequest.type == Request.RequestType.READ_RSSI) {
-            if (currentRequest.callback != null) {
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    currentRequest.callback.onRssiRead(currentRequest.requestId, gatt, rssi);
-                } else if (status == GATT_REQ_NOT_SUPPORTED) {
-                    performFaildCallback(currentRequest.callback, currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_STATUS_REQUEST_NOT_SUPPORTED, currentRequest.value);
-                } else {
-                    performFaildCallback(currentRequest.callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                }
-            }
-            processNextRequest();
-        }
-    }
-
-    @Override
-    public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-        if (currentRequest == null) return;
-        BluetoothGattCharacteristic characteristic = descriptor.getCharacteristic();
-        if (currentRequest.type == Request.RequestType.CHARACTERISTIC_NOTIFICATION) {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                performFaildCallback(currentRequest.callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                requestCallbackContainer.removeCallback(characteristic.getService().getUuid(), characteristic.getUuid());
-            }
-            if (characteristic.getService().getUuid().equals(pendingCharacteristic.getService().getUuid())
-                    && characteristic.getUuid().equals(pendingCharacteristic.getUuid())) {
-                requestCallbackContainer.addCallback(characteristic.getService().getUuid(), characteristic.getUuid(), currentRequest.callback);
-                if (!enableNotification(currentRequest.value == null || currentRequest.value.length == 0 || currentRequest.value[0] == 1, characteristic)) {
-                    performFaildCallback(currentRequest.callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                    requestCallbackContainer.removeCallback(characteristic.getService().getUuid(), characteristic.getUuid());
-                }
-            }
-        } else if (currentRequest.type == Request.RequestType.CHARACTERISTIC_INDICATION) {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                performFaildCallback(currentRequest.callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                requestCallbackContainer.removeCallback(characteristic.getService().getUuid(), characteristic.getUuid());
-            }
-            if (characteristic.getService().getUuid().equals(pendingCharacteristic.getService().getUuid())
-                    && characteristic.getUuid().equals(pendingCharacteristic.getUuid())) {
-                requestCallbackContainer.addCallback(characteristic.getService().getUuid(), characteristic.getUuid(), currentRequest.callback);
-                if (!enableIndication(currentRequest.value == null || currentRequest.value.length == 0 || currentRequest.value[0] == 1, characteristic)) {
-                    performFaildCallback(currentRequest.callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                    requestCallbackContainer.removeCallback(characteristic.getService().getUuid(), characteristic.getUuid());
-                }
-            }
-        } else if (currentRequest.type == Request.RequestType.READ_DESCRIPTOR) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                if (currentRequest.callback != null) {
-                    currentRequest.callback.onDescriptorRead(currentRequest.requestId, gatt, descriptor);
-                }
-                processNextRequest();
-            } else {
-                performFaildCallback(currentRequest.callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-            }
-        }
-    }
-
-    @Override
-    public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-        if (currentRequest == null) return;
-        BluetoothGattCharacteristic characteristic = descriptor.getCharacteristic();
-        if (currentRequest.type == Request.RequestType.CHARACTERISTIC_NOTIFICATION) {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                performFaildCallback(currentRequest.callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                requestCallbackContainer.removeCallback(characteristic.getService().getUuid(), characteristic.getUuid());
-            } else if (currentRequest.callback != null) {
-                if (currentRequest.value == null || currentRequest.value.length == 0 || currentRequest.value[0] == 1) {
-                    currentRequest.callback.onNotificationRegistered(currentRequest.requestId, gatt, descriptor);
-                } else {
-                    currentRequest.callback.onNotificationUnregistered(currentRequest.requestId, gatt, descriptor);
-                }
-            }
-            processNextRequest();
-        } else if (currentRequest.type == Request.RequestType.CHARACTERISTIC_INDICATION) {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                performFaildCallback(currentRequest.callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                requestCallbackContainer.removeCallback(characteristic.getService().getUuid(), characteristic.getUuid());
-            } else if (currentRequest.callback != null) {
-                if (currentRequest.value == null || currentRequest.value.length == 0 || currentRequest.value[0] == 1) {
-                    currentRequest.callback.onIndicationRegistered(currentRequest.requestId, gatt, descriptor);
-                } else {
-                    currentRequest.callback.onIndicationUnregistered(currentRequest.requestId, gatt, descriptor);
-                }
-            }
-            processNextRequest();
-        }
-    }
-
-    @Override
-    public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
-        if (currentRequest != null && currentRequest.type == Request.RequestType.SET_MTU) {
-            if (currentRequest.callback != null) {
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    currentRequest.callback.onMtuChanged(currentRequest.requestId, gatt, mtu);
-                } else if (status == GATT_REQ_NOT_SUPPORTED) {
-                    performFaildCallback(currentRequest.callback, currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_STATUS_REQUEST_NOT_SUPPORTED, currentRequest.value);
-                } else {
-                    performFaildCallback(currentRequest.callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                }
-            }
-            processNextRequest();
-        }
-    }
-
-    public void requestMtu(@NonNull final String requestId, final int mtu, final IRequestCallback callback) {
-        requestHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performRequestMtu(requestId, mtu, callback);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.SET_MTU, requestId, null, null, null, callback, BleUtils.numberToBytes(mtu, false)));
-                }
-            }
-        });
+    /**
+     * 获取蓝牙服务列表
+     */
+    public List<BluetoothGattService> getGattServices() {
+	    if (bluetoothGatt != null) {
+	        return bluetoothGatt.getServices();
+	    }
+	    return new ArrayList<>();
     }
     
-    /*
-     * 请求读取characteristic的值
-     * @param requestId 请求码
-     */
-    public void requestCharacteristicValue(@NonNull final String requestId, final UUID service, final UUID characteristic, final IRequestCallback callback) {
-        requestHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performCharacteristicValueRequest(requestId, service, characteristic, callback);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.READ_CHARACTERISTIC, requestId, service, characteristic,
-                            null, callback));
-                }
-            }
-        });
-    }
-
-    /*
-     * 打开Notifications
-     * @param requestId 请求码
-     */
-    public void requestCharacteristicNotification(@NonNull final String requestId, final UUID service, final UUID characteristic, final IRequestCallback callback, final boolean enable) {
-        requestHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performNotificationRequest(requestId, service, characteristic, callback, new byte[]{(byte) (enable ? 1 : 0)});
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.CHARACTERISTIC_NOTIFICATION, requestId, service,
-                            characteristic, null, callback));
-                }
-            }
-        });
-    }
-
-    public void requestCharacteristicIndication(@NonNull final String requestId, final UUID service, final UUID characteristic, final IRequestCallback callback, final boolean enable) {
-        requestHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performIndicationRequest(requestId, service, characteristic, callback, new byte[]{(byte) (enable ? 1 : 0)});
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.CHARACTERISTIC_INDICATION, requestId, service,
-                            characteristic, null, callback));
-                }
-            }
-        });
-    }
-
-    public void requestDescriptorValue(@NonNull final String requestId, final UUID service, final UUID characteristic, final UUID descriptor, final IRequestCallback callback) {
-        requestHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performDescriptorValueRequest(requestId, service, characteristic, descriptor, callback);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.READ_DESCRIPTOR, requestId, service, characteristic, descriptor, callback));
-                }
-            }
-        });
-    }
-
-    public void writeCharacteristicValue(@NonNull final String requestId, final UUID service, final UUID characteristic, final byte[] value, final IRequestCallback callback) {
-        requestHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performCharacteristicWrite(requestId, service, characteristic, callback, value);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.WRITE_CHARACTERISTIC, requestId, service, characteristic, null, callback, value));
-                }
-            }
-        });
-    }
-
-    public void requestRssiValue(@NonNull final String requestId, final IRequestCallback callback) {
-        requestHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performRssiValueRequest(requestId, callback);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.READ_RSSI, requestId, null, null, null, callback));
-                }
-            }
-        });
-    }
-
-    private void processNextRequest() {
-        requestHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (requestQueue.isEmpty()) {
-                    currentRequest = null;
-                    return;
-                }
-                Request request = requestQueue.remove();
-                switch (request.type) {
-                    case CHARACTERISTIC_NOTIFICATION:
-                        performNotificationRequest(request.requestId, request.service, request.characteristic, request.callback, request.value);
-                        break;
-                    case CHARACTERISTIC_INDICATION:
-                        performIndicationRequest(request.requestId, request.service, request.characteristic, request.callback, request.value);
-                        break;
-                    case READ_CHARACTERISTIC:
-                        performCharacteristicValueRequest(request.requestId, request.service, request.characteristic, request.callback);
-                        break;
-                    case READ_DESCRIPTOR:
-                        performDescriptorValueRequest(request.requestId, request.service, request.characteristic, request.descriptor, request.callback);
-                        break;
-                    case WRITE_CHARACTERISTIC:
-                        performCharacteristicWrite(request.requestId, request.service, request.characteristic, request.callback, request.value);
-                        break;
-                    case READ_RSSI:
-                        performRssiValueRequest(request.requestId, request.callback);
-                        break;
-                    case SET_MTU:
-                        performRequestMtu(request.requestId, (int) BleUtils.bytesToLong(request.value, false), request.callback);
-                        break;
-                }
-            }
-        });
-    }
-
-    private void performRequestMtu(String requestId, int mtu, IRequestCallback callback) {
-        if (bluetoothAdapter.isEnabled()) {
-            currentRequest = new Request(Request.RequestType.SET_MTU, requestId, null, null, null, callback);
-            if (bluetoothGatt != null) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    if (!bluetoothGatt.requestMtu(mtu)) {
-                        performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                        processNextRequest();
-                    }
-                } else {
-                    performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.API_LEVEL_TOO_LOW, currentRequest.value);
-                    processNextRequest();
-                }
-            } else {
-                performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_IS_NULL, currentRequest.value);
-                processNextRequest();
-            }
-        }
+    public synchronized void onScanResult(String addr) {
+	    if (device.addr.equals(addr) && device.connectionState == STATE_RECONNECTING) {
+            device.connectionState = STATE_CONNECTING;
+            Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_CONNECTING));
+            handler.sendEmptyMessage(MSG_CONNECT);
+	    }
     }
     
-    private void performRssiValueRequest(String requestId, IRequestCallback callback) {
-        if (bluetoothAdapter.isEnabled()) {
-            currentRequest = new Request(Request.RequestType.READ_RSSI, requestId, null, null, null, callback);
-            if (bluetoothGatt != null) {
-                if (!bluetoothGatt.readRemoteRssi()) {
-                    performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                    processNextRequest();
-                }
+    public synchronized void onScanStop() {
+	    if (device.connectionState == STATE_RECONNECTING) {
+	        if (Ble.getInstance().getConfig().getTryReconnectTimes() == Configuration.TRY_RECONNECT_TIMES_INFINITE ||
+                    tryReconnectTimes < Ble.getInstance().getConfig().getTryReconnectTimes()) {
+	            tryReconnectTimes++;
+                tryReconnect();
+	        } else {
+                notifyDisconnected();
+	        }	        
+	    }
+    }
+        
+	private static class ConnHandler extends Handler {
+        private WeakReference<Connection> ref;
+
+        ConnHandler(Connection conn) {
+            super(Looper.getMainLooper());
+            ref = new WeakReference<>(conn);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            final Connection conn = ref.get();
+            if (conn == null) {
+                return;
+            }
+            if (!conn.bluetoothAdapter.isEnabled()) {
+                conn.notifyDisconnected();
             } else {
-                performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_IS_NULL, currentRequest.value);
-                processNextRequest();
-            }
-        }
-    }
-
-    private void performFaildCallback(IRequestCallback callback, String requestId, Request.RequestType requestType, int failType, byte[] value) {
-        if (callback != null) {
-            callback.onRequestFialed(requestId, requestType, failType, value);
-        }
-    }
-
-    private void performCharacteristicValueRequest(String requestId, UUID service, UUID characteristic, IRequestCallback callback) {
-        if (bluetoothAdapter.isEnabled()) {
-            currentRequest = new Request(Request.RequestType.READ_CHARACTERISTIC, requestId, service, characteristic,
-                    null, callback);
-            if (bluetoothGatt != null) {
-                BluetoothGattService gattService = bluetoothGatt.getService(service);
-                if (gattService != null) {
-                    BluetoothGattCharacteristic gattCharacteristic = gattService.getCharacteristic(characteristic);
-                    if (gattCharacteristic != null) {
-                        if (!bluetoothGatt.readCharacteristic(gattCharacteristic)) {
-                            performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                            processNextRequest();
-                        }
-                    } else {
-                        performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_CHARACTERISTIC, currentRequest.value);
-                        processNextRequest();
-                    }
-                } else {
-                    performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_SERVICE, currentRequest.value);
-                    processNextRequest();
-                }
-            } else {
-                performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_IS_NULL, currentRequest.value);
-                processNextRequest();
-            }
-        }
-    }
-
-    private void performCharacteristicWrite(final String requestId, final UUID service, final UUID characteristic, final IRequestCallback callback, final byte[] value) {
-        requestHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (value.length > getPackageSize()) {
-                    List<byte[]> list = BleUtils.splitPackage(value, getPackageSize());
-                    for (byte[] bytes : list) {
-                        doWrite(requestId, service, characteristic, callback, bytes);
-                    }
-                } else {
-                    doWrite(requestId, service, characteristic, callback, value);
-                }
-            }
-        }, getWriteDelayMillis());
-    }
-
-    private void doWrite(String requestId, UUID service, UUID characteristic, IRequestCallback callback, byte[] value) {
-        if (bluetoothAdapter.isEnabled()) {
-            currentRequest = new Request(Request.RequestType.WRITE_CHARACTERISTIC, requestId, service, characteristic,
-                    null, callback, value);
-            if (bluetoothGatt != null) {
-                BluetoothGattService gattService = bluetoothGatt.getService(service);
-                if (gattService != null) {
-                    BluetoothGattCharacteristic gattCharacteristic = gattService.getCharacteristic(characteristic);
-                    if (gattCharacteristic != null) {
-                        gattCharacteristic.setValue(value);
-                        if (!bluetoothGatt.writeCharacteristic(gattCharacteristic)) {
-                            performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                            processNextRequest();
-                        }
-                    } else {
-                        performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_CHARACTERISTIC, currentRequest.value);
-                        processNextRequest();
-                    }
-                } else {
-                    performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_SERVICE, currentRequest.value);
-                    processNextRequest();
-                }
-            } else {
-                performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_IS_NULL, currentRequest.value);
-                processNextRequest();
-            }
-        }
-    }
-
-    private void performDescriptorValueRequest(String requestId, UUID service, UUID characteristic, UUID descriptor, IRequestCallback callback) {
-        if (bluetoothAdapter.isEnabled()) {
-            currentRequest = new Request(Request.RequestType.READ_DESCRIPTOR, requestId, service, characteristic,
-                    descriptor, callback);
-            if (bluetoothGatt != null) {
-                BluetoothGattService gattService = bluetoothGatt.getService(service);
-                if (gattService != null) {
-                    BluetoothGattCharacteristic gattCharacteristic = gattService.getCharacteristic(characteristic);
-                    if (gattCharacteristic != null) {
-                        BluetoothGattDescriptor gattDescriptor = gattCharacteristic.getDescriptor(descriptor);
-                        if (gattDescriptor != null) {
-                            if (!bluetoothGatt.readDescriptor(gattDescriptor)) {
-                                performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                                processNextRequest();
-                            }
+                switch(msg.what) {
+                    case MSG_CONNECT://连接
+                        conn.doConnect();
+                		break;
+                    case MSG_DISCONNECT://处理断开
+                        conn.doDisconnect(msg.arg2 == MSG_ARG1_RECONNECT, msg.arg1 == MSG_ARG1_RELEASE);
+                		break;
+                    case MSG_REFRESH://手动刷新
+                        conn.doRefresh(false);
+                        break;
+                    case MSG_AUTO_REFRESH://自动刷新
+                        conn.doRefresh(true);
+                        break;
+                    case MSG_RELEASE://销毁连接
+                        conn.autoReconnEnable = false;//停止重连
+                        conn.doDisconnect(false, true);
+                        break;
+                    case MSG_TIMER://定时器
+                        conn.doTimer();
+                        break;
+                    case MSG_DISCOVER_SERVICES://开始发现服务
+                        conn.doDiscoverServices();
+                        break;
+                    case MSG_ON_CONNECTION_STATE_CHANGE://连接状态变化
+                    case MSG_ON_SERVICES_DISCOVERED://发现服务
+                        BluetoothGatt gatt = (BluetoothGatt) msg.obj;
+                        int status = msg.arg1;
+                        int newState = msg.arg2;
+                        if (msg.what == MSG_ON_SERVICES_DISCOVERED) {
+                            conn.doOnServicesDiscovered(gatt, status);
                         } else {
-                            performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_DESCRIPTOR, currentRequest.value);
-                            processNextRequest();
+                            conn.doOnConnectionStateChange(gatt, status, newState);
                         }
-                    } else {
-                        performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_CHARACTERISTIC, currentRequest.value);
-                        processNextRequest();
-                    }
-                } else {
-                    performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_SERVICE, currentRequest.value);
-                    processNextRequest();
+                        break;
                 }
-            } else {
-                performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_IS_NULL, currentRequest.value);
-                processNextRequest();
             }
         }
     }
-
-    private void performIndicationRequest(String requestId, UUID service, UUID characteristic, IRequestCallback callback, byte[] value) {
-        if (bluetoothAdapter.isEnabled()) {
-            currentRequest = new Request(Request.RequestType.CHARACTERISTIC_INDICATION, requestId, service, characteristic,
-                    null, callback, value);
-            if (bluetoothGatt != null) {
-                BluetoothGattService gattService = bluetoothGatt.getService(service);
-                if (gattService != null) {
-                    pendingCharacteristic = gattService.getCharacteristic(characteristic);
-                    if (pendingCharacteristic != null) {
-                        BluetoothGattDescriptor gattDescriptor = pendingCharacteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG);
-                        if (gattDescriptor == null || !bluetoothGatt.readDescriptor(gattDescriptor)) {
-                            performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                            processNextRequest();
-                        }
-                    } else {
-                        performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_CHARACTERISTIC, currentRequest.value);
-                        processNextRequest();
-                    }
-                } else {
-                    performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_SERVICE, currentRequest.value);
-                    processNextRequest();
-                }
-            } else {
-                performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_IS_NULL, currentRequest.value);
-                processNextRequest();
-            }
+    
+    private void notifyDisconnected() {
+        device.connectionState = STATE_DISCONNECTED;
+        sendConnectionCallback();
+        Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_DISCONNECTED));
+    }
+    
+    private void doOnConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+        if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
+            Ble.println(Connection.class, Log.DEBUG, "连接状态：STATE_CONNECTED, " +
+                    gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress());
+            device.connectionState = STATE_CONNECTED;
+            sendConnectionCallback();
+            Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_CONNECTED));
+            // 进行服务发现，延时
+            handler.sendEmptyMessageDelayed(MSG_DISCOVER_SERVICES, Ble.getInstance().getConfig().getDiscoverServicesDelayMillis());
+        } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+            Ble.println(Connection.class, Log.DEBUG, "连接状态：STATE_DISCONNECTED, " +
+                    gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress() + ", autoReconnEnable: " + autoReconnEnable);
+            notifyDisconnected();
+        } else if (status == 133) {
+            doClearTaskAndRefresh(true);
+            Ble.println(Connection.class, Log.ERROR, "onConnectionStateChange error, status: " + status + ", " +
+                    gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress());
         }
     }
-
-    private void performNotificationRequest(String requestId, UUID service, UUID characteristic, IRequestCallback callback, byte[] value) {
-        if (bluetoothAdapter.isEnabled()) {
-            currentRequest = new Request(Request.RequestType.CHARACTERISTIC_NOTIFICATION, requestId, service, characteristic,
-                    null, callback, value);
-            if (bluetoothGatt != null) {
-                BluetoothGattService gattService = bluetoothGatt.getService(service);
-                if (gattService != null) {
-                    pendingCharacteristic = gattService.getCharacteristic(characteristic);
-                    if (pendingCharacteristic != null) {
-                        BluetoothGattDescriptor gattDescriptor = pendingCharacteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG);
-                        if (gattDescriptor == null || !bluetoothGatt.readDescriptor(gattDescriptor)) {
-                            performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value);
-                            processNextRequest();
-                        }
-                    } else {
-                        performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_CHARACTERISTIC, currentRequest.value);
-                        processNextRequest();
-                    }
-                } else {
-                    performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_SERVICE, currentRequest.value);
-                    processNextRequest();
-                }
+    
+    private void doOnServicesDiscovered(BluetoothGatt gatt, int status) {
+        List<BluetoothGattService> services = gatt.getServices();
+        if (status == BluetoothGatt.GATT_SUCCESS) {
+            Ble.println(Connection.class, Log.DEBUG, "onServicesDiscovered. " + gatt.getDevice().getName() + ", " +
+                    gatt.getDevice().getAddress() + ", 服务列表长度: " + gatt.getServices().size());
+            if (services.isEmpty()) {
+                doClearTaskAndRefresh(true);
             } else {
-                performFaildCallback(callback, currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_IS_NULL, currentRequest.value);
-                processNextRequest();
+                refreshTimes = 0;
+                tryReconnectTimes = 0;
+                device.connectionState = STATE_SERVICE_DISCORVERED;
+                sendConnectionCallback();
+                Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_SERVICE_DISCORVERED));
             }
-        }
-    }
-
-    private boolean enableNotification(boolean enable, BluetoothGattCharacteristic characteristic) {
-        if (!bluetoothAdapter.isEnabled() || bluetoothGatt == null) return false;
-        if (!bluetoothGatt.setCharacteristicNotification(characteristic, enable)) return false;
-        BluetoothGattDescriptor descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG);
-        if (descriptor == null) return false;
-
-        if (enable) {
-            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
         } else {
-            descriptor.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+            doClearTaskAndRefresh(true);
+            Ble.println(Connection.class, Log.ERROR, "onServicesDiscovered error, status: " + status + ", " +
+                    gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress());
         }
-
-        return bluetoothGatt.writeDescriptor(descriptor);
+    }
+    
+    private void doDiscoverServices() {
+        if (bluetoothGatt != null) {
+            bluetoothGatt.discoverServices();
+            device.connectionState = STATE_SERVICE_DISCORVERING;
+            sendConnectionCallback();
+            Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_SERVICE_DISCORVERING));
+        } else {
+            notifyDisconnected();
+        }
+    }
+    
+    private void doTimer() {
+        //连接超时。
+        if (device.connectionState != STATE_SERVICE_DISCORVERED && System.currentTimeMillis() - connStartTime > 
+                Ble.getInstance().getConfig().getConnectTimeoutMillis()) {
+            if (device.connectionState != STATE_DISCONNECTED) {
+                connStartTime = System.currentTimeMillis();
+                Ble.println(Connection.class, Log.ERROR, "连接超时, " + device.name + ", " + device.addr);
+                int type;
+                if (device.connectionState == STATE_RECONNECTING) {
+                    type = TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE;
+                } else if (device.connectionState == STATE_CONNECTING) {
+                    type = TIMEOUT_TYPE_CANNOT_CONNECT;
+                } else {
+                    type = TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES;
+                }
+                Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECT_TIMEOUT, device, type));
+            }
+            if (autoReconnEnable) {
+                doDisconnect(true, false);
+            } else {
+                doDisconnect(false, false);
+            }
+        }
+        handler.sendEmptyMessageDelayed(MSG_TIMER, 1000);
+    }
+    
+    //处理刷新
+    private void doRefresh(boolean isAuto) {
+	    connStartTime = System.currentTimeMillis();//防止刷新过程自动重连
+        if (bluetoothGatt != null) {
+            bluetoothGatt.disconnect();
+            if (isAuto) {
+                if (refreshTimes <= 5) {
+                    refresh(bluetoothGatt);
+                }
+                refreshTimes++;
+            } else {
+                refresh(bluetoothGatt);
+            }
+            bluetoothGatt.close();
+        }
+        notifyDisconnected();
+    }
+    
+    private void doConnect() {
+        //连接时需要停止蓝牙扫描
+        Ble.getInstance().stopScan();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                bluetoothGatt = bluetoothDevice.connectGatt(context, false, Connection.this);
+            }
+        }, 500);
+    }
+    
+    private void doDisconnect(boolean reconnect, boolean release) {
+	    doClearTaskAndRefresh(false);
+        if (bluetoothGatt != null) {
+            bluetoothGatt.close();
+        }
+        device.connectionState = STATE_DISCONNECTED;
+        if (release) {//销毁
+            bluetoothGatt = null;
+            Ble.println(Connection.class, Log.DEBUG, "连接销毁释放");
+        } else if (reconnect) {
+            device.connectionState = STATE_RECONNECTING;
+            tryReconnect();
+        }        
+        sendConnectionCallback();
+        Ble.getInstance().getObservable().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, device.connectionState));
     }
 
-    private boolean enableIndication(boolean enable, BluetoothGattCharacteristic characteristic) {
-        if (!bluetoothAdapter.isEnabled() || bluetoothGatt == null) return false;
-        if (!bluetoothGatt.setCharacteristicNotification(characteristic, enable)) return false;
-        BluetoothGattDescriptor descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG);
-        if (descriptor == null) return false;
-
-        if (enable) {
-            descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
-        }
-        else {
-            descriptor.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
-        }
-
-        return bluetoothGatt.writeDescriptor(descriptor);
+    private void tryReconnect() {        
+        connStartTime = System.currentTimeMillis();
+        //开启扫描，扫描到才连接
+        Ble.getInstance().startScan(context);
     }
+
+    private void doClearTaskAndRefresh(boolean refresh) {
+        clearRequestQueue();
+        if (refresh) {
+            doRefresh(true);
+        }       
+    }
+    
+    private void sendConnectionCallback() {
+	    if (connectionCallback != null) {
+	        connectionCallback.onConnectionStateChange(device.connectionState);
+	    }
+    }
+    
+    void setAutoReconnectEnable(boolean enable) {
+        autoReconnEnable = enable;
+    }
+
+    boolean isAutoReconnectEnabled() {
+        return autoReconnEnable;
+    }
+    
+    public synchronized void reconnect() {
+	    tryReconnectTimes = 0;
+        handler.removeMessages(MSG_TIMER);//停止定时器
+        handler.sendMessage(Message.obtain(handler, MSG_DISCONNECT, MSG_ARG1_RECONNECT));
+        handler.sendEmptyMessageDelayed(MSG_TIMER, 1000);//重启定时器
+	}
+
+    public synchronized void disconnect() {
+        handler.removeMessages(MSG_TIMER);//主动断开，停止定时器
+        handler.sendMessage(Message.obtain(handler, MSG_DISCONNECT, MSG_ARG1_NONE));
+	}
+
+	public void clearRequestQueue() {
+        requestQueue.clear();
+        currentRequest = null;
+    }
+	
+    /**
+     * 清理缓存
+     */
+    public void refresh() {
+        handler.sendEmptyMessage(MSG_REFRESH);
+    }
+    
+	/**
+	 * 销毁连接，停止定时器
+	 */
+	@Override
+	public void release() {
+	    super.release();
+	    handler.removeCallbacksAndMessages(null);//主动断开，停止定时器
+		handler.sendEmptyMessage(MSG_RELEASE);
+	}
+
+    public int getConnState() {
+		return device.connectionState;
+	}
+	
+	@Override
+	public void onConnectionStateChange(final BluetoothGatt gatt, int status, int newState) {
+	    handler.sendMessage(Message.obtain(handler, MSG_ON_CONNECTION_STATE_CHANGE, status, newState, gatt));
+	}
+
+    
+    
+	@Override
+	public void onServicesDiscovered(final BluetoothGatt gatt, int status) {
+        handler.sendMessage(Message.obtain(handler, MSG_ON_SERVICES_DISCOVERED, status, 0, gatt));
+	}
 }

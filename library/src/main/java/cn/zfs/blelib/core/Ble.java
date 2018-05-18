@@ -28,14 +28,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import cn.zfs.blelib.callback.BleScanListener;
 import cn.zfs.blelib.callback.ConnectionCallback;
 import cn.zfs.blelib.callback.IRequestCallback;
 import cn.zfs.blelib.callback.InitCallback;
 import cn.zfs.blelib.callback.RequestCallback;
-import cn.zfs.blelib.data.BleObservable;
+import cn.zfs.blelib.callback.ScanListener;
 import cn.zfs.blelib.data.Device;
-import cn.zfs.blelib.data.IBleObserver;
+import cn.zfs.blelib.data.EventType;
+import cn.zfs.blelib.data.Observable;
+import cn.zfs.blelib.data.SingleLongEvent;
 import cn.zfs.blelib.util.LogController;
 
 /**
@@ -45,23 +46,25 @@ import cn.zfs.blelib.util.LogController;
  */
 public class Ble {        
     private BluetoothAdapter bluetoothAdapter;
-    private Map<String, BleConnection> connectionMap;
+    private Map<String, Connection> connectionMap;
     private Map<String, IRequestCallback> requestCallbackMap;
     private boolean isInited;
     private boolean scanning;
     private BluetoothLeScanner bleScanner;
     private ScanCallback scanCallback;
     private BluetoothAdapter.LeScanCallback leScanCallback;    
-    private BleConfig config;
-    private List<BleScanListener> scanListeners;
+    private Configuration config;
+    private List<ScanListener> scanListeners;
     private Handler mainThreadHandler;
+    private Observable observable;
 
     private Ble() {
-        config = new BleConfig();
+        config = new Configuration();
         connectionMap = new ConcurrentHashMap<>();
         requestCallbackMap = new ConcurrentHashMap<>();
         mainThreadHandler = new Handler(Looper.getMainLooper());
         scanListeners = new ArrayList<>();
+        observable = Observable.getInstance();
     }
 
     private static class Holder {
@@ -81,14 +84,14 @@ public class Ble {
         LogController.printLevelControl = logPrintLevel;
     }
     
-    public BleConfig getConfig() {
+    public Configuration getConfig() {
         return config;
     }
 
     /**
      * 替换默认配置
      */
-    public void setConfig(BleConfig config) {
+    public void setConfig(Configuration config) {
         this.config = config;
     }
     
@@ -144,7 +147,7 @@ public class Ble {
             scanListeners.clear();
             releaseAllConnections();//释放所有连接
             context.getApplicationContext().unregisterReceiver(receiver);//取消注册蓝牙状态广播接收者
-            getObservable().clearObservers();//移除所有观察者
+            getObservable().clearObserversAndCaches();//移除所有观察者
             isInited = false;
         }
     }
@@ -154,15 +157,15 @@ public class Ble {
         public void onReceive(Context context, Intent intent) {
             if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(intent.getAction())) {//蓝牙开关状态变化                 
                 if (bluetoothAdapter != null) {
-                    getObservable().notifyBluetoothStateChange(bluetoothAdapter.getState());
+                    getObservable().post(new SingleLongEvent(EventType.ON_BLUETOOTH_STATE_CHANGED, null, bluetoothAdapter.getState()));
                     if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {//蓝牙关闭了
                         handleScanCallback(false, null, null);
                         //主动断开，停止定时器和重连尝试
-                        for (BleConnection connection : connectionMap.values()) {
+                        for (Connection connection : connectionMap.values()) {
                             connection.disconnect();
                         }
                     } else if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_ON) {
-                        for (BleConnection connection : connectionMap.values()) {
+                        for (Connection connection : connectionMap.values()) {
                             if (connection.isAutoReconnectEnabled()) {
                                 connection.reconnect();//如果开启了自动重连，则重连
                             }
@@ -197,30 +200,30 @@ public class Ble {
     /**
      * 获取蓝牙状态、数据传输被观察者实例
      */
-    public BleObservable getObservable() {
-        return config.getObservable();
+    public Observable getObservable() {
+        return observable;
     }
 
     /**
      * 注册观察者，开始监听蓝牙状态及数据
      * @param observer 观察者
      */
-    public void registerObserver(IBleObserver observer) {
-        getObservable().addObserver(observer);
+    public void registerObserver(Object observer) {
+        getObservable().register(observer);
     }
 
     /**
      * 取消注册观察者，停止监听蓝牙状态及数据
      * @param observer 观察者
      */
-    public void unregisterObserver(IBleObserver observer) {
-        getObservable().removeObserver(observer);
+    public void unregisterObserver(Object observer) {
+        getObservable().unregister(observer);
     }
 
     /**
      * 添加扫描监听器
      */
-    public void addScanListener(BleScanListener listener) {
+    public void addScanListener(ScanListener listener) {
         if (listener != null && !scanListeners.contains(listener)) {
             scanListeners.add(listener);
         }
@@ -229,7 +232,7 @@ public class Ble {
     /**
      * 移除扫描监听器
      */
-    public void removeScanListener(BleScanListener listener) {
+    public void removeScanListener(ScanListener listener) {
         scanListeners.remove(listener);
     }
 
@@ -286,7 +289,7 @@ public class Ble {
         mainThreadHandler.post(new Runnable() {
             @Override
             public void run() {
-                for (BleScanListener listener : scanListeners) {
+                for (ScanListener listener : scanListeners) {
                     if (device != null) {
                         listener.onScanResult(device, scanRecord);
                     } else if (start) {
@@ -351,7 +354,7 @@ public class Ble {
             bluetoothAdapter.stopLeScan(leScanCallback);
         }
         handleScanCallback(false, null, null);
-        for (BleConnection connection : connectionMap.values()) {
+        for (Connection connection : connectionMap.values()) {
             connection.onScanStop();
         }
     }
@@ -374,7 +377,7 @@ public class Ble {
 
     //解析广播字段
     private void parseScanResult(BluetoothDevice device, int rssi, final byte[] scanRecord) {
-        for (BleConnection connection : connectionMap.values()) {
+        for (Connection connection : connectionMap.values()) {
             connection.onScanResult(device.getAddress());
         }
         //生成
@@ -438,7 +441,7 @@ public class Ble {
     public synchronized void connect(Context context, Device device, boolean autoReconnect) {
         checkIfInit();
         if (device != null && !device.isConnected()) {
-            BleConnection connection = connectionMap.get(device.addr);
+            Connection connection = connectionMap.get(device.addr);
             //此前这个设备建立过连接，销毁之前的连接重新创建
             if (connection != null) {
                 connection.release();
@@ -455,13 +458,13 @@ public class Ble {
             if (config.isBondWhenConnect(device)) {
                 BluetoothDevice bd = bluetoothAdapter.getRemoteDevice(device.addr);
                 if (bd.getBondState() == BluetoothDevice.BOND_BONDED) {
-                    connection = BleConnection.newInstance(bluetoothAdapter, context, device, 0, callback);
+                    connection = Connection.newInstance(bluetoothAdapter, context, device, 0, callback);
                 } else {
                     createBond(device.addr);//配对
-                    connection = BleConnection.newInstance(bluetoothAdapter, context, device, 1500, callback);
+                    connection = Connection.newInstance(bluetoothAdapter, context, device, 1500, callback);
                 }                
             } else {
-                connection = BleConnection.newInstance(bluetoothAdapter, context, device, 0, callback);
+                connection = Connection.newInstance(bluetoothAdapter, context, device, 0, callback);
             }            
             if (connection != null) {
                 connection.setAutoReconnectEnable(autoReconnect);
@@ -473,7 +476,7 @@ public class Ble {
     /**
      * 获取连接
      */
-    public BleConnection getConnection(Device device) {
+    public Connection getConnection(Device device) {
         if (device != null) {
             return connectionMap.get(device.addr);
         }
@@ -483,7 +486,7 @@ public class Ble {
     /**
      * 获取连接
      */
-    public BleConnection getConnection(String addr) {
+    public Connection getConnection(String addr) {
         if (addr != null) {
             return connectionMap.get(addr);
         }
@@ -492,16 +495,16 @@ public class Ble {
 
     /**
      * 获取连接状态
-     * @return {@link Connection#STATE_DISCONNECTED}<br> {@link Connection#STATE_CONNECTING}<br>
-     *              {@link Connection#STATE_RECONNECTING}<br> {@link Connection#STATE_CONNECTED}<br>
-     *              {@link Connection#STATE_SERVICE_DISCORVERING}<br> {@link Connection#STATE_SERVICE_DISCORVERED}
+     * @return {@link BaseConnection#STATE_DISCONNECTED}<br> {@link BaseConnection#STATE_CONNECTING}<br>
+     *              {@link BaseConnection#STATE_RECONNECTING}<br> {@link BaseConnection#STATE_CONNECTED}<br>
+     *              {@link BaseConnection#STATE_SERVICE_DISCORVERING}<br> {@link BaseConnection#STATE_SERVICE_DISCORVERED}
      */
     public int getConnectionState(Device device) {
-        BleConnection connection = getConnection(device);
+        Connection connection = getConnection(device);
         if (connection != null) {
             return connection.getConnState();
         }
-        return Connection.STATE_DISCONNECTED;
+        return BaseConnection.STATE_DISCONNECTED;
     }
 
     /**
@@ -510,7 +513,7 @@ public class Ble {
     public void disconnectConnection(Device device) {
         checkIfInit();
         if (device != null) {
-            BleConnection connection = connectionMap.get(device.addr);
+            Connection connection = connectionMap.get(device.addr);
             if (connection != null) {
                 connection.disconnect();
             }
@@ -522,7 +525,7 @@ public class Ble {
      */
     public void disconnectAllConnection() {
         checkIfInit();
-        for (BleConnection connection : connectionMap.values()) {
+        for (Connection connection : connectionMap.values()) {
             connection.disconnect();
         }
     }
@@ -532,7 +535,7 @@ public class Ble {
      */
     public synchronized void releaseAllConnections() {
         checkIfInit();
-        for (BleConnection connection : connectionMap.values()) {
+        for (Connection connection : connectionMap.values()) {
             connection.release();
         }
         for (IRequestCallback callback : requestCallbackMap.values()) {
@@ -548,7 +551,7 @@ public class Ble {
     public synchronized void releaseConnection(Device device) {
         checkIfInit();
         if (device != null) {
-            BleConnection connection = connectionMap.remove(device.addr);
+            Connection connection = connectionMap.remove(device.addr);
             if (connection != null) {
                 connection.release();
             }
@@ -564,8 +567,8 @@ public class Ble {
      */
     public void reconnectAll() {
         checkIfInit();
-        for (BleConnection connection : connectionMap.values()) {
-            if (connection.getConnState() != Connection.STATE_SERVICE_DISCORVERED) {
+        for (Connection connection : connectionMap.values()) {
+            if (connection.getConnState() != BaseConnection.STATE_SERVICE_DISCORVERED) {
                 connection.reconnect();
             }
         }
@@ -577,8 +580,8 @@ public class Ble {
     public void reconnect(Device device) {
         checkIfInit();
         if (device != null) {
-            BleConnection connection = connectionMap.get(device.addr);
-            if (connection != null && connection.getConnState() != Connection.STATE_SERVICE_DISCORVERED) {
+            Connection connection = connectionMap.get(device.addr);
+            if (connection != null && connection.getConnState() != BaseConnection.STATE_SERVICE_DISCORVERED) {
                 connection.reconnect();
             }
         }
@@ -588,7 +591,7 @@ public class Ble {
      * 设置是否可自动重连，所有已创建的连接
      */
     public void setAutoReconnectEnable(boolean enable) {
-        for (BleConnection connection : connectionMap.values()) {
+        for (Connection connection : connectionMap.values()) {
             connection.setAutoReconnectEnable(enable);
         }
     }
@@ -598,7 +601,7 @@ public class Ble {
      */
     public void setAutoReconnectEnable(Device device, boolean enable) {
         if (device != null) {
-            BleConnection connection = connectionMap.get(device.addr);
+            Connection connection = connectionMap.get(device.addr);
             if (connection != null) {
                 connection.setAutoReconnectEnable(enable);
             }
@@ -611,7 +614,7 @@ public class Ble {
     public void refresh(Device device) {
         checkIfInit();
         if (device != null) {
-            BleConnection connection = connectionMap.get(device.addr);
+            Connection connection = connectionMap.get(device.addr);
             if (connection != null) {
                 connection.refresh();
             }

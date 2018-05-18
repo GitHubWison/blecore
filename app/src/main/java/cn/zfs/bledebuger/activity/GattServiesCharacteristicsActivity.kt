@@ -12,12 +12,10 @@ import android.view.MenuItem
 import cn.zfs.bledebuger.R
 import cn.zfs.bledebuger.adapter.BleServiceListAdapter
 import cn.zfs.bledebuger.entity.Item
-import cn.zfs.bledebuger.entity.MyBleObserver
 import cn.zfs.bledebuger.util.ToastUtils
 import cn.zfs.blelib.core.Ble
-import cn.zfs.blelib.core.Connection
+import cn.zfs.blelib.core.BaseConnection
 import cn.zfs.blelib.core.Request
-import cn.zfs.blelib.data.BleObserver
 import cn.zfs.blelib.data.Device
 import kotlinx.android.synthetic.main.activity_gatt_services_characteristics.*
 
@@ -94,24 +92,24 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
         override fun onConnectionStateChange(device: Device, state: Int) {
             runOnUiThread {
                 when (state) {
-                    Connection.STATE_CONNECTED -> {
+                    BaseConnection.STATE_CONNECTED -> {
                         ToastUtils.showShort("连接成功，未搜索服务")
                     }
-                    Connection.STATE_CONNECTING -> {
+                    BaseConnection.STATE_CONNECTING -> {
                         ToastUtils.showShort("连接中...")
                     }
-                    Connection.STATE_DISCONNECTED -> {
+                    BaseConnection.STATE_DISCONNECTED -> {
                         ToastUtils.showShort("连接断开")
                         itemList.clear()
                         adapter?.notifyDataSetChanged()
                     }
-                    Connection.STATE_RECONNECTING -> {
+                    BaseConnection.STATE_RECONNECTING -> {
                         ToastUtils.showShort("正在重连...")
                     }
-                    Connection.STATE_SERVICE_DISCORVERING -> {
+                    BaseConnection.STATE_SERVICE_DISCORVERING -> {
                         ToastUtils.showShort("连接成功，正在搜索服务...")
                     }
-                    Connection.STATE_SERVICE_DISCORVERED -> {
+                    BaseConnection.STATE_SERVICE_DISCORVERED -> {
                         ToastUtils.showShort("连接成功，并搜索到服务")
                         itemList.clear()
                         val connection = Ble.getInstance().getConnection(device)

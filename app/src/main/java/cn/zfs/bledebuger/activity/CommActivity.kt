@@ -10,12 +10,10 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.ScrollView
 import cn.zfs.bledebuger.R
-import cn.zfs.bledebuger.entity.MyBleObserver
 import cn.zfs.bledebuger.util.ToastUtils
 import cn.zfs.blelib.core.Ble
-import cn.zfs.blelib.core.Connection
-import cn.zfs.blelib.data.BleObserver
-import cn.zfs.blelib.data.Device
+import cn.zfs.blelib.core.BaseConnection
+import cn.zfs.blelib.data.*
 import cn.zfs.blelib.util.BleUtils
 import kotlinx.android.synthetic.main.activity_comm.*
 import java.text.SimpleDateFormat
@@ -27,7 +25,6 @@ import java.util.*
  * 作者: zengfansheng
  */
 class CommActivity : AppCompatActivity() {
-    private var observer: BleObserver? = null
     private var device: Device? = null
     private var writeService: ParcelUuid? = null
     private var writeCharacteristic: ParcelUuid? = null
@@ -38,8 +35,7 @@ class CommActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_comm)
-        observer = MyObserver()
-        Ble.getInstance().registerObserver(observer)
+        Ble.getInstance().registerObserver(this)
         device = intent.getParcelableExtra("device")
         writeService = intent.getParcelableExtra("writeService")
         writeCharacteristic = intent.getParcelableExtra("writeCharacteristic")
@@ -54,6 +50,7 @@ class CommActivity : AppCompatActivity() {
         tvAddr.text = device!!.addr
         initEvents()
         updateState(device!!.connectionState)
+        Ble.getInstance().registerObserver(this)
     }
 
     private fun initEvents() {
@@ -118,6 +115,22 @@ class CommActivity : AppCompatActivity() {
         return true
     }
 
+    @Observe(threadMode = ThreadMode.MAIN)
+    fun onConnectionStateChange(e: SingleIntEvent) {
+        when (e.eventType) {
+            EventType.ON_CONNECTION_STATE_CHANGED -> updateState(e.value)
+        }
+    }
+
+    @Observe(threadMode = ThreadMode.MAIN)
+    fun onConnectionCreateFailed(e: SingleStringEvent) {
+        when (e.eventType) {
+            EventType.ON_CONNECTION_CREATE_FAILED -> tvState.text = "无法建立连接： ${e.value}"
+        }
+    }
+    
+    
+    
     private inner class MyObserver : MyBleObserver() {
 
         override fun onUnableConnect(device: Device?, error: String?) {
@@ -153,22 +166,22 @@ class CommActivity : AppCompatActivity() {
 
     private fun updateState(state: Int) {
         when (state) {
-            Connection.STATE_CONNECTED -> {
+            BaseConnection.STATE_CONNECTED -> {
                 tvState.text = "连接成功，未搜索服务"
             }
-            Connection.STATE_CONNECTING -> {
+            BaseConnection.STATE_CONNECTING -> {
                 tvState.text = "连接中..."
             }
-            Connection.STATE_DISCONNECTED -> {
+            BaseConnection.STATE_DISCONNECTED -> {
                 tvState.text = "连接断开"
             }
-            Connection.STATE_RECONNECTING -> {
+            BaseConnection.STATE_RECONNECTING -> {
                 tvState.text = "正在重连..."
             }
-            Connection.STATE_SERVICE_DISCORVERING -> {
+            BaseConnection.STATE_SERVICE_DISCORVERING -> {
                 tvState.text = "连接成功，正在搜索服务..."
             }
-            Connection.STATE_SERVICE_DISCORVERED -> {
+            BaseConnection.STATE_SERVICE_DISCORVERED -> {
                 tvState.text = "连接成功，并搜索到服务"
                 if (notifyService != null && notifyCharacteristic != null) {
                     Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("1", notifyService!!.uuid,
@@ -180,7 +193,7 @@ class CommActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        Ble.getInstance().unregisterObserver(observer)//取消监听
+        Ble.getInstance().unregisterObserver(this)//取消监听
         super.onDestroy()
     }
 }

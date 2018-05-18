@@ -42,7 +42,6 @@ public class Request {
     public IRequestCallback callback;
     public String requestId;
     public byte[] value;
-    public long requestTime;//开始请求的时间
 
     public Request(@NonNull RequestType type, @NonNull String requestId, UUID service, UUID characteristic, UUID descriptor, IRequestCallback callback) {
         this.type = type;
@@ -52,7 +51,6 @@ public class Request {
         this.descriptor = descriptor;
         this.callback = callback;
         this.value = null;
-        requestTime = System.currentTimeMillis();
     }
 
     public Request(@NonNull RequestType type, @NonNull String requestId, UUID service, UUID characteristic, UUID descriptor, IRequestCallback callback, byte[] value) {
@@ -63,6 +61,5 @@ public class Request {
         this.descriptor = descriptor;
         this.callback = callback;
         this.value = value;
-        requestTime = System.currentTimeMillis();
     }
 }

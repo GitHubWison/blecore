@@ -9,6 +9,8 @@ import android.util.Log;
 import cn.zfs.blelib.core.Ble;
 import cn.zfs.blelib.core.Request;
 import cn.zfs.blelib.data.Device;
+import cn.zfs.blelib.data.EventType;
+import cn.zfs.blelib.data.WriteCharacteristicEvent;
 import cn.zfs.blelib.util.BleUtils;
 
 /**
@@ -56,7 +58,7 @@ public class RequestCallback implements IRequestCallback {
     @Override
     public void onRequestFialed(@NonNull String requestId, @NonNull Request.RequestType requestType, int failType, byte[] value) {
         if (requestType == Request.RequestType.WRITE_CHARACTERISTIC) {
-            Ble.getInstance().getObservable().notifyWriteCharacteristicResult(device, requestId, false, value);
+            Ble.getInstance().getObservable().post(new WriteCharacteristicEvent(EventType.ON_WRITE_CHARACTERISTIC, device, requestId, false, value));
         }
         Ble.println(RequestCallback.class, Log.ERROR, "请求失败！请求ID：" + requestId +
                 ", failType: " + failType + ", mac: " + device.addr);
@@ -92,6 +94,6 @@ public class RequestCallback implements IRequestCallback {
     public void onCharacteristicWrite(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
         Ble.println(RequestCallback.class, Log.DEBUG, "写入成功！value: "+ BleUtils.bytesToHexString(characteristic.getValue()) +
                 ", 请求ID：" + requestId + ", mac: " + device.addr);
-        Ble.getInstance().getObservable().notifyWriteCharacteristicResult(device, requestId, true, characteristic.getValue());
+        Ble.getInstance().getObservable().post(new WriteCharacteristicEvent(EventType.ON_WRITE_CHARACTERISTIC, device, requestId, true, characteristic.getValue()));
     }
 }

@@ -2,7 +2,6 @@ package cn.zfs.blelib.core;
 
 import cn.zfs.blelib.callback.ConnectionCallback;
 import cn.zfs.blelib.callback.IRequestCallback;
-import cn.zfs.blelib.data.BleObservable;
 import cn.zfs.blelib.data.Device;
 
 /**
@@ -10,14 +9,13 @@ import cn.zfs.blelib.data.Device;
  * 时间: 2018/4/17 17:02
  * 作者: zengfansheng
  */
-public class BleConfig {
+public class Configuration {
     private static final int DEFAULT_DISCOVER_SERVICES_DELAY_MILLIS = 500;
     private static final int DEFAULT_CONN_TIMEOUT_MILLIS = 8000;//连接超时时间
     public static final int TRY_RECONNECT_TIMES_INFINITE = -1;//无限重连
     private IScanHandler scanHandler;    
     private long discoverServicesDelayMillis = DEFAULT_DISCOVER_SERVICES_DELAY_MILLIS;
     private int connectTimeoutMillis = DEFAULT_CONN_TIMEOUT_MILLIS;
-    private BleObservable observable = new BleObservable();
     private Class<? extends IRequestCallback> requestCallbackClass;
     private Class<? extends ConnectionCallback> connectionCallbackClass;
     private Class<? extends Device> deviceClass;
@@ -35,7 +33,7 @@ public class BleConfig {
     /**
      * 设置设备字节码，扫描回调返回的Device实例根据此字节码实例化
      */
-    public BleConfig setDeviceClass(Class<? extends Device> deviceClass) {
+    public Configuration setDeviceClass(Class<? extends Device> deviceClass) {
         this.deviceClass = deviceClass;
         return this;
     }
@@ -44,25 +42,13 @@ public class BleConfig {
      * 设置扫描过滤器
      * @param handler 扫描结果处理
      */
-    public BleConfig setScanHandler(IScanHandler handler) {
+    public Configuration setScanHandler(IScanHandler handler) {
         scanHandler = handler;
         return this;
     }
 
     public IScanHandler getScanHandler() {
         return scanHandler;
-    }
-
-    public BleObservable getObservable() {
-        return observable;
-    }
-
-    /**
-     * 设置被观察者，消息发布者
-     */
-    public BleConfig setObservable(BleObservable observable) {
-        this.observable = observable;
-        return this;
     }
 
     /**
@@ -75,7 +61,7 @@ public class BleConfig {
     /**
      * 设置连接状态变化回调
      */
-    public BleConfig setConnectionCallbackClass(Class<? extends ConnectionCallback> connectionCallbackClass) {
+    public Configuration setConnectionCallbackClass(Class<? extends ConnectionCallback> connectionCallbackClass) {
         this.connectionCallbackClass = connectionCallbackClass;
         return this;
     }
@@ -87,7 +73,7 @@ public class BleConfig {
     /**
      * 设置请求回调，数据交互
      */
-    public BleConfig setRequestCallbackClass(Class<? extends IRequestCallback> requestCallbackClass) {
+    public Configuration setRequestCallbackClass(Class<? extends IRequestCallback> requestCallbackClass) {
         this.requestCallbackClass = requestCallbackClass;
         return this;
     }
@@ -109,7 +95,7 @@ public class BleConfig {
     /**
      * 设置连接超时时间
      */
-    public BleConfig setConnectTimeoutMillis(int connectTimeoutMillis) {
+    public Configuration setConnectTimeoutMillis(int connectTimeoutMillis) {
         this.connectTimeoutMillis = connectTimeoutMillis;
         return this;
     }
@@ -118,7 +104,7 @@ public class BleConfig {
      * 设置连接成功后，延时发现服务的时间
      * @param delayMillis 延时，毫秒
      */
-    public BleConfig setDiscoverServicesDelayMillis(int delayMillis) {
+    public Configuration setDiscoverServicesDelayMillis(int delayMillis) {
         this.discoverServicesDelayMillis = delayMillis;
         return this;
     }
@@ -134,7 +120,7 @@ public class BleConfig {
     /**
      * 设置断开后尝试自动重连次数。-1为无限重连。默认为-1
      */
-    public BleConfig setTryReconnectTimes(int tryReconnectTimes) {
+    public Configuration setTryReconnectTimes(int tryReconnectTimes) {
         this.tryReconnectTimes = tryReconnectTimes;
         return this;
     }
@@ -158,7 +144,7 @@ public class BleConfig {
      * 设置蓝牙扫描周期
      * @param scanPeriodMillis 毫秒
      */
-    public BleConfig setScanPeriodMillis(int scanPeriodMillis) {
+    public Configuration setScanPeriodMillis(int scanPeriodMillis) {
         this.scanPeriodMillis = scanPeriodMillis;
         return this;
     }
@@ -182,7 +168,7 @@ public class BleConfig {
      * 发送数据时的分包大小
      * @param packageSize 包大小，字节
      */
-    public BleConfig setPackageSize(int packageSize) {
+    public Configuration setPackageSize(int packageSize) {
         this.packageSize = packageSize;
         return this;
     }
@@ -194,7 +180,7 @@ public class BleConfig {
     /**
      * 是否将观察者的消息post到UI线程，默认是true
      */
-    public BleConfig setPostObserverMsgMainThread(boolean postObserverMsgMainThread) {
+    public Configuration setPostObserverMsgMainThread(boolean postObserverMsgMainThread) {
         this.postObserverMsgMainThread = postObserverMsgMainThread;
         return this;
     }

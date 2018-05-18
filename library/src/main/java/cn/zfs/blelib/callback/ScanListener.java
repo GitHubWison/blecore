@@ -8,7 +8,7 @@ import cn.zfs.blelib.data.Device;
  * 描述: 蓝牙扫描回调
  * 时间: 2018/5/9 00:08
  */
-public interface BleScanListener {
+public interface ScanListener {
     /**
      * 扫描开始
      */

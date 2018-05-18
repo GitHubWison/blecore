@@ -13,11 +13,10 @@ import android.widget.TextView
 import cn.zfs.bledebuger.R
 import cn.zfs.bledebuger.base.BaseHolder
 import cn.zfs.bledebuger.base.BaseListAdapter
-import cn.zfs.bledebuger.entity.MyBleObservable
 import cn.zfs.bledebuger.entity.MyRequestCallback
 import cn.zfs.bledebuger.util.ToastUtils
-import cn.zfs.blelib.callback.BleScanListener
 import cn.zfs.blelib.callback.InitCallback
+import cn.zfs.blelib.callback.ScanListener
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.data.Device
 import cn.zfs.blelib.util.LogController
@@ -36,7 +35,6 @@ class MainActivity : CheckPermissionsActivity() {
         initViews()
         Ble.getInstance().config.setDiscoverServicesDelayMillis(2000)
                 .setRequestCallbackClass(MyRequestCallback::class.java)
-                .setBleObservableClass(MyBleObservable::class.java)
         
         Ble.getInstance().setLogPrintLevelControl(LogController.ALL)//输出日志
         Ble.getInstance().addScanListener(scanListener)
@@ -146,7 +144,7 @@ class MainActivity : CheckPermissionsActivity() {
         return true
     }
 
-    private val scanListener = object : BleScanListener {
+    private val scanListener = object : ScanListener {
         override fun onScanStart() {
             scanning = true
             invalidateOptionsMenu()

@@ -4,7 +4,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
 
-import cn.zfs.blelib.core.Connection;
+import cn.zfs.blelib.core.BaseConnection;
 
 /**
  * 描述: 蓝牙设备
@@ -23,7 +23,7 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
     public int mode;//工作模式
     /** 是否正在升级 */
     public boolean isUpgrading;
-    public int connectionState = Connection.STATE_DISCONNECTED;//连接状态
+    public int connectionState = BaseConnection.STATE_DISCONNECTED;//连接状态
 
     public Device() {
     }
@@ -66,15 +66,15 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
     }
 
     public boolean isConnected() {
-        return connectionState == Connection.STATE_SERVICE_DISCORVERED;
+        return connectionState == BaseConnection.STATE_SERVICE_DISCORVERED;
     }
 
     public boolean isDisconnected() {
-        return connectionState == Connection.STATE_DISCONNECTED;
+        return connectionState == BaseConnection.STATE_DISCONNECTED;
     }
 
     public boolean isConnecting() {
-        return connectionState != Connection.STATE_DISCONNECTED && connectionState != Connection.STATE_SERVICE_DISCORVERED;
+        return connectionState != BaseConnection.STATE_DISCONNECTED && connectionState != BaseConnection.STATE_SERVICE_DISCORVERED;
     }
 
     @Override
