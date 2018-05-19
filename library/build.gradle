@@ -23,7 +23,8 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    compileOnly 'com.android.support:appcompat-v7:27.1.1'    
+    compileOnly 'com.android.support:appcompat-v7:27.1.1'
+    compileOnly 'org.greenrobot:eventbus:3.1.1'
 }
 
 // 指定编码

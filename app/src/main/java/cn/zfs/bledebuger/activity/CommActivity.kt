@@ -17,6 +17,8 @@ import cn.zfs.blelib.core.Request
 import cn.zfs.blelib.data.*
 import cn.zfs.blelib.util.BleUtils
 import kotlinx.android.synthetic.main.activity_comm.*
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -166,21 +168,21 @@ class CommActivity : AppCompatActivity() {
         return true
     }
 
-    @Observe(threadMode = ThreadMode.MAIN)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     fun handleSingleIntEvent(e: SingleIntEvent) {
         when (e.eventType) {
             EventType.ON_CONNECTION_STATE_CHANGED -> updateState(e.value)
         }
     }
 
-    @Observe(threadMode = ThreadMode.MAIN)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     fun handleSingleStringEvent(e: SingleStringEvent) {
         when (e.eventType) {
             EventType.ON_CONNECTION_CREATE_FAILED -> tvState.text = "无法建立连接： ${e.value}"
         }
     }
 
-    @Observe(threadMode = ThreadMode.MAIN)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     fun handleSingleByteArrayEvent(e: SingleByteArrayEvent) {
         when (e.eventType) {
             EventType.ON_CHARACTERISTIC_CHANGED -> {
@@ -200,14 +202,14 @@ class CommActivity : AppCompatActivity() {
         }
     }
 
-    @Observe(threadMode = ThreadMode.BACKGROUND)
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
     fun handleRequestEvent(e: RequestEvent) {
         if (e.eventType == EventType.ON_WRITE_CHARACTERISTIC) {
             successCount++
         }
     }
 
-    @Observe(threadMode = ThreadMode.BACKGROUND)
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
     fun handleRequestFailedEvent(e: RequestFailedEvent) {
         if (e.requestType == Request.RequestType.WRITE_CHARACTERISTIC) {
             failCount++

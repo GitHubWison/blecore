@@ -15,6 +15,8 @@ import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Request
 import cn.zfs.blelib.data.*
 import kotlinx.android.synthetic.main.activity_gatt_services_characteristics.*
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 
 /**
  * 描述:
@@ -78,7 +80,7 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
         }
     }
 
-    @Observe(threadMode = ThreadMode.MAIN)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     fun handleSingleIntEvent(e: SingleIntEvent) {
         when (e.eventType) {
             EventType.ON_CONNECTION_STATE_CHANGED -> {
@@ -123,14 +125,14 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
         }
     }
 
-    @Observe(threadMode = ThreadMode.MAIN)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     fun handleSingleStringEvent(e: SingleStringEvent) {
         when (e.eventType) {
             EventType.ON_CONNECTION_CREATE_FAILED -> ToastUtils.showShort("无法建立连接： ${e.value}")
         }
     }
     
-    @Observe(threadMode = ThreadMode.MAIN)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     fun handleRequestFailedEvent(e: RequestFailedEvent) {
         when (e.requestType) {
             Request.RequestType.CHARACTERISTIC_NOTIFICATION -> {
@@ -145,7 +147,7 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
         } 
     }
 
-    @Observe(threadMode = ThreadMode.MAIN)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     fun handleRequestByteArrayEvent(e: RequestByteArrayEvent) {
         when (e.eventType) {
             EventType.ON_CHARACTERISTIC_READ, EventType.ON_DESCRIPTOR_READ -> {
@@ -155,7 +157,7 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
         }
     }
 
-    @Observe(threadMode = ThreadMode.MAIN)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     fun handleRequestEvent(e: RequestEvent) {
         when (e.eventType) {
             EventType.ON_NOTIFICATION_REGISTERED, EventType.ON_INDICATION_REGISTERED -> {

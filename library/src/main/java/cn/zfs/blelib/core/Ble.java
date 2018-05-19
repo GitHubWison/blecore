@@ -21,6 +21,8 @@ import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.Log;
 
+import org.greenrobot.eventbus.EventBus;
+
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +37,6 @@ import cn.zfs.blelib.callback.RequestCallback;
 import cn.zfs.blelib.callback.ScanListener;
 import cn.zfs.blelib.data.Device;
 import cn.zfs.blelib.data.EventType;
-import cn.zfs.blelib.data.Observable;
 import cn.zfs.blelib.data.SingleLongEvent;
 import cn.zfs.blelib.util.LogController;
 
@@ -145,7 +146,6 @@ public class Ble {
             scanListeners.clear();
             releaseAllConnections();//释放所有连接
             context.getApplicationContext().unregisterReceiver(receiver);//取消注册蓝牙状态广播接收者
-            Observable.getInstance().clearObserversAndCaches();//移除所有观察者
             isInited = false;
         }
     }
@@ -155,7 +155,7 @@ public class Ble {
         public void onReceive(Context context, Intent intent) {
             if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(intent.getAction())) {//蓝牙开关状态变化                 
                 if (bluetoothAdapter != null) {
-                    Observable.getInstance().post(new SingleLongEvent(EventType.ON_BLUETOOTH_STATE_CHANGED, null, bluetoothAdapter.getState()));
+                    EventBus.getDefault().post(new SingleLongEvent(EventType.ON_BLUETOOTH_STATE_CHANGED, null, bluetoothAdapter.getState()));
                     if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {//蓝牙关闭了
                         handleScanCallback(false, null, null);
                         //主动断开，停止定时器和重连尝试
@@ -196,19 +196,19 @@ public class Ble {
     }
     
     /**
-     * 注册观察者，开始监听蓝牙状态及数据
-     * @param observer 观察者
+     * 注册订阅者，开始监听蓝牙状态及数据
+     * @param subscriber 订阅者
      */
-    public void registerObserver(Object observer) {
-        Observable.getInstance().register(observer);
+    public void registerObserver(Object subscriber) {
+        EventBus.getDefault().register(subscriber);
     }
 
     /**
-     * 取消注册观察者，停止监听蓝牙状态及数据
-     * @param observer 观察者
+     * 取消注册订阅者，停止监听蓝牙状态及数据
+     * @param subscriber 订阅者
      */
-    public void unregisterObserver(Object observer) {
-        Observable.getInstance().unregister(observer);
+    public void unregisterObserver(Object subscriber) {
+        EventBus.getDefault().unregister(subscriber);
     }
 
     /**
