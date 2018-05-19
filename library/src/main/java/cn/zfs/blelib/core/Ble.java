@@ -196,7 +196,9 @@ public class Ble {
      * @param subscriber 订阅者
      */
     public void registerSubscriber(Object subscriber) {
-        EventBus.getDefault().register(subscriber);
+        if (!EventBus.getDefault().isRegistered(subscriber)) {
+            EventBus.getDefault().register(subscriber);
+        }
     }
 
     /**
