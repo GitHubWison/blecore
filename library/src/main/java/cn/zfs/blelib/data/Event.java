@@ -5,7 +5,7 @@ package cn.zfs.blelib.data;
  * 时间: 2018/5/18 09:02
  * 作者: zengfansheng
  */
-public class Event {
+public class Event<D extends Device> {
     /**
      * 事件类型<br>
      * {@link EventType#ON_BLUETOOTH_STATE_CHANGED}<br>
@@ -13,12 +13,12 @@ public class Event {
      */
     public int eventType;
     /** 设备 */
-    public Device device;
+    public D device;
 
     public Event() {
     }
 
-    public Event(Device device) {
+    public Event(D device) {
         this.device = device;
     }
 
@@ -26,7 +26,7 @@ public class Event {
         this.eventType = eventType;
     }
 
-    public Event(int eventType, Device device) {
+    public Event(int eventType, D device) {
         this.eventType = eventType;
         this.device = device;
     }

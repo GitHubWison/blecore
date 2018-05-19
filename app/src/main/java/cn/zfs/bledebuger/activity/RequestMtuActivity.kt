@@ -107,7 +107,7 @@ class RequestMtuActivity : AppCompatActivity() {
     }
     
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleRequestIntEvent(e: RequestIntEvent) {
+    fun handleRequestIntEvent(e: RequestSingleValueEvent<Int, Device>) {
         if (e.requestId == "REQUEST_MTU" && e.eventType == EventType.ON_MTU_CHANGED) {
             mtu = e.result
             tvMtu.text = "当前MTU： $mtu"
@@ -117,14 +117,14 @@ class RequestMtuActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.POSTING)
-    fun handleRequestEvent(e: RequestEvent) {
+    fun handleRequestEvent(e: RequestEvent<Device>) {
         if (e.eventType == EventType.ON_WRITE_CHARACTERISTIC && e.requestId == "write" && !loop) {
             ToastUtils.showShort("写入成功")
         }
     }
 
     @Subscribe(threadMode = ThreadMode.POSTING)
-    fun handleRequestFailedEvent(e: RequestFailedEvent) {
+    fun handleRequestFailedEvent(e: RequestFailedEvent<Device>) {
         if (!loop) {
             if (e.requestId == "REQUEST_MTU" && e.requestType == Request.RequestType.SET_MTU) {
                 ToastUtils.showShort("MTU修改失败")

@@ -7,13 +7,17 @@ import android.support.annotation.Nullable;
  * 时间: 2018/5/18 09:06
  * 作者: zengfansheng
  */
-public class SingleValueEvent<T> extends Event {
+public class SingleValueEvent<T, D extends Device> extends Event<D> {
     /** 该事件的数据 */
     public T value;
 
     public SingleValueEvent() {}
 
-    public SingleValueEvent(int type, @Nullable Device device, T value) {
+    public SingleValueEvent(int eventType, T value) {
+        this(eventType, null, value);
+    }
+
+    public SingleValueEvent(int type, @Nullable D device, T value) {
         super(type, device);
         this.value = value;
     }

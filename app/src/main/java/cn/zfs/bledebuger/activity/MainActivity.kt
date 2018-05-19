@@ -35,7 +35,7 @@ class MainActivity : CheckPermissionsActivity() {
         Ble.getInstance().configuration.setDiscoverServicesDelayMillis(2000)
         
         Ble.getInstance().setLogPrintLevelControl(LogController.ALL)//输出日志
-        Ble.getInstance().addScanListener(scanListener)
+        Ble.getInstance().addScanListener(scanListener)     
     }
 
     private fun initViews() {
@@ -168,7 +168,6 @@ class MainActivity : CheckPermissionsActivity() {
             Ble.getInstance().initialize(this, object : InitCallback {
                 override fun onSuccess() {
                     ToastUtils.showShort("初始化成功")
-
                 }
 
                 override fun onFail(errorCode: Int) {

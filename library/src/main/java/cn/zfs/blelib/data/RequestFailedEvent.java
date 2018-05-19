@@ -10,7 +10,7 @@ import cn.zfs.blelib.core.Request;
  * 时间: 2018/5/18 19:05
  * 作者: zengfansheng
  */
-public class RequestFailedEvent extends RequestEvent {
+public class RequestFailedEvent<D extends Device> extends RequestEvent<D> {
     
     /**
      * {@link IRequestCallback#NONE}<br>{@link IRequestCallback#NULL_CHARACTERISTIC}<br>{@link IRequestCallback#NULL_DESCRIPTOR},
@@ -22,7 +22,7 @@ public class RequestFailedEvent extends RequestEvent {
     public RequestFailedEvent() {
     }
 
-    public RequestFailedEvent(int eventType, Device device, @NonNull String requestId, @NonNull Request.RequestType requestType, byte[] src, int failType) {
+    public RequestFailedEvent(int eventType, D device, @NonNull String requestId, @NonNull Request.RequestType requestType, byte[] src, int failType) {
         super(eventType, device, requestId, requestType, src);
         this.failType = failType;
     }

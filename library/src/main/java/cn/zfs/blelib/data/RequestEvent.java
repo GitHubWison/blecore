@@ -9,7 +9,7 @@ import cn.zfs.blelib.core.Request;
  * 时间: 2018/5/18 10:37
  * 作者: zengfansheng
  */
-public class RequestEvent extends Event {
+public class RequestEvent<D extends Device> extends Event<D> {
     @NonNull
     public String requestId = "";    
     @NonNull
@@ -32,13 +32,13 @@ public class RequestEvent extends Event {
         this.src = src;
     }
 
-    public RequestEvent(int eventType, Device device, @NonNull String requestId, @NonNull Request.RequestType requestType) {
+    public RequestEvent(int eventType, D device, @NonNull String requestId, @NonNull Request.RequestType requestType) {
         super(eventType, device);
         this.requestId = requestId;
         this.requestType = requestType;
     }
     
-    public RequestEvent(int eventType, Device device, @NonNull String requestId, @NonNull Request.RequestType requestType, byte[] src) {
+    public RequestEvent(int eventType, D device, @NonNull String requestId, @NonNull Request.RequestType requestType, byte[] src) {
         super(eventType, device);
         this.requestId = requestId;
         this.requestType = requestType;

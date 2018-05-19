@@ -167,21 +167,21 @@ class CommActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleSingleIntEvent(e: SingleIntEvent) {
+    fun handleSingleIntEvent(e: SingleValueEvent<Int, Device>) {
         when (e.eventType) {
             EventType.ON_CONNECTION_STATE_CHANGED -> updateState(e.value)
         }
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleSingleStringEvent(e: SingleStringEvent) {
+    fun handleSingleStringEvent(e: SingleValueEvent<String, Device>) {
         when (e.eventType) {
             EventType.ON_CONNECTION_CREATE_FAILED -> tvState.text = "无法建立连接： ${e.value}"
         }
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleSingleByteArrayEvent(e: SingleByteArrayEvent) {
+    fun handleSingleByteArrayEvent(e: SingleValueEvent<ByteArray, Device>) {
         when (e.eventType) {
             EventType.ON_CHARACTERISTIC_CHANGED -> {
                 if (!pause) {
@@ -201,14 +201,14 @@ class CommActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
-    fun handleRequestEvent(e: RequestEvent) {
+    fun handleRequestEvent(e: RequestEvent<Device>) {
         if (e.eventType == EventType.ON_WRITE_CHARACTERISTIC) {
             successCount++
         }
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
-    fun handleRequestFailedEvent(e: RequestFailedEvent) {
+    fun handleRequestFailedEvent(e: RequestFailedEvent<Device>) {
         if (e.requestType == Request.RequestType.WRITE_CHARACTERISTIC) {
             failCount++
         }

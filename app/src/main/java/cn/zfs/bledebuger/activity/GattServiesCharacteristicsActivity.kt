@@ -80,7 +80,7 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleSingleIntEvent(e: SingleIntEvent) {
+    fun handleSingleIntEvent(e: SingleValueEvent<Int, Device>) {
         when (e.eventType) {
             EventType.ON_CONNECTION_STATE_CHANGED -> {
                 when (e.value) {
@@ -125,14 +125,14 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleSingleStringEvent(e: SingleStringEvent) {
+    fun handleSingleStringEvent(e: SingleValueEvent<String, Device>) {
         when (e.eventType) {
             EventType.ON_CONNECTION_CREATE_FAILED -> ToastUtils.showShort("无法建立连接： ${e.value}")
         }
     }
     
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleRequestFailedEvent(e: RequestFailedEvent) {
+    fun handleRequestFailedEvent(e: RequestFailedEvent<Device>) {
         when (e.requestType) {
             Request.RequestType.CHARACTERISTIC_NOTIFICATION -> {
                 if (e.requestId.endsWith("_1")) {
@@ -147,7 +147,7 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleRequestByteArrayEvent(e: RequestByteArrayEvent) {
+    fun handleRequestByteArrayEvent(e: RequestSingleValueEvent<ByteArray, Device>) {
         when (e.eventType) {
             EventType.ON_CHARACTERISTIC_READ, EventType.ON_DESCRIPTOR_READ -> {
                 itemList.firstOrNull { e.requestId == it.toString() }?.value = e.result
@@ -157,7 +157,7 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleRequestEvent(e: RequestEvent) {
+    fun handleRequestEvent(e: RequestEvent<Device>) {
         when (e.eventType) {
             EventType.ON_NOTIFICATION_REGISTERED, EventType.ON_INDICATION_REGISTERED -> {
                 itemList.firstOrNull { e.requestId == "${it}_1" }?.notification = true

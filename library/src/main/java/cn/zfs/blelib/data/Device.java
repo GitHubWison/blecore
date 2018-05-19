@@ -20,9 +20,7 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
     public int type = -1;//设备类型
     public int battery = -1;//电量
     public int rssi = -1000;//信号强度
-    public int mode;//工作模式
-    /** 是否正在升级 */
-    public boolean isUpgrading;
+    public int mode;//工作模式    
     public int connectionState = BaseConnection.STATE_DISCONNECTED;//连接状态
 
     public Device() {
@@ -92,8 +90,7 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         dest.writeInt(this.type);
         dest.writeInt(this.battery);
         dest.writeInt(this.rssi);
-        dest.writeInt(this.mode);
-        dest.writeByte(this.isUpgrading ? (byte) 1 : (byte) 0);
+        dest.writeInt(this.mode);        
         dest.writeInt(this.connectionState);
     }
 
@@ -106,8 +103,7 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         this.type = in.readInt();
         this.battery = in.readInt();
         this.rssi = in.readInt();
-        this.mode = in.readInt();
-        this.isUpgrading = in.readByte() != 0;
+        this.mode = in.readInt();        
         this.connectionState = in.readInt();
     }
 
