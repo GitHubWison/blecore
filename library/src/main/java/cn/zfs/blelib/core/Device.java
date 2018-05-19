@@ -1,10 +1,8 @@
-package cn.zfs.blelib.data;
+package cn.zfs.blelib.core;
 
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
-
-import cn.zfs.blelib.core.BaseConnection;
 
 /**
  * 描述: 蓝牙设备
@@ -12,16 +10,26 @@ import cn.zfs.blelib.core.BaseConnection;
  * 作者: zengfansheng
  */
 public class Device implements Comparable<Device>, Cloneable, Parcelable {
-    public String name = "";//设备名称
-    public String devId = "";//设备id
-    public String addr = "";//设备地址
-    public String firmware = "";//固件版本
-    public String hardware = "";//硬件版本
-    public int type = -1;//设备类型
-    public int battery = -1;//电量
-    public int rssi = -1000;//信号强度
-    public int mode;//工作模式    
-    public int connectionState = BaseConnection.STATE_DISCONNECTED;//连接状态
+    /** 设备名称 */
+    public String name = "";
+    /** 设备id */
+    public String devId = "";
+    /** 设备地址 */
+    public String addr = "";
+    /** 固件版本 */
+    public String firmware = "";
+    /** 硬件版本 */
+    public String hardware = "";
+    /** 设备类型 */
+    public int type = -1;
+    /** 电量 */
+    public int battery = -1;
+    /** 信号强度 */
+    public int rssi = -1000;
+    /** 工作模式 */
+    public int mode;
+    /** 连接状态 */
+    public int connectionState = Connection.STATE_DISCONNECTED;
 
     public Device() {
     }
@@ -64,15 +72,15 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
     }
 
     public boolean isConnected() {
-        return connectionState == BaseConnection.STATE_SERVICE_DISCORVERED;
+        return connectionState == Connection.STATE_SERVICE_DISCORVERED;
     }
 
     public boolean isDisconnected() {
-        return connectionState == BaseConnection.STATE_DISCONNECTED;
+        return connectionState == Connection.STATE_DISCONNECTED;
     }
 
     public boolean isConnecting() {
-        return connectionState != BaseConnection.STATE_DISCONNECTED && connectionState != BaseConnection.STATE_SERVICE_DISCORVERED;
+        return connectionState != Connection.STATE_DISCONNECTED && connectionState != Connection.STATE_SERVICE_DISCORVERED;
     }
 
     @Override

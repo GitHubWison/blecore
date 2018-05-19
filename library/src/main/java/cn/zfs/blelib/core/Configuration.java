@@ -4,7 +4,6 @@ import android.bluetooth.BluetoothGattCharacteristic;
 
 import cn.zfs.blelib.callback.ConnectionCallback;
 import cn.zfs.blelib.callback.IRequestCallback;
-import cn.zfs.blelib.data.Device;
 
 /**
  * 描述: 蓝牙配置

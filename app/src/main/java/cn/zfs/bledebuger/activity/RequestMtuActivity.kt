@@ -1,6 +1,5 @@
 package cn.zfs.bledebuger.activity
 
-import android.bluetooth.BluetoothGattCharacteristic
 import android.os.Bundle
 import android.os.ParcelUuid
 import android.support.v7.app.AppCompatActivity
@@ -11,10 +10,10 @@ import cn.zfs.bledebuger.R
 import cn.zfs.bledebuger.util.ToastUtils
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Request
-import cn.zfs.blelib.data.Device
-import cn.zfs.blelib.data.EventType
-import cn.zfs.blelib.data.RequestFailedEvent
-import cn.zfs.blelib.data.RequestSingleValueEvent
+import cn.zfs.blelib.event.CharacteristicWriteEvent
+import cn.zfs.blelib.core.Device
+import cn.zfs.blelib.event.MtuChangedEvent
+import cn.zfs.blelib.event.RequestFailedEvent
 import cn.zfs.blelib.util.BleUtils
 import kotlinx.android.synthetic.main.activity_request_mtu.*
 import org.greenrobot.eventbus.Subscribe
@@ -111,9 +110,9 @@ class RequestMtuActivity : AppCompatActivity() {
     }
     
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleRequestIntEvent(e: RequestSingleValueEvent<Int, Device>) {
-        if (e.requestId == "REQUEST_MTU" && e.eventType == EventType.ON_MTU_CHANGED) {
-            mtu = e.result
+    fun handleEvent(e: MtuChangedEvent<Device>) {
+        if (e.requestId == "REQUEST_MTU") {
+            mtu = e.mtu
             tvMtu.text = "当前MTU： $mtu"
             btnGenerateByteArr.visibility = View.VISIBLE
             btnSendData.visibility = View.VISIBLE
@@ -121,14 +120,14 @@ class RequestMtuActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.POSTING)
-    fun handleCharacteristicEvent(e: RequestSingleValueEvent<BluetoothGattCharacteristic, Device>) {
-        if (e.eventType == EventType.ON_WRITE_CHARACTERISTIC && e.requestId == "write" && !loop) {
+    fun handleEvent(e: CharacteristicWriteEvent<Device>) {
+        if (e.requestId == "write" && !loop) {
             ToastUtils.showShort("写入成功")
         }
     }
 
     @Subscribe(threadMode = ThreadMode.POSTING)
-    fun handleRequestFailedEvent(e: RequestFailedEvent<Device>) {
+    fun handleEvent(e: RequestFailedEvent) {
         if (!loop) {
             if (e.requestId == "REQUEST_MTU" && e.requestType == Request.RequestType.SET_MTU) {
                 ToastUtils.showShort("MTU修改失败")

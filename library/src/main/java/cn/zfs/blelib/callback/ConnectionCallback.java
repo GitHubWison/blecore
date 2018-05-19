@@ -2,8 +2,8 @@ package cn.zfs.blelib.callback;
 
 import android.support.annotation.NonNull;
 
-import cn.zfs.blelib.core.BaseConnection;
-import cn.zfs.blelib.data.Device;
+import cn.zfs.blelib.core.Connection;
+import cn.zfs.blelib.core.Device;
 
 /**
  * 描述: 连接状态变化回调
@@ -19,9 +19,9 @@ public abstract class ConnectionCallback {
 
     /**
      * 连接状态变化
-     * @param state 连接状态<br> {@link BaseConnection#STATE_DISCONNECTED}<br> {@link BaseConnection#STATE_CONNECTING}<br>
-     *              {@link BaseConnection#STATE_RECONNECTING}<br> {@link BaseConnection#STATE_CONNECTED}<br>
-     *              {@link BaseConnection#STATE_SERVICE_DISCORVERING}<br> {@link BaseConnection#STATE_SERVICE_DISCORVERED}
+     * @param state 连接状态<br> {@link Connection#STATE_DISCONNECTED}<br> {@link Connection#STATE_CONNECTING}<br>
+     *              {@link Connection#STATE_RECONNECTING}<br> {@link Connection#STATE_CONNECTED}<br>
+     *              {@link Connection#STATE_SERVICE_DISCORVERING}<br> {@link Connection#STATE_SERVICE_DISCORVERED}
      */
-    public abstract void onConnectionStateChange(@BaseConnection.STATE int state);
+    public abstract void onConnectionStateChange(@Connection.STATE int state);
 }

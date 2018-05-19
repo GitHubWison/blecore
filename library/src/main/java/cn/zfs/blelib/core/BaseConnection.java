@@ -10,11 +10,8 @@ import android.bluetooth.BluetoothGattService;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
@@ -31,26 +28,7 @@ import cn.zfs.blelib.util.BleUtils;
  * 作者: zengfansheng
  */
 public abstract class BaseConnection extends BluetoothGattCallback {
-    public static final UUID CLIENT_CHARACTERISTIC_CONFIG = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
-    //----------蓝牙连接状态-------------   
-    public static final int STATE_DISCONNECTED = 0;
-    public static final int STATE_CONNECTING = 1;
-    public static final int STATE_RECONNECTING = 2;
-    public static final int STATE_CONNECTED = 3;
-    public static final int STATE_SERVICE_DISCORVERING = 4;
-    public static final int STATE_SERVICE_DISCORVERED = 5;
-    public static final int STATE_RELEASED = 6;
-    //----------连接超时类型---------
-    /**搜索不到设备*/
-    public static final int TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE = 0;
-    /**能搜到，连接不上*/
-    public static final int TIMEOUT_TYPE_CANNOT_CONNECT = 1;
-    /**能连接上，无法发现服务*/
-    public static final int TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES = 2;
-
-    @IntDef({STATE_DISCONNECTED, STATE_CONNECTING, STATE_RECONNECTING, STATE_CONNECTED, STATE_SERVICE_DISCORVERING, STATE_SERVICE_DISCORVERED})
-    @Retention(RetentionPolicy.SOURCE)
-    public @interface STATE {}
+    public static final UUID CLIENT_CHARACTERISTIC_CONFIG = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");    
 
     private static final short  GATT_REQ_NOT_SUPPORTED = 6;
     protected BluetoothDevice bluetoothDevice;

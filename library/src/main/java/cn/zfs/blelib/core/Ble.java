@@ -33,9 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import cn.zfs.blelib.callback.ConnectionCallback;
 import cn.zfs.blelib.callback.InitCallback;
 import cn.zfs.blelib.callback.ScanListener;
-import cn.zfs.blelib.data.Device;
-import cn.zfs.blelib.data.EventType;
-import cn.zfs.blelib.data.SingleValueEvent;
+import cn.zfs.blelib.event.BluetoothStateChangedEvent;
 import cn.zfs.blelib.util.LogController;
 
 /**
@@ -151,7 +149,7 @@ public class Ble {
         public void onReceive(Context context, Intent intent) {
             if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(intent.getAction())) {//蓝牙开关状态变化                 
                 if (bluetoothAdapter != null) {
-                    EventBus.getDefault().post(new SingleValueEvent<>(EventType.ON_BLUETOOTH_STATE_CHANGED, bluetoothAdapter.getState()));
+                    EventBus.getDefault().post(new BluetoothStateChangedEvent(bluetoothAdapter.getState()));
                     if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {//蓝牙关闭了
                         handleScanCallback(false, null, null);
                         //主动断开，停止定时器和重连尝试
@@ -459,16 +457,16 @@ public class Ble {
 
     /**
      * 获取连接状态
-     * @return {@link BaseConnection#STATE_DISCONNECTED}<br> {@link BaseConnection#STATE_CONNECTING}<br>
-     *              {@link BaseConnection#STATE_RECONNECTING}<br> {@link BaseConnection#STATE_CONNECTED}<br>
-     *              {@link BaseConnection#STATE_SERVICE_DISCORVERING}<br> {@link BaseConnection#STATE_SERVICE_DISCORVERED}
+     * @return {@link Connection#STATE_DISCONNECTED}<br> {@link Connection#STATE_CONNECTING}<br>
+     *              {@link Connection#STATE_RECONNECTING}<br> {@link Connection#STATE_CONNECTED}<br>
+     *              {@link Connection#STATE_SERVICE_DISCORVERING}<br> {@link Connection#STATE_SERVICE_DISCORVERED}
      */
     public int getConnectionState(Device device) {
         Connection connection = getConnection(device);
         if (connection != null) {
             return connection.getConnState();
         }
-        return BaseConnection.STATE_DISCONNECTED;
+        return Connection.STATE_DISCONNECTED;
     }
 
     /**
@@ -524,7 +522,7 @@ public class Ble {
     public void reconnectAll() {
         checkIfInit();
         for (Connection connection : connectionMap.values()) {
-            if (connection.getConnState() != BaseConnection.STATE_SERVICE_DISCORVERED) {
+            if (connection.getConnState() != Connection.STATE_SERVICE_DISCORVERED) {
                 connection.reconnect();
             }
         }
@@ -537,7 +535,7 @@ public class Ble {
         checkIfInit();
         if (device != null) {
             Connection connection = connectionMap.get(device.addr);
-            if (connection != null && connection.getConnState() != BaseConnection.STATE_SERVICE_DISCORVERED) {
+            if (connection != null && connection.getConnState() != Connection.STATE_SERVICE_DISCORVERED) {
                 connection.reconnect();
             }
         }

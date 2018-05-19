@@ -1,6 +1,5 @@
 package cn.zfs.bledebuger.activity
 
-import android.bluetooth.BluetoothGattCharacteristic
 import android.content.Intent
 import android.os.Bundle
 import android.os.ParcelUuid
@@ -12,10 +11,11 @@ import android.view.MenuItem
 import android.widget.ScrollView
 import cn.zfs.bledebuger.R
 import cn.zfs.bledebuger.util.ToastUtils
-import cn.zfs.blelib.core.BaseConnection
 import cn.zfs.blelib.core.Ble
+import cn.zfs.blelib.core.Connection
+import cn.zfs.blelib.core.Device
 import cn.zfs.blelib.core.Request
-import cn.zfs.blelib.data.*
+import cn.zfs.blelib.event.*
 import cn.zfs.blelib.util.BleUtils
 import kotlinx.android.synthetic.main.activity_comm.*
 import org.greenrobot.eventbus.Subscribe
@@ -168,72 +168,62 @@ class CommActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleSingleIntEvent(e: SingleValueEvent<Int, Device>) {
-        when (e.eventType) {
-            EventType.ON_CONNECTION_STATE_CHANGED -> updateState(e.value)
-        }
+    fun handleEvent(e: ConnectionStateChangedEvent<Device>) {
+        updateState(e.state)
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleSingleStringEvent(e: SingleValueEvent<String, Device>) {
-        when (e.eventType) {
-            EventType.ON_CONNECTION_CREATE_FAILED -> tvState.text = "无法建立连接： ${e.value}"
-        }
+    fun handleEvent(e: ConnectionCreateFailedEvent<Device>) {
+        tvState.text = "无法建立连接： ${e.error}"
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleCharacteristicChangeEvent(e: SingleValueEvent<BluetoothGattCharacteristic, Device>) {
-        when (e.eventType) {
-            EventType.ON_CHARACTERISTIC_CHANGED -> {
-                if (!pause) {
-                    if (tvLogs.text.length > 1024 * 1024) {
-                        tvLogs.text = ""
-                    }
-                    tvLogs.append(SimpleDateFormat("mm:ss.SSS").format(Date()))
-                    tvLogs.append("> ")
-                    tvLogs.append(BleUtils.bytesToHexString(e.value.value))
-                    tvLogs.append("\n")
-                    scrollView.post {
-                        scrollView.fullScroll(ScrollView.FOCUS_DOWN)
-                    }
-                }
+    fun handleEvent(e: CharacteristicChangedEvent<Device>) {
+        if (!pause) {
+            if (tvLogs.text.length > 1024 * 1024) {
+                tvLogs.text = ""
+            }
+            tvLogs.append(SimpleDateFormat("mm:ss.SSS").format(Date()))
+            tvLogs.append("> ")
+            tvLogs.append(BleUtils.bytesToHexString(e.characteristic.value))
+            tvLogs.append("\n")
+            scrollView.post {
+                scrollView.fullScroll(ScrollView.FOCUS_DOWN)
             }
         }
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
-    fun handleRequestFailedEvent(e: RequestFailedEvent<Device>) {
+    fun handleEvent(e: RequestFailedEvent) {
         if (e.requestType == Request.RequestType.WRITE_CHARACTERISTIC) {
             failCount++
         }
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
-    fun handleCharacteristicEvent(e: RequestSingleValueEvent<BluetoothGattCharacteristic, Device>) {
-        when (e.eventType) {
-            EventType.ON_WRITE_CHARACTERISTIC -> successCount++
-        }
+    fun handleEvent(e: CharacteristicWriteEvent<Device>) {
+        successCount++
     }
     
     private fun updateState(state: Int) {
         when (state) {
-            BaseConnection.STATE_CONNECTED -> {
-                tvState.text = "连接成功，未搜索服务"
+            Connection.STATE_CONNECTED -> {
+                tvState.text = "连接成功，等待发现服务"
             }
-            BaseConnection.STATE_CONNECTING -> {
+            Connection.STATE_CONNECTING -> {
                 tvState.text = "连接中..."
             }
-            BaseConnection.STATE_DISCONNECTED -> {
+            Connection.STATE_DISCONNECTED -> {
                 tvState.text = "连接断开"
             }
-            BaseConnection.STATE_RECONNECTING -> {
+            Connection.STATE_RECONNECTING -> {
                 tvState.text = "正在重连..."
             }
-            BaseConnection.STATE_SERVICE_DISCORVERING -> {
-                tvState.text = "连接成功，正在搜索服务..."
+            Connection.STATE_SERVICE_DISCORVERING -> {
+                tvState.text = "连接成功，正在发现服务..."
             }
-            BaseConnection.STATE_SERVICE_DISCORVERED -> {
-                tvState.text = "连接成功，并搜索到服务"
+            Connection.STATE_SERVICE_DISCORVERED -> {
+                tvState.text = "连接成功，并成功发现服务"
                 if (notifyService != null && notifyCharacteristic != null) {
                     Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("1", notifyService!!.uuid,
                             notifyCharacteristic!!.uuid, true)

@@ -11,23 +11,34 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
 import org.greenrobot.eventbus.EventBus;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
 import cn.zfs.blelib.callback.ConnectionCallback;
 import cn.zfs.blelib.callback.IRequestCallback;
-import cn.zfs.blelib.data.Device;
-import cn.zfs.blelib.data.Event;
-import cn.zfs.blelib.data.EventType;
-import cn.zfs.blelib.data.RequestFailedEvent;
-import cn.zfs.blelib.data.RequestSingleValueEvent;
-import cn.zfs.blelib.data.SingleValueEvent;
+import cn.zfs.blelib.event.CharacteristicChangedEvent;
+import cn.zfs.blelib.event.CharacteristicReadEvent;
+import cn.zfs.blelib.event.CharacteristicWriteEvent;
+import cn.zfs.blelib.event.ConnectTimeoutEvent;
+import cn.zfs.blelib.event.ConnectionCreateFailedEvent;
+import cn.zfs.blelib.event.ConnectionStateChangedEvent;
+import cn.zfs.blelib.event.DescriptorReadEvent;
+import cn.zfs.blelib.event.IndicationRegisteredEvent;
+import cn.zfs.blelib.event.IndicationUnregisteredEvent;
+import cn.zfs.blelib.event.MtuChangedEvent;
+import cn.zfs.blelib.event.NotificationRegisteredEvent;
+import cn.zfs.blelib.event.NotificationUnregisteredEvent;
+import cn.zfs.blelib.event.ReadRemoteRssiEvent;
+import cn.zfs.blelib.event.RequestFailedEvent;
 import cn.zfs.blelib.util.BleUtils;
 
 /**
@@ -36,6 +47,26 @@ import cn.zfs.blelib.util.BleUtils;
  * 作者: zengfansheng
  */
 public class Connection extends BaseConnection implements IRequestCallback {
+    //----------蓝牙连接状态-------------   
+    public static final int STATE_DISCONNECTED = 0;
+    public static final int STATE_CONNECTING = 1;
+    public static final int STATE_RECONNECTING = 2;
+    public static final int STATE_CONNECTED = 3;
+    public static final int STATE_SERVICE_DISCORVERING = 4;
+    public static final int STATE_SERVICE_DISCORVERED = 5;
+    public static final int STATE_RELEASED = 6;
+    //----------连接超时类型---------
+    /**搜索不到设备*/
+    public static final int TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE = 0;
+    /**能搜到，连接不上*/
+    public static final int TIMEOUT_TYPE_CANNOT_CONNECT = 1;
+    /**能连接上，无法发现服务*/
+    public static final int TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES = 2;
+
+    @IntDef({STATE_DISCONNECTED, STATE_CONNECTING, STATE_RECONNECTING, STATE_CONNECTED, STATE_SERVICE_DISCORVERING, STATE_SERVICE_DISCORVERED})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface STATE {}
+    
     private static final int MSG_ARG1_NONE = 0;
     private static final int MSG_ARG1_RELEASE = 1;
     private static final int MSG_ARG1_RECONNECT = 2;
@@ -72,8 +103,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
                                                long connectDelay, ConnectionCallback connectionCallback) {
 		if (bluetoothAdapter == null || device == null || device.addr == null || !device.addr.matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
 			Ble.println(Connection.class, Log.ERROR, "BluetoothAdapter not initialized or unspecified address.");
-			EventBus.getDefault().post(new SingleValueEvent<>(EventType.ON_CONNECTION_CREATE_FAILED, device, 
-                    "BluetoothAdapter not initialized or unspecified address."));
+			EventBus.getDefault().post(new ConnectionCreateFailedEvent<>(device, "BluetoothAdapter not initialized or unspecified address."));
 			return null;
 		}
 		//初始化并建立连接
@@ -85,7 +115,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
 		//连接蓝牙设备        
         conn.device.connectionState = STATE_CONNECTING;
         conn.connStartTime = System.currentTimeMillis();
-        EventBus.getDefault().post(new SingleValueEvent<>(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_CONNECTING));
+        conn.sendConnectionCallback();
         conn.handler.sendEmptyMessageDelayed(MSG_CONNECT, connectDelay);//连接
         conn.handler.sendEmptyMessageDelayed(MSG_TIMER, connectDelay + 1000);//启动定时器，用于断线重连
 		return conn;
@@ -126,7 +156,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
     public synchronized void onScanResult(String addr) {
 	    if (device.addr.equals(addr) && device.connectionState == STATE_RECONNECTING) {
             device.connectionState = STATE_CONNECTING;
-            EventBus.getDefault().post(new SingleValueEvent<>(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_CONNECTING));
+            sendConnectionCallback();
             handler.sendEmptyMessage(MSG_CONNECT);
 	    }
     }
@@ -202,7 +232,6 @@ public class Connection extends BaseConnection implements IRequestCallback {
     private void notifyDisconnected() {
         device.connectionState = STATE_DISCONNECTED;
         sendConnectionCallback();
-        EventBus.getDefault().post(new SingleValueEvent<>(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_DISCONNECTED));
     }
     
     private void doOnConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -210,8 +239,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
             Ble.println(Connection.class, Log.DEBUG, "连接状态：STATE_CONNECTED, " +
                     gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress());
             device.connectionState = STATE_CONNECTED;
-            sendConnectionCallback();
-            EventBus.getDefault().post(new SingleValueEvent<>(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_CONNECTED));
+            sendConnectionCallback();            
             // 进行服务发现，延时
             handler.sendEmptyMessageDelayed(MSG_DISCOVER_SERVICES, Ble.getInstance().getConfiguration().getDiscoverServicesDelayMillis());
         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
@@ -237,7 +265,6 @@ public class Connection extends BaseConnection implements IRequestCallback {
                 tryReconnectTimes = 0;
                 device.connectionState = STATE_SERVICE_DISCORVERED;
                 sendConnectionCallback();
-                EventBus.getDefault().post(new SingleValueEvent<>(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_SERVICE_DISCORVERED));
             }
         } else {
             doClearTaskAndRefresh(true);
@@ -251,7 +278,6 @@ public class Connection extends BaseConnection implements IRequestCallback {
             bluetoothGatt.discoverServices();
             device.connectionState = STATE_SERVICE_DISCORVERING;
             sendConnectionCallback();
-            EventBus.getDefault().post(new SingleValueEvent<>(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_SERVICE_DISCORVERING));
         } else {
             notifyDisconnected();
         }
@@ -272,7 +298,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
                 } else {
                     type = TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES;
                 }
-                EventBus.getDefault().post(new SingleValueEvent<>(EventType.ON_CONNECT_TIMEOUT, device, type));
+                EventBus.getDefault().post(new ConnectTimeoutEvent<>(device, type));
             }
             if (autoReconnEnable) {
                 doDisconnect(true, false);
@@ -327,7 +353,6 @@ public class Connection extends BaseConnection implements IRequestCallback {
             tryReconnect();
         }        
         sendConnectionCallback();
-        EventBus.getDefault().post(new SingleValueEvent<>(EventType.ON_CONNECTION_STATE_CHANGED, device, device.connectionState));
     }
 
     private void tryReconnect() {        
@@ -347,6 +372,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
 	    if (connectionCallback != null) {
 	        connectionCallback.onConnectionStateChange(device.connectionState);
 	    }
+        EventBus.getDefault().post(new ConnectionStateChangedEvent<>(device, device.connectionState));
     }
     
     void setAutoReconnectEnable(boolean enable) {
@@ -389,7 +415,6 @@ public class Connection extends BaseConnection implements IRequestCallback {
 	    super.release();
 	    handler.removeCallbacksAndMessages(null);//主动断开，停止定时器
 		handler.sendEmptyMessage(MSG_RELEASE);
-        EventBus.getDefault().post(new Event<>(EventType.ON_CONNECTION_RELEASED, device));
 	}
 
     @NonNull
@@ -414,78 +439,69 @@ public class Connection extends BaseConnection implements IRequestCallback {
 
     @Override
     public void onCharacteristicRead(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-        EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_CHARACTERISTIC_READ, device, requestId,
-                Request.RequestType.READ_CHARACTERISTIC, characteristic));
+        EventBus.getDefault().post(new CharacteristicReadEvent<>(device, requestId, characteristic));
         Ble.println(Connection.class, Log.DEBUG, "onCharacteristicRead！请求ID：" + requestId +
                 ", value: " + BleUtils.bytesToHexString(characteristic.getValue()) + ", mac: " + device.addr);
     }
 
     @Override
     public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-        EventBus.getDefault().post(new SingleValueEvent<>(EventType.ON_CHARACTERISTIC_CHANGED, device, characteristic));
+        EventBus.getDefault().post(new CharacteristicChangedEvent<>(device, characteristic));
     }
 
     @Override
     public void onReadRemoteRssi(@NonNull String requestId, BluetoothGatt gatt, int rssi) {
-        EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_READ_REMOTE_RSSI, device, requestId,
-                Request.RequestType.READ_RSSI, rssi));
+        EventBus.getDefault().post(new ReadRemoteRssiEvent<>(device, requestId, rssi));
         Ble.println(Connection.class, Log.DEBUG, "读到信号强度！rssi: "+ rssi + ", mac: " + device.addr);
     }
 
     @Override
     public void onMtuChanged(@NonNull String requestId, BluetoothGatt gatt, int mtu) {
-        EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_MTU_CHANGED, device, requestId,
-                Request.RequestType.SET_MTU, mtu));
+        EventBus.getDefault().post(new MtuChangedEvent<>(device, requestId, mtu));
         Ble.println(Connection.class, Log.DEBUG, "Mtu修改成功！mtu: "+ mtu + ", mac: " + device.addr);
     }
 
     @Override
     public void onRequestFialed(@NonNull String requestId, @NonNull Request.RequestType requestType, int failType, byte[] value) {
-        EventBus.getDefault().post(new RequestFailedEvent<>(EventType.ON_BLE_REQUEST_FIALED, device, requestId, requestType, value, failType));
+        EventBus.getDefault().post(new RequestFailedEvent(requestId, requestType, failType, value));
         Ble.println(Connection.class, Log.ERROR, "请求失败！请求ID：" + requestId +
                 ", failType: " + failType + ", mac: " + device.addr);
     }
 
     @Override
     public void onDescriptorRead(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
-        EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_DESCRIPTOR_READ, device, requestId,
-                Request.RequestType.READ_DESCRIPTOR, descriptor));
+        EventBus.getDefault().post(new DescriptorReadEvent<>(device, requestId, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "onDescriptorRead！请求ID：" + requestId +
                 ", value: " + BleUtils.bytesToHexString(descriptor.getValue()) + ", mac: " + device.addr);
     }
 
     @Override
     public void onNotificationRegistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
-        EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_NOTIFICATION_REGISTERED, device, requestId,
-                Request.RequestType.CHARACTERISTIC_NOTIFICATION, descriptor));
+        EventBus.getDefault().post(new NotificationRegisteredEvent<>(device, requestId, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "NOTIFICATION_REGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
     public void onNotificationUnregistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
-        EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_NOTIFICATION_UNREGISTERED, device, requestId,
-                Request.RequestType.CHARACTERISTIC_NOTIFICATION, descriptor));
+        EventBus.getDefault().post(new NotificationUnregisteredEvent<>(device, requestId, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "NOTIFICATION_UNREGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
     public void onIndicationRegistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
-        EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_INDICATION_REGISTERED, device, requestId,
-                Request.RequestType.CHARACTERISTIC_INDICATION, descriptor));
+        EventBus.getDefault().post(new IndicationRegisteredEvent<>(device, requestId, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "INDICATION_REGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
     public void onIndicationUnregistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
-        EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_INDICATION_UNREGISTERED, device, requestId,
-                Request.RequestType.CHARACTERISTIC_INDICATION, descriptor));
+        EventBus.getDefault().post(new IndicationUnregisteredEvent<>(device, requestId, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "INDICATION_UNREGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
     public void onCharacteristicWrite(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-        EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_WRITE_CHARACTERISTIC, device, requestId,
-                Request.RequestType.WRITE_CHARACTERISTIC, characteristic));
+        EventBus.getDefault().post(new CharacteristicWriteEvent<>(device, requestId, characteristic));
         Ble.println(Connection.class, Log.DEBUG, "写入成功！value: "+ BleUtils.bytesToHexString(characteristic.getValue()) +
                 ", 请求ID：" + requestId + ", mac: " + device.addr);
     }
