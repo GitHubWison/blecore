@@ -39,6 +39,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     public static final int STATE_CONNECTED = 3;
     public static final int STATE_SERVICE_DISCORVERING = 4;
     public static final int STATE_SERVICE_DISCORVERED = 5;
+    public static final int STATE_RELEASED = 6;
     //----------连接超时类型---------
     /**搜索不到设备*/
     public static final int TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE = 0;

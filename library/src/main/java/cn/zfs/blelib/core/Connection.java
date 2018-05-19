@@ -323,6 +323,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
         }
         device.connectionState = STATE_DISCONNECTED;
         if (release) {//销毁
+            device.connectionState = STATE_RELEASED;
             bluetoothGatt = null;
             Ble.println(Connection.class, Log.DEBUG, "连接销毁释放");
         } else if (reconnect) {
