@@ -1,5 +1,6 @@
 package cn.zfs.bledebuger.activity
 
+import android.bluetooth.BluetoothGattCharacteristic
 import android.content.Intent
 import android.os.Bundle
 import android.os.ParcelUuid
@@ -181,7 +182,7 @@ class CommActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleSingleByteArrayEvent(e: SingleValueEvent<ByteArray, Device>) {
+    fun handleCharacteristicChangeEvent(e: SingleValueEvent<BluetoothGattCharacteristic, Device>) {
         when (e.eventType) {
             EventType.ON_CHARACTERISTIC_CHANGED -> {
                 if (!pause) {
@@ -190,7 +191,7 @@ class CommActivity : AppCompatActivity() {
                     }
                     tvLogs.append(SimpleDateFormat("mm:ss.SSS").format(Date()))
                     tvLogs.append("> ")
-                    tvLogs.append(BleUtils.bytesToHexString(e.value))
+                    tvLogs.append(BleUtils.bytesToHexString(e.value.value))
                     tvLogs.append("\n")
                     scrollView.post {
                         scrollView.fullScroll(ScrollView.FOCUS_DOWN)
@@ -201,19 +202,19 @@ class CommActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
-    fun handleRequestEvent(e: RequestEvent<Device>) {
-        if (e.eventType == EventType.ON_WRITE_CHARACTERISTIC) {
-            successCount++
-        }
-    }
-
-    @Subscribe(threadMode = ThreadMode.BACKGROUND)
     fun handleRequestFailedEvent(e: RequestFailedEvent<Device>) {
         if (e.requestType == Request.RequestType.WRITE_CHARACTERISTIC) {
             failCount++
         }
     }
 
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    fun handleCharacteristicEvent(e: RequestSingleValueEvent<BluetoothGattCharacteristic, Device>) {
+        when (e.eventType) {
+            EventType.ON_WRITE_CHARACTERISTIC -> successCount++
+        }
+    }
+    
     private fun updateState(state: Int) {
         when (state) {
             BaseConnection.STATE_CONNECTED -> {

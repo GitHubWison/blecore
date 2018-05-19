@@ -1,5 +1,6 @@
 package cn.zfs.bledebuger.activity
 
+import android.bluetooth.BluetoothGattCharacteristic
 import android.os.Bundle
 import android.os.ParcelUuid
 import android.support.v7.app.AppCompatActivity
@@ -10,7 +11,10 @@ import cn.zfs.bledebuger.R
 import cn.zfs.bledebuger.util.ToastUtils
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Request
-import cn.zfs.blelib.data.*
+import cn.zfs.blelib.data.Device
+import cn.zfs.blelib.data.EventType
+import cn.zfs.blelib.data.RequestFailedEvent
+import cn.zfs.blelib.data.RequestSingleValueEvent
 import cn.zfs.blelib.util.BleUtils
 import kotlinx.android.synthetic.main.activity_request_mtu.*
 import org.greenrobot.eventbus.Subscribe
@@ -117,7 +121,7 @@ class RequestMtuActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.POSTING)
-    fun handleRequestEvent(e: RequestEvent<Device>) {
+    fun handleCharacteristicEvent(e: RequestSingleValueEvent<BluetoothGattCharacteristic, Device>) {
         if (e.eventType == EventType.ON_WRITE_CHARACTERISTIC && e.requestId == "write" && !loop) {
             ToastUtils.showShort("写入成功")
         }

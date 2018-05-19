@@ -1,5 +1,7 @@
 package cn.zfs.bledebuger.activity
 
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
 import android.content.Intent
 import android.os.Bundle
 import android.os.ParcelUuid
@@ -147,17 +149,17 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleRequestByteArrayEvent(e: RequestSingleValueEvent<ByteArray, Device>) {
+    fun handleCharacteristicEvent(e: RequestSingleValueEvent<BluetoothGattCharacteristic, Device>) {
         when (e.eventType) {
-            EventType.ON_CHARACTERISTIC_READ, EventType.ON_DESCRIPTOR_READ -> {
-                itemList.firstOrNull { e.requestId == it.toString() }?.value = e.result
+            EventType.ON_CHARACTERISTIC_READ -> {
+                itemList.firstOrNull { e.requestId == it.toString() }?.value = e.result.value
                 adapter?.notifyDataSetChanged()
             }
         }
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleRequestEvent(e: RequestEvent<Device>) {
+    fun handleDescriptorEvent(e: RequestSingleValueEvent<BluetoothGattDescriptor, Device>) {
         when (e.eventType) {
             EventType.ON_NOTIFICATION_REGISTERED, EventType.ON_INDICATION_REGISTERED -> {
                 itemList.firstOrNull { e.requestId == "${it}_1" }?.notification = true
@@ -171,9 +173,13 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
                     notifyCharacteristic = null
                 }
             }
+            EventType.ON_DESCRIPTOR_READ -> {
+                itemList.firstOrNull { e.requestId == it.toString() }?.value = e.result.value
+                adapter?.notifyDataSetChanged()
+            }
         }
     }
-    
+        
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.connection, menu)
         if (device != null && !device!!.isDisconnected) {

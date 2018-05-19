@@ -25,7 +25,6 @@ import cn.zfs.blelib.callback.IRequestCallback;
 import cn.zfs.blelib.data.Device;
 import cn.zfs.blelib.data.Event;
 import cn.zfs.blelib.data.EventType;
-import cn.zfs.blelib.data.RequestEvent;
 import cn.zfs.blelib.data.RequestFailedEvent;
 import cn.zfs.blelib.data.RequestSingleValueEvent;
 import cn.zfs.blelib.data.SingleValueEvent;
@@ -416,14 +415,14 @@ public class Connection extends BaseConnection implements IRequestCallback {
     @Override
     public void onCharacteristicRead(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
         EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_CHARACTERISTIC_READ, device, requestId,
-                Request.RequestType.READ_CHARACTERISTIC, characteristic.getValue()));
+                Request.RequestType.READ_CHARACTERISTIC, characteristic));
         Ble.println(Connection.class, Log.DEBUG, "onCharacteristicRead！请求ID：" + requestId +
                 ", value: " + BleUtils.bytesToHexString(characteristic.getValue()) + ", mac: " + device.addr);
     }
 
     @Override
     public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-        EventBus.getDefault().post(new SingleValueEvent<>(EventType.ON_CHARACTERISTIC_CHANGED, device, characteristic.getValue()));
+        EventBus.getDefault().post(new SingleValueEvent<>(EventType.ON_CHARACTERISTIC_CHANGED, device, characteristic));
     }
 
     @Override
@@ -450,43 +449,43 @@ public class Connection extends BaseConnection implements IRequestCallback {
     @Override
     public void onDescriptorRead(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
         EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_DESCRIPTOR_READ, device, requestId,
-                Request.RequestType.READ_DESCRIPTOR, descriptor.getValue()));
+                Request.RequestType.READ_DESCRIPTOR, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "onDescriptorRead！请求ID：" + requestId +
                 ", value: " + BleUtils.bytesToHexString(descriptor.getValue()) + ", mac: " + device.addr);
     }
 
     @Override
     public void onNotificationRegistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
-        EventBus.getDefault().post(new RequestEvent<>(EventType.ON_NOTIFICATION_REGISTERED, device, requestId,
-                Request.RequestType.CHARACTERISTIC_NOTIFICATION));
+        EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_NOTIFICATION_REGISTERED, device, requestId,
+                Request.RequestType.CHARACTERISTIC_NOTIFICATION, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "NOTIFICATION_REGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
     public void onNotificationUnregistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
-        EventBus.getDefault().post(new RequestEvent<>(EventType.ON_NOTIFICATION_UNREGISTERED, device, requestId,
-                Request.RequestType.CHARACTERISTIC_NOTIFICATION));
+        EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_NOTIFICATION_UNREGISTERED, device, requestId,
+                Request.RequestType.CHARACTERISTIC_NOTIFICATION, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "NOTIFICATION_UNREGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
     public void onIndicationRegistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
-        EventBus.getDefault().post(new RequestEvent<>(EventType.ON_INDICATION_REGISTERED, device, requestId,
-                Request.RequestType.CHARACTERISTIC_INDICATION));
+        EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_INDICATION_REGISTERED, device, requestId,
+                Request.RequestType.CHARACTERISTIC_INDICATION, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "INDICATION_REGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
     public void onIndicationUnregistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
-        EventBus.getDefault().post(new RequestEvent<>(EventType.ON_INDICATION_UNREGISTERED, device, requestId,
-                Request.RequestType.CHARACTERISTIC_INDICATION));
+        EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_INDICATION_UNREGISTERED, device, requestId,
+                Request.RequestType.CHARACTERISTIC_INDICATION, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "INDICATION_UNREGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
     public void onCharacteristicWrite(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-        EventBus.getDefault().post(new RequestEvent<>(EventType.ON_WRITE_CHARACTERISTIC, device, requestId,
-                Request.RequestType.WRITE_CHARACTERISTIC, characteristic.getValue()));
+        EventBus.getDefault().post(new RequestSingleValueEvent<>(EventType.ON_WRITE_CHARACTERISTIC, device, requestId,
+                Request.RequestType.WRITE_CHARACTERISTIC, characteristic));
         Ble.println(Connection.class, Log.DEBUG, "写入成功！value: "+ BleUtils.bytesToHexString(characteristic.getValue()) +
                 ", 请求ID：" + requestId + ", mac: " + device.addr);
     }
