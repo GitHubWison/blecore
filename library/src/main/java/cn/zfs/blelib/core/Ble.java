@@ -54,12 +54,12 @@ public class Ble {
     private BluetoothLeScanner bleScanner;
     private ScanCallback scanCallback;
     private BluetoothAdapter.LeScanCallback leScanCallback;    
-    private Configuration config;
+    private Configuration configuration;
     private List<ScanListener> scanListeners;
     private Handler mainThreadHandler;
 
     private Ble() {
-        config = new Configuration();
+        configuration = new Configuration();
         connectionMap = new ConcurrentHashMap<>();
         requestCallbackMap = new ConcurrentHashMap<>();
         mainThreadHandler = new Handler(Looper.getMainLooper());
@@ -83,15 +83,15 @@ public class Ble {
         LogController.printLevelControl = logPrintLevel;
     }
     
-    public Configuration getConfig() {
-        return config;
+    public Configuration getConfiguration() {
+        return configuration;
     }
 
     /**
      * 替换默认配置
      */
-    public void setConfig(Configuration config) {
-        this.config = config;
+    public void setConfiguration(Configuration configuration) {
+        this.configuration = configuration;
     }
     
     /**
@@ -99,7 +99,7 @@ public class Ble {
      * @param context 上下文
      * @param callback 初始化结果回调
      */
-    public void init(Context context, InitCallback callback) {
+    public void initialize(Context context, InitCallback callback) {
         context = context.getApplicationContext();
         //检查手机是否支持BLE
         if (!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -184,7 +184,7 @@ public class Ble {
     /**
      * 是否已初始化过
      */
-    public boolean isInited() {
+    public boolean isInitialized() {
         return isInited;
     }
 
@@ -199,7 +199,7 @@ public class Ble {
      * 注册订阅者，开始监听蓝牙状态及数据
      * @param subscriber 订阅者
      */
-    public void registerObserver(Object subscriber) {
+    public void registerSubscriber(Object subscriber) {
         EventBus.getDefault().register(subscriber);
     }
 
@@ -207,7 +207,7 @@ public class Ble {
      * 取消注册订阅者，停止监听蓝牙状态及数据
      * @param subscriber 订阅者
      */
-    public void unregisterObserver(Object subscriber) {
+    public void unregisterSubscriber(Object subscriber) {
         EventBus.getDefault().unregister(subscriber);
     }
 
@@ -257,7 +257,7 @@ public class Ble {
         getSystemConnectedDevices();
         
         //如果是高版本使用新的搜索方法
-        if (config.isUseBluetoothLeScanner() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (configuration.isUseBluetoothLeScanner() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             if (bleScanner == null) {
                 bleScanner = bluetoothAdapter.getBluetoothLeScanner();
             }
@@ -273,7 +273,7 @@ public class Ble {
         }
         scanning = true;
         handleScanCallback(true, null, null);       
-        mainThreadHandler.postDelayed(stopScanRunnable, config.getScanPeriodMillis());
+        mainThreadHandler.postDelayed(stopScanRunnable, configuration.getScanPeriodMillis());
     }
 
     private void handleScanCallback(final boolean start, final Device device, final byte[] scanRecord) {
@@ -376,9 +376,9 @@ public class Ble {
         dev.name = TextUtils.isEmpty(device.getName()) ? "unknown device" : device.getName();
         dev.addr = device.getAddress();
         dev.rssi = rssi;
-        if (config.getScanHandler() != null) {
+        if (configuration.getScanHandler() != null) {
             //只在指定的过滤器通知
-            if (config.getScanHandler().handle(dev, scanRecord)) {
+            if (configuration.getScanHandler().handle(dev, scanRecord)) {
                 handleScanCallback(false, dev, scanRecord);
             }
         } else {
@@ -388,10 +388,10 @@ public class Ble {
     }
     
     private Device createDevice() {
-        if (config.getDeviceClass() != null) {
+        if (configuration.getDeviceClass() != null) {
             try {
                 //通过反射创建Device
-                return config.getDeviceClass().getConstructor().newInstance();
+                return configuration.getDeviceClass().getConstructor().newInstance();
             } catch (Exception e) {
                 //如果反射创建不成功，使用默认创建
                 return new Device();
@@ -408,10 +408,10 @@ public class Ble {
         if (device != null) {
             IRequestCallback callback = requestCallbackMap.get(device.addr);
             if (callback == null) {
-                if (config.getRequestCallbackClass() != null) {
+                if (configuration.getRequestCallbackClass() != null) {
                     try {
                         //通过反射创建回调
-                        callback = config.getRequestCallbackClass().getConstructor(Device.class).newInstance(device);
+                        callback = configuration.getRequestCallbackClass().getConstructor(Device.class).newInstance(device);
                     } catch (Exception e) {
                         //如果反射创建不成功，使用默认创建
                         callback = new RequestCallback(device);
@@ -438,15 +438,15 @@ public class Ble {
                 connection.release();
             }
             ConnectionCallback callback = null;
-            if (config.getConnectionCallbackClass() != null) {
+            if (configuration.getConnectionCallbackClass() != null) {
                 try {
                     //通过反射创建回调
-                    callback = config.getConnectionCallbackClass().getConstructor(Device.class).newInstance(device);
+                    callback = configuration.getConnectionCallbackClass().getConstructor(Device.class).newInstance(device);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
-            if (config.isBondWhenConnect(device)) {
+            if (configuration.isBondWhenConnect(device)) {
                 BluetoothDevice bd = bluetoothAdapter.getRemoteDevice(device.addr);
                 if (bd.getBondState() == BluetoothDevice.BOND_BONDED) {
                     connection = Connection.newInstance(bluetoothAdapter, context, device, 0, callback);

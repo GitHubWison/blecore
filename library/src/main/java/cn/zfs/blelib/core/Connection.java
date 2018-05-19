@@ -86,12 +86,17 @@ public class Connection extends BaseConnection {
 
     @Override
     protected int getWriteDelayMillis() {
-        return Ble.getInstance().getConfig().getWriteDelayMillis();
+        return Ble.getInstance().getConfiguration().getWriteDelayMillis();
     }
 
     @Override
     protected int getPackageSize() {
-        return Ble.getInstance().getConfig().getPackageSize();
+        return Ble.getInstance().getConfiguration().getPackageSize();
+    }
+
+    @Override
+    protected int getWriteType() {
+        return Ble.getInstance().getConfiguration().getWriteType();
     }
 
     /**
@@ -121,8 +126,8 @@ public class Connection extends BaseConnection {
     
     public synchronized void onScanStop() {
 	    if (device.connectionState == STATE_RECONNECTING) {
-	        if (Ble.getInstance().getConfig().getTryReconnectTimes() == Configuration.TRY_RECONNECT_TIMES_INFINITE ||
-                    tryReconnectTimes < Ble.getInstance().getConfig().getTryReconnectTimes()) {
+	        if (Ble.getInstance().getConfiguration().getTryReconnectTimes() == Configuration.TRY_RECONNECT_TIMES_INFINITE ||
+                    tryReconnectTimes < Ble.getInstance().getConfiguration().getTryReconnectTimes()) {
 	            tryReconnectTimes++;
                 tryReconnect();
 	        } else {
@@ -201,7 +206,7 @@ public class Connection extends BaseConnection {
             sendConnectionCallback();
             EventBus.getDefault().post(new SingleIntEvent(EventType.ON_CONNECTION_STATE_CHANGED, device, STATE_CONNECTED));
             // 进行服务发现，延时
-            handler.sendEmptyMessageDelayed(MSG_DISCOVER_SERVICES, Ble.getInstance().getConfig().getDiscoverServicesDelayMillis());
+            handler.sendEmptyMessageDelayed(MSG_DISCOVER_SERVICES, Ble.getInstance().getConfiguration().getDiscoverServicesDelayMillis());
         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
             Ble.println(Connection.class, Log.DEBUG, "连接状态：STATE_DISCONNECTED, " +
                     gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress() + ", autoReconnEnable: " + autoReconnEnable);
@@ -248,7 +253,7 @@ public class Connection extends BaseConnection {
     private void doTimer() {
         //连接超时。
         if (device.connectionState != STATE_SERVICE_DISCORVERED && System.currentTimeMillis() - connStartTime > 
-                Ble.getInstance().getConfig().getConnectTimeoutMillis()) {
+                Ble.getInstance().getConfiguration().getConnectTimeoutMillis()) {
             if (device.connectionState != STATE_DISCONNECTED) {
                 connStartTime = System.currentTimeMillis();
                 Ble.println(Connection.class, Log.ERROR, "连接超时, " + device.name + ", " + device.addr);

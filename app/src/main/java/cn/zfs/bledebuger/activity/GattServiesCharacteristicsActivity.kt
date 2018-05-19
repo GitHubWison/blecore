@@ -39,7 +39,7 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
             return
         }
         Ble.getInstance().connect(this, device, true)
-        Ble.getInstance().registerObserver(this)
+        Ble.getInstance().registerSubscriber(this)
         initViews()
     }
 
@@ -203,7 +203,7 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     }
     
     override fun onDestroy() {
-        Ble.getInstance().unregisterObserver(this)//取消监听
+        Ble.getInstance().unregisterSubscriber(this)//取消监听
         Ble.getInstance().releaseConnection(device)
         super.onDestroy()
     }

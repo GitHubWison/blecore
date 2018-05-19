@@ -1,5 +1,7 @@
 package cn.zfs.blelib.core;
 
+import android.bluetooth.BluetoothGattCharacteristic;
+
 import cn.zfs.blelib.callback.ConnectionCallback;
 import cn.zfs.blelib.callback.IRequestCallback;
 import cn.zfs.blelib.data.Device;
@@ -13,7 +15,7 @@ public class Configuration {
     private static final int DEFAULT_DISCOVER_SERVICES_DELAY_MILLIS = 500;
     private static final int DEFAULT_CONN_TIMEOUT_MILLIS = 8000;//连接超时时间
     public static final int TRY_RECONNECT_TIMES_INFINITE = -1;//无限重连
-    private IScanHandler scanHandler;    
+    private IScanHandler scanHandler;
     private long discoverServicesDelayMillis = DEFAULT_DISCOVER_SERVICES_DELAY_MILLIS;
     private int connectTimeoutMillis = DEFAULT_CONN_TIMEOUT_MILLIS;
     private Class<? extends IRequestCallback> requestCallbackClass;
@@ -24,8 +26,8 @@ public class Configuration {
     private int scanPeriodMillis = 10000;
     private boolean useBluetoothLeScanner = true;
     private int packageSize = 20;//发送数据时的分包大小
-    private boolean postObserverMsgMainThread = true;
-    
+    private int writeType;
+
     public Class<? extends Device> getDeviceClass() {
         return deviceClass;
     }
@@ -40,6 +42,7 @@ public class Configuration {
 
     /**
      * 设置扫描过滤器
+     *
      * @param handler 扫描结果处理
      */
     public Configuration setScanHandler(IScanHandler handler) {
@@ -102,6 +105,7 @@ public class Configuration {
 
     /**
      * 设置连接成功后，延时发现服务的时间
+     *
      * @param delayMillis 延时，毫秒
      */
     public Configuration setDiscoverServicesDelayMillis(int delayMillis) {
@@ -142,6 +146,7 @@ public class Configuration {
 
     /**
      * 设置蓝牙扫描周期
+     *
      * @param scanPeriodMillis 毫秒
      */
     public Configuration setScanPeriodMillis(int scanPeriodMillis) {
@@ -166,6 +171,7 @@ public class Configuration {
 
     /**
      * 发送数据时的分包大小
+     *
      * @param packageSize 包大小，字节
      */
     public Configuration setPackageSize(int packageSize) {
@@ -173,15 +179,18 @@ public class Configuration {
         return this;
     }
 
-    public boolean isPostObserverMsgMainThread() {
-        return postObserverMsgMainThread;
+    public int getWriteType() {
+        return writeType;
     }
 
     /**
-     * 是否将观察者的消息post到UI线程，默认是true
+     * 设置写入模式，默认的规则：如果Characteristic的属性有PROPERTY_WRITE_NO_RESPONSE则使用
+     * {@link BluetoothGattCharacteristic#WRITE_TYPE_NO_RESPONSE}，否则使用{@link BluetoothGattCharacteristic#WRITE_TYPE_DEFAULT}
+     *
+     * @param writeType {@link BluetoothGattCharacteristic#WRITE_TYPE_NO_RESPONSE}<br>{@link BluetoothGattCharacteristic#WRITE_TYPE_DEFAULT}<br>
+     *                  {@link BluetoothGattCharacteristic#WRITE_TYPE_SIGNED}
      */
-    public Configuration setPostObserverMsgMainThread(boolean postObserverMsgMainThread) {
-        this.postObserverMsgMainThread = postObserverMsgMainThread;
-        return this;
+    public void setWriteType(int writeType) {
+        this.writeType = writeType;
     }
 }

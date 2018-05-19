@@ -32,7 +32,7 @@ class MainActivity : CheckPermissionsActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         initViews()
-        Ble.getInstance().config.setDiscoverServicesDelayMillis(2000)
+        Ble.getInstance().configuration.setDiscoverServicesDelayMillis(2000)
         
         Ble.getInstance().setLogPrintLevelControl(LogController.ALL)//输出日志
         Ble.getInstance().addScanListener(scanListener)
@@ -50,7 +50,7 @@ class MainActivity : CheckPermissionsActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (Ble.getInstance().isInited) {
+        if (Ble.getInstance().isInitialized) {
             if (Ble.getInstance().isBluetoothAdapterEnabled) {
                 doStartScan()
             } else {
@@ -61,7 +61,7 @@ class MainActivity : CheckPermissionsActivity() {
     
     override fun onPause() {
         super.onPause()
-        if (Ble.getInstance().isInited) {
+        if (Ble.getInstance().isInitialized) {
             Ble.getInstance().stopScan()
         }
     }
@@ -114,7 +114,7 @@ class MainActivity : CheckPermissionsActivity() {
             }
         }
         menu?.findItem(R.id.menuAbout)?.actionView = aboutView        
-        if (!Ble.getInstance().isInited) {
+        if (!Ble.getInstance().isInitialized) {
             menu?.findItem(R.id.menuStop)?.isVisible = false
             menu?.findItem(R.id.menuScan)?.isVisible = false
             menu?.findItem(R.id.menuProgress)?.actionView = null
@@ -165,7 +165,7 @@ class MainActivity : CheckPermissionsActivity() {
 
     override fun onPermissionsRequestResult(hasPermission: Boolean) {
         if (hasPermission) {
-            Ble.getInstance().init(this, object : InitCallback {
+            Ble.getInstance().initialize(this, object : InitCallback {
                 override fun onSuccess() {
                     ToastUtils.showShort("初始化成功")
 

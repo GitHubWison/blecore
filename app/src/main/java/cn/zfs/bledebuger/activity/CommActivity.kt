@@ -44,7 +44,7 @@ class CommActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_comm)
-        Ble.getInstance().registerObserver(this)
+        Ble.getInstance().registerSubscriber(this)
         device = intent.getParcelableExtra("device")
         writeService = intent.getParcelableExtra("writeService")
         writeCharacteristic = intent.getParcelableExtra("writeCharacteristic")
@@ -59,7 +59,7 @@ class CommActivity : AppCompatActivity() {
         tvAddr.text = device!!.addr
         initEvents()
         updateState(device!!.connectionState)
-        Ble.getInstance().registerObserver(this)
+        Ble.getInstance().registerSubscriber(this)
     }
 
     private fun initEvents() {
@@ -245,7 +245,7 @@ class CommActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        Ble.getInstance().unregisterObserver(this)//取消监听
+        Ble.getInstance().unregisterSubscriber(this)//取消监听
         super.onDestroy()
     }
 }
