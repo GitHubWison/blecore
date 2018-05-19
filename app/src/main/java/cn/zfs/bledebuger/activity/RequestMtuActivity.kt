@@ -9,9 +9,9 @@ import android.view.View
 import cn.zfs.bledebuger.R
 import cn.zfs.bledebuger.util.ToastUtils
 import cn.zfs.blelib.core.Ble
+import cn.zfs.blelib.core.Device
 import cn.zfs.blelib.core.Request
 import cn.zfs.blelib.event.CharacteristicWriteEvent
-import cn.zfs.blelib.core.Device
 import cn.zfs.blelib.event.MtuChangedEvent
 import cn.zfs.blelib.event.RequestFailedEvent
 import cn.zfs.blelib.util.BleUtils
@@ -110,7 +110,7 @@ class RequestMtuActivity : AppCompatActivity() {
     }
     
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleEvent(e: MtuChangedEvent<Device>) {
+    fun onMtuChanged(e: MtuChangedEvent<Device>) {
         if (e.requestId == "REQUEST_MTU") {
             mtu = e.mtu
             tvMtu.text = "当前MTU： $mtu"
@@ -120,14 +120,14 @@ class RequestMtuActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.POSTING)
-    fun handleEvent(e: CharacteristicWriteEvent<Device>) {
+    fun onCharacteristicWrite(e: CharacteristicWriteEvent<Device>) {
         if (e.requestId == "write" && !loop) {
             ToastUtils.showShort("写入成功")
         }
     }
 
     @Subscribe(threadMode = ThreadMode.POSTING)
-    fun handleEvent(e: RequestFailedEvent) {
+    fun onRequestFialed(e: RequestFailedEvent) {
         if (!loop) {
             if (e.requestId == "REQUEST_MTU" && e.requestType == Request.RequestType.SET_MTU) {
                 ToastUtils.showShort("MTU修改失败")

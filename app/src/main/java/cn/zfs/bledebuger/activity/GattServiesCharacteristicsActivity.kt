@@ -81,7 +81,7 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleEvent(e: ConnectionStateChangedEvent<Device>) {
+    fun onConnectionStateChange(e: ConnectionStateChangedEvent<Device>) {
         when (e.state) {
             Connection.STATE_CONNECTED -> {
                 ToastUtils.showShort("连接成功，等待发现服务")
@@ -122,12 +122,12 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleEvent(e: ConnectionCreateFailedEvent<Device>) {
+    fun onConnectionCreateFailed(e: ConnectionCreateFailedEvent<Device>) {
         ToastUtils.showShort("无法建立连接： ${e.error}")
     }
     
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleEvent(e: RequestFailedEvent) {
+    fun onRequestFialed(e: RequestFailedEvent) {
         when (e.requestType) {
             Request.RequestType.CHARACTERISTIC_NOTIFICATION -> {
                 if (e.requestId.endsWith("_1")) {
@@ -142,19 +142,19 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleEvent(e: CharacteristicReadEvent<Device>) {
+    fun onCharacteristicRead(e: CharacteristicReadEvent<Device>) {
         itemList.firstOrNull { e.requestId == it.toString() }?.value = e.characteristic.value
         adapter?.notifyDataSetChanged()
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleEvent(e: NotificationRegisteredEvent<Device>) {
+    fun onNotificationRegistered(e: NotificationRegisteredEvent<Device>) {
         itemList.firstOrNull { e.requestId == "${it}_1" }?.notification = true
         adapter?.notifyDataSetChanged()
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleEvent(e: NotificationUnregisteredEvent<Device>) {
+    fun onNotificationUnregistered(e: NotificationUnregisteredEvent<Device>) {
         itemList.firstOrNull { e.requestId == "${it}_0" }?.notification = false
         adapter?.notifyDataSetChanged()
         notifyService = null
@@ -162,19 +162,19 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleEvent(e: IndicationRegisteredEvent<Device>) {
+    fun onIndicationRegistered(e: IndicationRegisteredEvent<Device>) {
         itemList.firstOrNull { e.requestId == "${it}_1" }?.notification = true
         adapter?.notifyDataSetChanged()
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleEvent(e: IndicationUnregisteredEvent<Device>) {
+    fun onIndicationUnregistered(e: IndicationUnregisteredEvent<Device>) {
         itemList.firstOrNull { e.requestId == "${it}_0" }?.notification = false
         adapter?.notifyDataSetChanged()
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun handleEvent(e: DescriptorReadEvent<Device>) {
+    fun onDescriptorRead(e: DescriptorReadEvent<Device>) {
         itemList.firstOrNull { e.requestId == it.toString() }?.value = e.descriptor.value
         adapter?.notifyDataSetChanged()
     }
