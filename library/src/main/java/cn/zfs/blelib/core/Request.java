@@ -22,8 +22,6 @@ import android.support.annotation.NonNull;
 
 import java.util.UUID;
 
-import cn.zfs.blelib.callback.IRequestCallback;
-
 /**
  * 描述: 用作请求队列
  * 时间: 2018/4/11 15:15
@@ -39,27 +37,24 @@ public class Request {
     public UUID service;
     public UUID characteristic;
     public UUID descriptor;
-    public IRequestCallback callback;
     public String requestId;
     public byte[] value;
 
-    public Request(@NonNull RequestType type, @NonNull String requestId, UUID service, UUID characteristic, UUID descriptor, IRequestCallback callback) {
+    public Request(@NonNull RequestType type, @NonNull String requestId, UUID service, UUID characteristic, UUID descriptor) {
         this.type = type;
         this.requestId = requestId;
         this.service = service;
         this.characteristic = characteristic;
         this.descriptor = descriptor;
-        this.callback = callback;
         this.value = null;
     }
 
-    public Request(@NonNull RequestType type, @NonNull String requestId, UUID service, UUID characteristic, UUID descriptor, IRequestCallback callback, byte[] value) {
+    public Request(@NonNull RequestType type, @NonNull String requestId, UUID service, UUID characteristic, UUID descriptor, byte[] value) {
         this.type = type;
         this.requestId = requestId;
         this.service = service;
         this.characteristic = characteristic;
         this.descriptor = descriptor;
-        this.callback = callback;
         this.value = value;
     }
 }

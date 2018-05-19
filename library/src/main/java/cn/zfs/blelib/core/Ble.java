@@ -31,9 +31,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import cn.zfs.blelib.callback.ConnectionCallback;
-import cn.zfs.blelib.callback.IRequestCallback;
 import cn.zfs.blelib.callback.InitCallback;
-import cn.zfs.blelib.callback.RequestCallback;
 import cn.zfs.blelib.callback.ScanListener;
 import cn.zfs.blelib.data.Device;
 import cn.zfs.blelib.data.EventType;
@@ -48,7 +46,6 @@ import cn.zfs.blelib.util.LogController;
 public class Ble {        
     private BluetoothAdapter bluetoothAdapter;
     private Map<String, Connection> connectionMap;
-    private Map<String, IRequestCallback> requestCallbackMap;
     private boolean isInited;
     private boolean scanning;
     private BluetoothLeScanner bleScanner;
@@ -61,7 +58,6 @@ public class Ble {
     private Ble() {
         configuration = new Configuration();
         connectionMap = new ConcurrentHashMap<>();
-        requestCallbackMap = new ConcurrentHashMap<>();
         mainThreadHandler = new Handler(Looper.getMainLooper());
         scanListeners = new ArrayList<>();
     }
@@ -400,31 +396,6 @@ public class Ble {
             return new Device();
         }
     }
-
-    /**
-     * 获取蓝牙通信数据接收回调，没有创建一个，有直接返回已有
-     */
-    public IRequestCallback getRequestCallback(Device device) {
-        if (device != null) {
-            IRequestCallback callback = requestCallbackMap.get(device.addr);
-            if (callback == null) {
-                if (configuration.getRequestCallbackClass() != null) {
-                    try {
-                        //通过反射创建回调
-                        callback = configuration.getRequestCallbackClass().getConstructor(Device.class).newInstance(device);
-                    } catch (Exception e) {
-                        //如果反射创建不成功，使用默认创建
-                        callback = new RequestCallback(device);
-                    }                    
-                } else {
-                    callback = new RequestCallback(device);
-                }                
-                requestCallbackMap.put(device.addr, callback);
-            }
-            return callback;
-        }
-        return null;
-    }
     
     /**
      * 建立连接
@@ -529,11 +500,7 @@ public class Ble {
         for (Connection connection : connectionMap.values()) {
             connection.release();
         }
-        for (IRequestCallback callback : requestCallbackMap.values()) {
-            callback.onDestroy();
-        }
         connectionMap.clear();
-        requestCallbackMap.clear();
     }
 
     /**
@@ -545,10 +512,6 @@ public class Ble {
             Connection connection = connectionMap.remove(device.addr);
             if (connection != null) {
                 connection.release();
-            }
-            IRequestCallback callback = requestCallbackMap.remove(device.addr);
-            if (callback != null) {
-                callback.onDestroy();
             }
         }
     }

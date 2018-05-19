@@ -30,11 +30,6 @@ public interface IRequestCallback {
     @interface FAIL_TYPE {}
 
     /**
-     * 连接销毁回调
-     */
-    void onDestroy();
-
-    /**
      * 读取characteristic的结果
      * @param requestId 请求ID
      */
@@ -49,7 +44,7 @@ public interface IRequestCallback {
      * 收到设备信号强度RSSI
      * @param rssi 信号强度
      */
-    void onRssiRead(@NonNull String requestId, BluetoothGatt gatt, int rssi);
+    void onReadRemoteRssi(@NonNull String requestId, BluetoothGatt gatt, int rssi);
 
     /**
      * 收到设备Mtu改变成功后，新值

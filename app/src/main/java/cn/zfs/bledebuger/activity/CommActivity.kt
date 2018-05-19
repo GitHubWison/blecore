@@ -84,11 +84,9 @@ class CommActivity : AppCompatActivity() {
                     }
                     bytes[i] = Integer.valueOf(str, 16).toByte()
                 }
-                Ble.getInstance().getConnection(device)?.writeCharacteristicValue("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes,
-                        Ble.getInstance().getRequestCallback(device))
+                Ble.getInstance().getConnection(device)?.writeCharacteristicValue("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
                 while (run && loop) {
-                    Ble.getInstance().getConnection(device)?.writeCharacteristicValue("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes,
-                            Ble.getInstance().getRequestCallback(device))
+                    Ble.getInstance().getConnection(device)?.writeCharacteristicValue("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
                     Thread.sleep(delay)
                     if (System.currentTimeMillis() - lastUpdateTime > 500) {
                         lastUpdateTime = System.currentTimeMillis()
@@ -237,7 +235,7 @@ class CommActivity : AppCompatActivity() {
                 tvState.text = "连接成功，并搜索到服务"
                 if (notifyService != null && notifyCharacteristic != null) {
                     Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("1", notifyService!!.uuid,
-                            notifyCharacteristic!!.uuid, Ble.getInstance().getRequestCallback(device), true)
+                            notifyCharacteristic!!.uuid, true)
                 }
             }
         }

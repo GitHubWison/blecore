@@ -50,8 +50,7 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
             override fun onItemClick(type: Int, node: Item) {
                 when (type) {
                     BleServiceListAdapter.READ -> {
-                        Ble.getInstance().getConnection(device)?.requestCharacteristicValue(node.toString(), node.service!!.uuid, 
-                                node.characteristic!!.uuid, Ble.getInstance().getRequestCallback(device))
+                        Ble.getInstance().getConnection(device)?.requestCharacteristicValue(node.toString(), node.service!!.uuid, node.characteristic!!.uuid)
                     }
                     BleServiceListAdapter.SEND -> {
                         val i = Intent(this@GattServiesCharacteristicsActivity, CommActivity::class.java)
@@ -68,11 +67,11 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
                         notifyService = ParcelUuid(node.service!!.uuid)
                         notifyCharacteristic = ParcelUuid(node.characteristic!!.uuid)
                         Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("${node}_1", node.service!!.uuid,
-                                node.characteristic!!.uuid, Ble.getInstance().getRequestCallback(device), true)
+                                node.characteristic!!.uuid, true)
                     }
                     BleServiceListAdapter.STOP_NOTI -> {
                         Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("${node}_0", node.service!!.uuid,
-                                node.characteristic!!.uuid, Ble.getInstance().getRequestCallback(device), false)
+                                node.characteristic!!.uuid, false)
                     }
                 }
             }

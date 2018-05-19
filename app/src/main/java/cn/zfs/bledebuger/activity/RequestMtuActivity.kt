@@ -1,7 +1,5 @@
 package cn.zfs.bledebuger.activity
 
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.BluetoothGattCharacteristic
 import android.os.Bundle
 import android.os.ParcelUuid
 import android.support.v7.app.AppCompatActivity
@@ -10,12 +8,13 @@ import android.text.TextWatcher
 import android.view.View
 import cn.zfs.bledebuger.R
 import cn.zfs.bledebuger.util.ToastUtils
-import cn.zfs.blelib.callback.RequestCallback
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Request
-import cn.zfs.blelib.data.Device
+import cn.zfs.blelib.data.*
 import cn.zfs.blelib.util.BleUtils
 import kotlinx.android.synthetic.main.activity_request_mtu.*
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import kotlin.concurrent.thread
 
 /**
@@ -29,7 +28,6 @@ class RequestMtuActivity : AppCompatActivity() {
     private var writeCharacteristic: ParcelUuid? = null
     private var mtu = 0
     private var data = ByteArray(0)
-    private var callback: MyCallback? = null
     private var loop = false
     private var delay = 0L
     private var run = true
@@ -49,7 +47,6 @@ class RequestMtuActivity : AppCompatActivity() {
             return
         }
         device = Ble.getInstance().getConnection(device)?.device
-        callback = MyCallback(device!!)
         setContentView(R.layout.activity_request_mtu)
         btnRequest.setOnClickListener { 
             val numStr = etMtu.text.toString()
@@ -57,7 +54,7 @@ class RequestMtuActivity : AppCompatActivity() {
                 numStr.isEmpty() -> ToastUtils.showShort("请设置数值")
                 numStr.toInt() > 512 -> ToastUtils.showShort("数值超过范围")
                 numStr.toInt() < 20 -> ToastUtils.showShort("数值不合法")
-                else -> Ble.getInstance().getConnection(device)?.requestMtu("REQUEST_MTU", numStr.toInt(), callback)
+                else -> Ble.getInstance().getConnection(device)?.requestMtu("REQUEST_MTU", numStr.toInt())
             }
         }
         btnGenerateByteArr.setOnClickListener {
@@ -77,10 +74,10 @@ class RequestMtuActivity : AppCompatActivity() {
         btnSendData.setOnClickListener {
             thread {
                 Ble.getInstance().getConnection(device)?.writeCharacteristicValue("write", writeService!!.uuid,
-                        writeCharacteristic!!.uuid, data, callback)
+                        writeCharacteristic!!.uuid, data)
                 while (run && loop) {
                     Ble.getInstance().getConnection(device)?.writeCharacteristicValue("write", writeService!!.uuid,
-                            writeCharacteristic!!.uuid, data, callback)                    
+                            writeCharacteristic!!.uuid, data)                    
                     Thread.sleep(delay)
                 }
                 Ble.getInstance().getConnection(device)?.clearRequestQueue()
@@ -109,29 +106,30 @@ class RequestMtuActivity : AppCompatActivity() {
         }
     }
     
-    private inner class MyCallback(dev: Device) : RequestCallback(dev) {
-        override fun onMtuChanged(requestId: String, gatt: BluetoothGatt?, mtu: Int) {
-            runOnUiThread {
-                this@RequestMtuActivity.mtu = mtu
-                tvMtu.text = "当前MTU： $mtu"
-                btnGenerateByteArr.visibility = View.VISIBLE
-                btnSendData.visibility = View.VISIBLE
-            }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun handleRequestIntEvent(e: RequestIntEvent) {
+        if (e.requestId == "REQUEST_MTU" && e.eventType == EventType.ON_MTU_CHANGED) {
+            mtu = e.result
+            tvMtu.text = "当前MTU： $mtu"
+            btnGenerateByteArr.visibility = View.VISIBLE
+            btnSendData.visibility = View.VISIBLE
         }
+    }
 
-        override fun onRequestFialed(requestId: String, requestType: Request.RequestType, failType: Int, value: ByteArray?) {
-            if (!loop) {
-                if (requestId == "REQUEST_MTU" && requestType == Request.RequestType.SET_MTU) {
-                    ToastUtils.showShort("修改失败")
-                } else if (requestId == "write") {
-                    ToastUtils.showShort("写入失败")
-                }
-            }
+    @Subscribe(threadMode = ThreadMode.POSTING)
+    fun handleRequestEvent(e: RequestEvent) {
+        if (e.eventType == EventType.ON_WRITE_CHARACTERISTIC && e.requestId == "write" && !loop) {
+            ToastUtils.showShort("写入成功")
         }
+    }
 
-        override fun onCharacteristicWrite(requestId: String, gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
-            if (!loop) {
-                ToastUtils.showShort("写入成功")
+    @Subscribe(threadMode = ThreadMode.POSTING)
+    fun handleRequestFailedEvent(e: RequestFailedEvent) {
+        if (!loop) {
+            if (e.requestId == "REQUEST_MTU" && e.requestType == Request.RequestType.SET_MTU) {
+                ToastUtils.showShort("MTU修改失败")
+            } else if (e.requestId == "write" && e.requestType == Request.RequestType.WRITE_CHARACTERISTIC) {
+                ToastUtils.showShort("写入失败")
             }
         }
     }

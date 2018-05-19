@@ -36,4 +36,6 @@ public interface EventType {
     int ON_INDICATION_REGISTERED = 13;
     /** indication取消注册成功 */
     int ON_INDICATION_UNREGISTERED = 14;
+    /** 蓝牙连接释放了 */
+    int ON_CONNECTION_RELEASED = 15;
 }
