@@ -185,7 +185,7 @@ public class Ble {
     //检查是否初始化过
     private void checkIfInit() {
         if (!isInited) {
-            throw new RuntimeException("BLE实例未初始化，请先调用init(Context context, InitCallback callback)初始化");
+            throw new RuntimeException("BLE实例未初始化，请先调用initialize(Context context, InitCallback callback)初始化");
         }
     }
     
