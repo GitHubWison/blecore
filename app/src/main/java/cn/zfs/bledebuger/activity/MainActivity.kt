@@ -36,6 +36,7 @@ class MainActivity : CheckPermissionsActivity() {
         
         Ble.getInstance().setLogPrintLevelControl(LogController.ALL)//输出日志
         Ble.getInstance().addScanListener(scanListener)     
+        Ble.getInstance().configuration.isWaitWriteResult = true
     }
 
     private fun initViews() {
