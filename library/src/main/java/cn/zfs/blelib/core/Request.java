@@ -39,6 +39,7 @@ public class Request {
     public UUID descriptor;
     public String requestId;
     public byte[] value;
+    boolean waitWriteResult;
 
     public Request(@NonNull RequestType type, @NonNull String requestId, UUID service, UUID characteristic, UUID descriptor) {
         this.type = type;

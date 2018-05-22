@@ -110,7 +110,7 @@ class RequestMtuActivity : AppCompatActivity() {
     }
     
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onMtuChanged(e: MtuChangedEvent<Device>) {
+    fun onMtuChanged(e: MtuChangedEvent) {
         if (e.requestId == "REQUEST_MTU") {
             mtu = e.mtu
             tvMtu.text = "当前MTU： $mtu"
@@ -120,7 +120,7 @@ class RequestMtuActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.POSTING)
-    fun onCharacteristicWrite(e: CharacteristicWriteEvent<Device>) {
+    fun onCharacteristicWrite(e: CharacteristicWriteEvent) {
         if (e.requestId == "write" && !loop) {
             ToastUtils.showShort("写入成功")
         }

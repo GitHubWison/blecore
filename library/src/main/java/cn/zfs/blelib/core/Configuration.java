@@ -26,6 +26,7 @@ public class Configuration {
     private boolean useBluetoothLeScanner = true;
     private int packageSize = 20;//发送数据时的分包大小
     private int writeType;
+    private boolean waitWriteResult;
 
     public Class<? extends Device> getDeviceClass() {
         return deviceClass;
@@ -191,5 +192,17 @@ public class Configuration {
      */
     public void setWriteType(int writeType) {
         this.writeType = writeType;
+    }
+
+    public boolean isWaitWriteResult() {
+        return waitWriteResult;
+    }
+
+    /**
+     * 是否等待写入结果，不等待则直接处理下一个请求，否则等待onCharacteristicWrite回调后再处理下一请求，默认不等待。
+     * 不等待的话也不会处理写入结果回调，也意味着不会发布写入结果的消息
+     */
+    public void setWaitWriteResult(boolean waitWriteResult) {
+        this.waitWriteResult = waitWriteResult;
     }
 }

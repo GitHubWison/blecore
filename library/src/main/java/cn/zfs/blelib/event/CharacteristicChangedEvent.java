@@ -10,10 +10,10 @@ import cn.zfs.blelib.core.Device;
  * 时间: 2018/5/19 20:05
  * 作者: zengfansheng
  */
-public class CharacteristicChangedEvent<D extends Device> extends DeviceEvent<D> {
+public class CharacteristicChangedEvent extends DeviceEvent<Device> {
     public BluetoothGattCharacteristic characteristic;
 
-    public CharacteristicChangedEvent(@NonNull D device, BluetoothGattCharacteristic characteristic) {
+    public CharacteristicChangedEvent(@NonNull Device device, BluetoothGattCharacteristic characteristic) {
         super(device);
         this.characteristic = characteristic;
     }

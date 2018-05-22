@@ -10,7 +10,7 @@ import cn.zfs.blelib.core.Device;
  * 时间: 2018/5/19 19:51
  * 作者: zengfansheng
  */
-public class ConnectTimeoutEvent<D extends Device> extends DeviceEvent<D> {
+public class ConnectTimeoutEvent extends DeviceEvent<Device> {
     /**
      * 设备连接超时。可能的值：
      * <br>{@link Connection#TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE}
@@ -19,7 +19,7 @@ public class ConnectTimeoutEvent<D extends Device> extends DeviceEvent<D> {
      */
     public int type;
 
-    public ConnectTimeoutEvent(@NonNull D device, int type) {
+    public ConnectTimeoutEvent(@NonNull Device device, int type) {
         super(device);
         this.type = type;
     }

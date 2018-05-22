@@ -10,10 +10,10 @@ import cn.zfs.blelib.core.Device;
  * 时间: 2018/5/19 20:21
  * 作者: zengfansheng
  */
-public class IndicationRegisteredEvent<D extends Device> extends BothDeviceAndRequestIdEvent<D> {
+public class IndicationRegisteredEvent extends BothDeviceAndRequestIdEvent<Device> {
     public BluetoothGattDescriptor descriptor;
 
-    public IndicationRegisteredEvent(@NonNull D device, @NonNull String requestId, BluetoothGattDescriptor descriptor) {
+    public IndicationRegisteredEvent(@NonNull Device device, @NonNull String requestId, BluetoothGattDescriptor descriptor) {
         super(device, requestId);
         this.descriptor = descriptor;
     }

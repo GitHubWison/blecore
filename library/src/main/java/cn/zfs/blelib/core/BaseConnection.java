@@ -61,6 +61,8 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     
     protected abstract int getWriteType();
     
+    protected abstract boolean isWaitWriteResult();
+    
     /*
      * Clears the internal cache and forces a refresh of the services from the
      * remote device.
@@ -90,7 +92,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
 
     @Override
     public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-        if (currentRequest != null && currentRequest.type == Request.RequestType.WRITE_CHARACTERISTIC) {
+        if (currentRequest != null && currentRequest.waitWriteResult && currentRequest.type == Request.RequestType.WRITE_CHARACTERISTIC) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 requestCallback.onCharacteristicWrite(currentRequest.requestId, gatt, characteristic);
             } else if (status == GATT_REQ_NOT_SUPPORTED) {
@@ -419,6 +421,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
         if (bluetoothAdapter.isEnabled()) {
             currentRequest = new Request(Request.RequestType.WRITE_CHARACTERISTIC, requestId, service, characteristic,
                     null, value);
+            currentRequest.waitWriteResult = isWaitWriteResult();
             if (bluetoothGatt != null) {
                 BluetoothGattService gattService = bluetoothGatt.getService(service);
                 if (gattService != null) {
@@ -431,6 +434,8 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                         }                        
                         if (!bluetoothGatt.writeCharacteristic(gattCharacteristic)) {
                             handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, true);
+                        } else if (!currentRequest.waitWriteResult) {
+                            processNextRequest();
                         }
                     } else {
                         handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_CHARACTERISTIC, currentRequest.value, true);

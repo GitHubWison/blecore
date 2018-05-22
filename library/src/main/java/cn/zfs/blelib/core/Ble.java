@@ -52,12 +52,14 @@ public class Ble {
     private Configuration configuration;
     private List<ScanListener> scanListeners;
     private Handler mainThreadHandler;
+    private EventBus publisher;
 
     private Ble() {
         configuration = new Configuration();
         connectionMap = new ConcurrentHashMap<>();
         mainThreadHandler = new Handler(Looper.getMainLooper());
         scanListeners = new ArrayList<>();
+        publisher = EventBus.builder().build();
     }
 
     private static class Holder {
@@ -149,7 +151,7 @@ public class Ble {
         public void onReceive(Context context, Intent intent) {
             if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(intent.getAction())) {//蓝牙开关状态变化                 
                 if (bluetoothAdapter != null) {
-                    EventBus.getDefault().post(new BluetoothStateChangedEvent(bluetoothAdapter.getState()));
+                    publisher.post(new BluetoothStateChangedEvent(bluetoothAdapter.getState()));
                     if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {//蓝牙关闭了
                         handleScanCallback(false, null, null);
                         //主动断开，停止定时器和重连尝试
@@ -189,13 +191,17 @@ public class Ble {
         }
     }
     
+    public EventBus getPublisher() {
+        return publisher;
+    }
+    
     /**
      * 注册订阅者，开始监听蓝牙状态及数据
      * @param subscriber 订阅者
      */
     public void registerSubscriber(Object subscriber) {
-        if (!EventBus.getDefault().isRegistered(subscriber)) {
-            EventBus.getDefault().register(subscriber);
+        if (!publisher.isRegistered(subscriber)) {
+            publisher.register(subscriber);
         }
     }
 
@@ -204,7 +210,7 @@ public class Ble {
      * @param subscriber 订阅者
      */
     public void unregisterSubscriber(Object subscriber) {
-        EventBus.getDefault().unregister(subscriber);
+        publisher.unregister(subscriber);
     }
 
     /**

@@ -7,13 +7,13 @@ import cn.zfs.blelib.core.Device;
  * 时间: 2018/5/19 19:35
  * 作者: zengfansheng
  */
-public class ConnectionCreateFailedEvent<D extends Device> {
+public class ConnectionCreateFailedEvent {
     /** 设备 */
-    public D device;
+    public Device device;
     /** 失败详情 */
     public String error;
 
-    public ConnectionCreateFailedEvent(D device, String error) {
+    public ConnectionCreateFailedEvent(Device device, String error) {
         this.device = device;
         this.error = error;
     }

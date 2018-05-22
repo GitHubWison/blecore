@@ -9,11 +9,11 @@ import cn.zfs.blelib.core.Device;
  * 时间: 2018/5/19 20:10
  * 作者: zengfansheng
  */
-public class MtuChangedEvent<D extends Device> extends BothDeviceAndRequestIdEvent<D> {
+public class MtuChangedEvent extends BothDeviceAndRequestIdEvent<Device> {
     /** 新的MTU值 */
     public int mtu;
 
-    public MtuChangedEvent(@NonNull D device, @NonNull String requestId, int mtu) {
+    public MtuChangedEvent(@NonNull Device device, @NonNull String requestId, int mtu) {
         super(device, requestId);
         this.mtu = mtu;
     }

@@ -10,7 +10,7 @@ import cn.zfs.blelib.core.Device;
  * 时间: 2018/5/19 19:42
  * 作者: zengfansheng
  */
-public class ConnectionStateChangedEvent<D extends Device> extends DeviceEvent<D> {
+public class ConnectionStateChangedEvent extends DeviceEvent<Device> {
     /**
      * 当前连接状态。可能的值：
      * <br>{@link Connection#STATE_DISCONNECTED} 
@@ -23,7 +23,7 @@ public class ConnectionStateChangedEvent<D extends Device> extends DeviceEvent<D
      */
     public int state;
 
-    public ConnectionStateChangedEvent(@NonNull D device, int state) {
+    public ConnectionStateChangedEvent(@NonNull Device device, int state) {
         super(device);
         this.state = state;
     }

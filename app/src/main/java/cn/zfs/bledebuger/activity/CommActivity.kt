@@ -168,17 +168,17 @@ class CommActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onConnectionStateChange(e: ConnectionStateChangedEvent<Device>) {
+    fun onConnectionStateChange(e: ConnectionStateChangedEvent) {
         updateState(e.state)
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onConnectionCreateFailed(e: ConnectionCreateFailedEvent<Device>) {
+    fun onConnectionCreateFailed(e: ConnectionCreateFailedEvent) {
         tvState.text = "无法建立连接： ${e.error}"
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onCharacteristicChanged(e: CharacteristicChangedEvent<Device>) {
+    fun onCharacteristicChanged(e: CharacteristicChangedEvent) {
         if (!pause) {
             if (tvLogs.text.length > 1024 * 1024) {
                 tvLogs.text = ""
@@ -201,7 +201,7 @@ class CommActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
-    fun onCharacteristicWrite(e: CharacteristicWriteEvent<Device>) {
+    fun onCharacteristicWrite(e: CharacteristicWriteEvent) {
         successCount++
     }
     
