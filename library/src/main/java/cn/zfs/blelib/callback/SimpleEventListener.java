@@ -21,77 +21,77 @@ import cn.zfs.blelib.event.RequestFailedEvent;
  * 时间: 2018/5/23 14:09
  * 作者: zengfansheng
  */
-public interface EventListener {
+public class SimpleEventListener {
 
     /**
      * 蓝牙状态变化
      */
-    void onBluetoothStateChanged(BluetoothStateChangedEvent event);
+    public void onBluetoothStateChanged(BluetoothStateChangedEvent event) {}
 
     /**
      * 收到设备notify值 （设备上报值）
      */
-    void onCharacteristicChanged(CharacteristicChangedEvent event);
+    public void onCharacteristicChanged(CharacteristicChangedEvent event) {}
 
     /**
      * 读取到特征字的值
      */
-    void onCharacteristicRead(CharacteristicReadEvent event);
+    public void onCharacteristicRead(CharacteristicReadEvent event) {}
 
     /**
      * 写入成功
      */
-    void onCharacteristicWrite(CharacteristicWriteEvent event);
+    public void onCharacteristicWrite(CharacteristicWriteEvent event) {}
 
     /**
      * 连接创建失败
      */
-    void onConnectionCreateFailed(ConnectionCreateFailedEvent event);
+    public void onConnectionCreateFailed(ConnectionCreateFailedEvent event) {}
 
     /**
      * 连接状态变化
      */
-    void onConnectionStateChanged(ConnectionStateChangedEvent event);
+    public void onConnectionStateChanged(ConnectionStateChangedEvent event) {}
 
     /**
      * 连接超时
      */
-    void onConnectTimeout(ConnectTimeoutEvent event);
+    public void onConnectTimeout(ConnectTimeoutEvent event) {}
 
-    void onDescriptorRead(DescriptorReadEvent event);
+    public void onDescriptorRead(DescriptorReadEvent event) {}
 
     /**
      * indication注册成功
      */
-    void onIndicationRegistered(IndicationRegisteredEvent event);
+    public void onIndicationRegistered(IndicationRegisteredEvent event) {}
 
     /**
      * indication取消注册成功
      */
-    void onIndicationUnregistered(IndicationUnregisteredEvent event);
+    public void onIndicationUnregistered(IndicationUnregisteredEvent event) {}
 
     /**
      * MTU修改成功
      */
-    void onMtuChanged(MtuChangedEvent event);
+    public void onMtuChanged(MtuChangedEvent event) {}
 
     /**
      * notification注册成功
      */
-    void onNotificationRegistered(NotificationRegisteredEvent event);
+    public void onNotificationRegistered(NotificationRegisteredEvent event) {}
 
     /**
      * notification取消注册成功
      */
-    void onNotificationUnregistered(NotificationUnregisteredEvent event);
+    public void onNotificationUnregistered(NotificationUnregisteredEvent event) {}
 
     /**
      * 读取到信息强度
      */
-    void onReadRemoteRssi(ReadRemoteRssiEvent event);
+    public void onReadRemoteRssi(ReadRemoteRssiEvent event) {}
 
     /**
      * 请求失败事件，如读特征值、写特征值、开启notification等等
      */
-    void onRequestFailed(RequestFailedEvent event);
+    public void onRequestFailed(RequestFailedEvent event) {}
 }
