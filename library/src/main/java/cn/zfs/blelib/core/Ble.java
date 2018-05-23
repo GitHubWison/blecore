@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import cn.zfs.blelib.callback.ConnectionCallback;
 import cn.zfs.blelib.callback.InitCallback;
@@ -52,6 +54,7 @@ public class Ble {
     private Configuration configuration;
     private List<ScanListener> scanListeners;
     private Handler mainThreadHandler;
+    private ExecutorService executorService;
     private EventBus publisher;
 
     private Ble() {
@@ -59,6 +62,7 @@ public class Ble {
         connectionMap = new ConcurrentHashMap<>();
         mainThreadHandler = new Handler(Looper.getMainLooper());
         scanListeners = new ArrayList<>();
+        executorService = Executors.newCachedThreadPool();
         publisher = EventBus.builder().build();
     }
 
@@ -189,6 +193,10 @@ public class Ble {
         if (!isInited) {
             throw new RuntimeException("BLE实例未初始化，请先调用initialize(Context context, InitCallback callback)初始化");
         }
+    }
+    
+    public ExecutorService getExecutorService() {
+        return executorService;
     }
     
     public EventBus getPublisher() {

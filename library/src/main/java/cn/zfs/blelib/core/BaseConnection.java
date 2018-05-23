@@ -505,8 +505,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
 
     private void performNotificationRequest(String requestId, UUID service, UUID characteristic, byte[] value) {
         if (bluetoothAdapter.isEnabled()) {
-            currentRequest = new Request(Request.RequestType.CHARACTERISTIC_NOTIFICATION, requestId, service, characteristic,
-                    null, value);
+            currentRequest = new Request(Request.RequestType.CHARACTERISTIC_NOTIFICATION, requestId, service, characteristic, null, value);
             if (bluetoothGatt != null) {
                 BluetoothGattService gattService = bluetoothGatt.getService(service);
                 if (gattService != null) {
