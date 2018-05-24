@@ -4,6 +4,7 @@
 
     <item
         android:id="@+id/menuProgress"
+        android:title=""
         android:checkable="false"
         android:orderInCategory="1"
         app:showAsAction="ifRoom"/>

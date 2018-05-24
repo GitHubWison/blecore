@@ -87,6 +87,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
     private boolean autoReconnEnable = true;//重连控制
 	private int refreshTimes;//记录刷新次数，如果成功发现服务器，则清零
     private int tryReconnectTimes;
+    private boolean notifyTimeout;
 	    
     private Connection(BluetoothDevice bluetoothDevice) {
         super(bluetoothDevice);
@@ -118,26 +119,6 @@ public class Connection extends BaseConnection implements IRequestCallback {
         conn.handler.sendEmptyMessageDelayed(MSG_TIMER, connectDelay + 1000);//启动定时器，用于断线重连
 		return conn;
 	}
-
-    @Override
-    protected int getWriteDelayMillis() {
-        return Ble.getInstance().getConfiguration().getWriteDelayMillis();
-    }
-
-    @Override
-    protected int getPackageSize() {
-        return Ble.getInstance().getConfiguration().getPackageSize();
-    }
-
-    @Override
-    protected int getWriteType() {
-        return Ble.getInstance().getConfiguration().getWriteType();
-    }
-
-    @Override
-    protected boolean isWaitWriteResult() {
-        return Ble.getInstance().getConfiguration().isWaitWriteResult();
-    }
 
     /**
      * 获取当前连接的设备
@@ -195,6 +176,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
             } else {
                 switch(msg.what) {
                     case MSG_CONNECT://连接
+                        conn.notifyTimeout = true;
                         conn.doConnect();
                 		break;
                     case MSG_DISCONNECT://处理断开
@@ -240,7 +222,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
     private void doOnConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
         if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
             Ble.println(Connection.class, Log.DEBUG, "连接状态：STATE_CONNECTED, " +
-                    gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress());
+                    gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress());            
             device.connectionState = STATE_CONNECTED;
             sendConnectionCallback();            
             // 进行服务发现，延时
@@ -249,6 +231,11 @@ public class Connection extends BaseConnection implements IRequestCallback {
             Ble.println(Connection.class, Log.DEBUG, "连接状态：STATE_DISCONNECTED, " +
                     gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress() + ", autoReconnEnable: " + autoReconnEnable);
             notifyDisconnected();
+            //如果连接上马上又断开，直接把连接开始时间往前推到可以重连的范围
+            if (System.currentTimeMillis() - connStartTime < 1000) {
+                connStartTime = System.currentTimeMillis() - Ble.getInstance().getConfiguration().getConnectTimeoutMillis();
+                notifyTimeout = false;
+            }
         } else if (status == 133) {
             doClearTaskAndRefresh(true);
             Ble.println(Connection.class, Log.ERROR, "onConnectionStateChange error, status: " + status + ", " +
@@ -301,7 +288,10 @@ public class Connection extends BaseConnection implements IRequestCallback {
                 } else {
                     type = TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES;
                 }
-                Ble.getInstance().getPublisher().post(new ConnectTimeoutEvent(device, type));
+                if (notifyTimeout) {
+                    Ble.getInstance().getPublisher().post(new ConnectTimeoutEvent(device, type));
+                }
+                notifyTimeout = true;
             }
             if (autoReconnEnable) {
                 doDisconnect(true, false);
@@ -393,7 +383,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
         handler.sendEmptyMessageDelayed(MSG_TIMER, 1000);//重启定时器
 	}
 
-    public synchronized void disconnect() {
+    public void disconnect() {
         handler.removeMessages(MSG_TIMER);//主动断开，停止定时器
         handler.sendMessage(Message.obtain(handler, MSG_DISCONNECT, MSG_ARG1_NONE));
 	}

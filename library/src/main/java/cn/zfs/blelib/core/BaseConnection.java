@@ -52,6 +52,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     public void clearRequestQueue() {
         requestQueue.clear();
         currentRequest = null;
+        writeHandler.removeCallbacksAndMessages(null);
     }
     
     public void release() {
@@ -73,7 +74,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
         }
         return false;
     }
-
+    
     @Override
     public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
         // 读取到值
@@ -202,35 +203,28 @@ public abstract class BaseConnection extends BluetoothGattCallback {
         }
     }
     
-    public void requestMtu(@NonNull final String requestId, final int mtu) {
-        writeHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performRequestMtu(requestId, mtu);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.SET_MTU, requestId, null, null, null, BleUtils.numberToBytes(mtu, false)));
-                }
+    public void requestMtu(@NonNull String requestId, int mtu) {
+        synchronized (this) {
+            if (currentRequest == null) {
+                performRequestMtu(requestId, mtu);
+                return;
             }
-        });
+        }
+        requestQueue.add(new Request(Request.RequestType.SET_MTU, requestId, null, null, null, BleUtils.numberToBytes(mtu, false)));
     }
     
     /*
      * 请求读取characteristic的值
      * @param requestId 请求码
      */
-    public void requestCharacteristicValue(@NonNull final String requestId, final UUID service, final UUID characteristic) {
-        writeHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performCharacteristicValueRequest(requestId, service, characteristic);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.READ_CHARACTERISTIC, requestId, service, characteristic,
-                            null));
-                }
+    public void requestCharacteristicValue(@NonNull String requestId, UUID service, UUID characteristic) {
+        synchronized (this) {
+            if (currentRequest == null) {
+                performCharacteristicValueRequest(requestId, service, characteristic);
+                return;
             }
-        });
+        }
+        requestQueue.add(new Request(Request.RequestType.READ_CHARACTERISTIC, requestId, service, characteristic, null));
     }
 
     /**
@@ -238,110 +232,90 @@ public abstract class BaseConnection extends BluetoothGattCallback {
      * @param requestId 请求码
      * @param enable 开启还是关闭
      */
-    public void requestCharacteristicNotification(@NonNull final String requestId, final UUID service, final UUID characteristic, final boolean enable) {
-        writeHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performNotificationRequest(requestId, service, characteristic, enable ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.CHARACTERISTIC_NOTIFICATION, requestId, service,
-                            characteristic, null));
-                }
+    public void requestCharacteristicNotification(@NonNull String requestId, UUID service, UUID characteristic, boolean enable) {
+        synchronized (this) {
+            if (currentRequest == null) {
+                performNotificationRequest(requestId, service, characteristic, enable ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+                return;
             }
-        });
+        }
+        requestQueue.add(new Request(Request.RequestType.CHARACTERISTIC_NOTIFICATION, requestId, service, characteristic, null));
     }
 
     /**
      * @param enable 开启还是关闭
      */
-    public void requestCharacteristicIndication(@NonNull final String requestId, final UUID service, final UUID characteristic, final boolean enable) {
-        writeHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performIndicationRequest(requestId, service, characteristic, enable ? BluetoothGattDescriptor.ENABLE_INDICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.CHARACTERISTIC_INDICATION, requestId, service,
-                            characteristic, null));
-                }
+    public void requestCharacteristicIndication(@NonNull String requestId, UUID service, UUID characteristic, boolean enable) {
+        synchronized (this) {
+            if (currentRequest == null) {
+                performIndicationRequest(requestId, service, characteristic, enable ? BluetoothGattDescriptor.ENABLE_INDICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+                return;
             }
-        });
+        }
+        requestQueue.add(new Request(Request.RequestType.CHARACTERISTIC_INDICATION, requestId, service, characteristic, null));
     }
 
-    public void requestDescriptorValue(@NonNull final String requestId, final UUID service, final UUID characteristic, final UUID descriptor) {
-        writeHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performDescriptorValueRequest(requestId, service, characteristic, descriptor);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.READ_DESCRIPTOR, requestId, service, characteristic, descriptor));
-                }
+    public void requestDescriptorValue(@NonNull String requestId, UUID service, UUID characteristic, UUID descriptor) {
+        synchronized (this) {
+            if (currentRequest == null) {
+                performDescriptorValueRequest(requestId, service, characteristic, descriptor);
+                return;
             }
-        });
+        }
+        requestQueue.add(new Request(Request.RequestType.READ_DESCRIPTOR, requestId, service, characteristic, descriptor));
     }
 
-    public void writeCharacteristicValue(@NonNull final String requestId, final UUID service, final UUID characteristic, final byte[] value) {
-        writeHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performCharacteristicWrite(requestId, service, characteristic, value);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.WRITE_CHARACTERISTIC, requestId, service, characteristic, null, value));
-                }
+    public void writeCharacteristicValue(@NonNull String requestId, UUID service, UUID characteristic, byte[] value) {
+        synchronized (this) {
+            if (currentRequest == null) {
+                performCharacteristicWrite(requestId, service, characteristic, value);
+                return;
             }
-        });
+        }
+        requestQueue.add(new Request(Request.RequestType.WRITE_CHARACTERISTIC, requestId, service, characteristic, null, value));
     }
 
-    public void requestRssiValue(@NonNull final String requestId) {
-        writeHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performRssiValueRequest(requestId);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.READ_RSSI, requestId, null, null, null));
-                }
+    public void requestRssiValue(@NonNull String requestId) {
+        synchronized (this) {
+            if (currentRequest == null) {
+                performRssiValueRequest(requestId);
+                return;
             }
-        });
+        }
+        requestQueue.add(new Request(Request.RequestType.READ_RSSI, requestId, null, null, null));
     }
 
-    private synchronized void processNextRequest() {
-        writeHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (requestQueue.isEmpty()) {
-                    currentRequest = null;
-                    return;
-                }
-                Request request = requestQueue.remove();
-                switch (request.type) {
-                    case CHARACTERISTIC_NOTIFICATION:
-                        performNotificationRequest(request.requestId, request.service, request.characteristic, request.value);
-                        break;
-                    case CHARACTERISTIC_INDICATION:
-                        performIndicationRequest(request.requestId, request.service, request.characteristic, request.value);
-                        break;
-                    case READ_CHARACTERISTIC:
-                        performCharacteristicValueRequest(request.requestId, request.service, request.characteristic);
-                        break;
-                    case READ_DESCRIPTOR:
-                        performDescriptorValueRequest(request.requestId, request.service, request.characteristic, request.descriptor);
-                        break;
-                    case WRITE_CHARACTERISTIC:
-                        performCharacteristicWrite(request.requestId, request.service, request.characteristic, request.value);
-                        break;
-                    case READ_RSSI:
-                        performRssiValueRequest(request.requestId);
-                        break;
-                    case SET_MTU:
-                        performRequestMtu(request.requestId, (int) BleUtils.bytesToLong(request.value, false));
-                        break;
-                }
+    private void processNextRequest() {
+        synchronized (this) {
+            if (requestQueue.isEmpty()) {
+                currentRequest = null;
+                return;
             }
-        });
+            Request request = requestQueue.remove();
+            switch (request.type) {
+                case CHARACTERISTIC_NOTIFICATION:
+                    performNotificationRequest(request.requestId, request.service, request.characteristic, request.value);
+                    break;
+                case CHARACTERISTIC_INDICATION:
+                    performIndicationRequest(request.requestId, request.service, request.characteristic, request.value);
+                    break;
+                case READ_CHARACTERISTIC:
+                    performCharacteristicValueRequest(request.requestId, request.service, request.characteristic);
+                    break;
+                case READ_DESCRIPTOR:
+                    performDescriptorValueRequest(request.requestId, request.service, request.characteristic, request.descriptor);
+                    break;
+                case WRITE_CHARACTERISTIC:
+                    performCharacteristicWrite(request.requestId, request.service, request.characteristic, request.value);
+                    break;
+                case READ_RSSI:
+                    performRssiValueRequest(request.requestId);
+                    break;
+                case SET_MTU:
+                    performRequestMtu(request.requestId, (int) BleUtils.bytesToLong(request.value, false));
+                    break;
+            }
+        }
     }
 
     private void performRequestMtu(String requestId, int mtu) {

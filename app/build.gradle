@@ -11,6 +11,9 @@ android {
         versionCode 3
         versionName "1.2"
     }
+    lintOptions {
+        abortOnError false
+    }
     buildTypes {
         release {
             minifyEnabled false

@@ -376,8 +376,13 @@ public class Ble {
         }
     }
 
-    //解析广播字段
-    private void parseScanResult(BluetoothDevice device, int rssi, final byte[] scanRecord) {
+    /**
+     * 解析广播字段
+     * @param device 蓝牙设备
+     * @param rssi 信号强度
+     * @param scanRecord 广播内容
+     */
+    public void parseScanResult(BluetoothDevice device, int rssi, final byte[] scanRecord) {
         for (Connection connection : connectionMap.values()) {
             connection.onScanResult(device.getAddress());
         }

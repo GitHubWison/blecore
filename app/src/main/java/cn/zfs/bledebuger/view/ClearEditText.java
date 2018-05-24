@@ -8,12 +8,11 @@ import android.text.TextWatcher;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.EditText;
 
 /**
  * 带可清除的EditText
  */
-public class ClearEditText extends EditText implements View.OnFocusChangeListener, TextWatcher {
+public class ClearEditText extends android.support.v7.widget.AppCompatEditText implements View.OnFocusChangeListener, TextWatcher {
     //EditText右侧的删除按钮  
     private Drawable mClearDrawable;
     private boolean hasFoucs;

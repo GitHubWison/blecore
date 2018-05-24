@@ -16,7 +16,9 @@ public class LogController {
     public static final int ERROR = WARN << 1;
     public static final int ALL = VERBOSE|INFO|DEBUG|WARN|ERROR;
 
-    /**控制输出级别<br>{@link #NONE}, {@link #VERBOSE}, {@link #DEBUG}, {@link #INFO}, {@link #WARN}, {@link #ERROR}*/
+    /**
+     * 控制输出级别<br>{@link #NONE}, {@link #VERBOSE}, {@link #DEBUG}, {@link #INFO}, {@link #WARN}, {@link #ERROR}
+     */
     public static int printLevelControl = NONE;
 
     public static boolean accept(int priority) {
