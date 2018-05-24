@@ -397,11 +397,6 @@ public class Connection extends BaseConnection implements IRequestCallback {
         handler.removeMessages(MSG_TIMER);//主动断开，停止定时器
         handler.sendMessage(Message.obtain(handler, MSG_DISCONNECT, MSG_ARG1_NONE));
 	}
-
-	public void clearRequestQueue() {
-        requestQueue.clear();
-        currentRequest = null;
-    }
 	
     /**
      * 清理缓存

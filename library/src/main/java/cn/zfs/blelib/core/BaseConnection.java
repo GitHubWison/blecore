@@ -37,31 +37,28 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     protected Request currentRequest;
     private BluetoothGattCharacteristic pendingCharacteristic;
     protected BluetoothAdapter bluetoothAdapter;
-    private HandlerThread handlerThread;
-    private Handler requestHandler;
     private IRequestCallback requestCallback;
+    private Handler writeHandler;
+    private HandlerThread handlerThread;
 
     BaseConnection(BluetoothDevice bluetoothDevice) {
         this.bluetoothDevice = bluetoothDevice;
-        handlerThread = new HandlerThread("ConnectionThread_" + bluetoothDevice.getAddress());
-        handlerThread.start();
-        requestHandler = new Handler(handlerThread.getLooper());
         requestCallback = getRequestCallback();
+        handlerThread = new HandlerThread("WriteThread");
+        handlerThread.start();
+        writeHandler = new Handler(handlerThread.getLooper());
     }
 
+    public void clearRequestQueue() {
+        requestQueue.clear();
+        currentRequest = null;
+    }
+    
     public void release() {
-        handlerThread.quit();//移除所有消息，停止线程
+        handlerThread.quit();
     }
 
     protected abstract @NonNull IRequestCallback getRequestCallback();
-    
-    protected abstract int getWriteDelayMillis();
-    
-    protected abstract int getPackageSize();
-    
-    protected abstract int getWriteType();
-    
-    protected abstract boolean isWaitWriteResult();
     
     /*
      * Clears the internal cache and forces a refresh of the services from the
@@ -206,7 +203,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     }
     
     public void requestMtu(@NonNull final String requestId, final int mtu) {
-        requestHandler.post(new Runnable() {
+        writeHandler.post(new Runnable() {
             @Override
             public void run() {
                 if (currentRequest == null) {
@@ -223,7 +220,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
      * @param requestId 请求码
      */
     public void requestCharacteristicValue(@NonNull final String requestId, final UUID service, final UUID characteristic) {
-        requestHandler.post(new Runnable() {
+        writeHandler.post(new Runnable() {
             @Override
             public void run() {
                 if (currentRequest == null) {
@@ -242,7 +239,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
      * @param enable 开启还是关闭
      */
     public void requestCharacteristicNotification(@NonNull final String requestId, final UUID service, final UUID characteristic, final boolean enable) {
-        requestHandler.post(new Runnable() {
+        writeHandler.post(new Runnable() {
             @Override
             public void run() {
                 if (currentRequest == null) {
@@ -259,7 +256,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
      * @param enable 开启还是关闭
      */
     public void requestCharacteristicIndication(@NonNull final String requestId, final UUID service, final UUID characteristic, final boolean enable) {
-        requestHandler.post(new Runnable() {
+        writeHandler.post(new Runnable() {
             @Override
             public void run() {
                 if (currentRequest == null) {
@@ -273,7 +270,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     }
 
     public void requestDescriptorValue(@NonNull final String requestId, final UUID service, final UUID characteristic, final UUID descriptor) {
-        requestHandler.post(new Runnable() {
+        writeHandler.post(new Runnable() {
             @Override
             public void run() {
                 if (currentRequest == null) {
@@ -286,7 +283,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     }
 
     public void writeCharacteristicValue(@NonNull final String requestId, final UUID service, final UUID characteristic, final byte[] value) {
-        requestHandler.post(new Runnable() {
+        writeHandler.post(new Runnable() {
             @Override
             public void run() {
                 if (currentRequest == null) {
@@ -299,7 +296,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     }
 
     public void requestRssiValue(@NonNull final String requestId) {
-        requestHandler.post(new Runnable() {
+        writeHandler.post(new Runnable() {
             @Override
             public void run() {
                 if (currentRequest == null) {
@@ -311,8 +308,8 @@ public abstract class BaseConnection extends BluetoothGattCallback {
         });
     }
 
-    private void processNextRequest() {
-        requestHandler.post(new Runnable() {
+    private synchronized void processNextRequest() {
+        writeHandler.post(new Runnable() {
             @Override
             public void run() {
                 if (requestQueue.isEmpty()) {
@@ -402,11 +399,12 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     }
 
     private void performCharacteristicWrite(final String requestId, final UUID service, final UUID characteristic, final byte[] value) {
-        requestHandler.postDelayed(new Runnable() {
+        writeHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (value.length > getPackageSize()) {
-                    List<byte[]> list = BleUtils.splitPackage(value, getPackageSize());
+                int packSize = Ble.getInstance().getConfiguration().getPackageSize();
+                if (value.length > packSize) {
+                    List<byte[]> list = BleUtils.splitPackage(value, packSize);
                     for (byte[] bytes : list) {
                         doWrite(requestId, service, characteristic, bytes);
                     }
@@ -414,23 +412,24 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                     doWrite(requestId, service, characteristic, value);
                 }
             }
-        }, getWriteDelayMillis());
+        }, Ble.getInstance().getConfiguration().getWriteDelayMillis());
     }
 
     private void doWrite(String requestId, UUID service, UUID characteristic, byte[] value) {
         if (bluetoothAdapter.isEnabled()) {
             currentRequest = new Request(Request.RequestType.WRITE_CHARACTERISTIC, requestId, service, characteristic,
                     null, value);
-            currentRequest.waitWriteResult = isWaitWriteResult();
+            currentRequest.waitWriteResult = Ble.getInstance().getConfiguration().isWaitWriteResult();
             if (bluetoothGatt != null) {
                 BluetoothGattService gattService = bluetoothGatt.getService(service);
                 if (gattService != null) {
                     BluetoothGattCharacteristic gattCharacteristic = gattService.getCharacteristic(characteristic);
                     if (gattCharacteristic != null) {
                         gattCharacteristic.setValue(value);
-                        if (getWriteType() == BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT || getWriteType() == BluetoothGattCharacteristic.WRITE_TYPE_SIGNED ||
-                                getWriteType() == BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) {
-                            gattCharacteristic.setWriteType(getWriteType());
+                        int writeType = Ble.getInstance().getConfiguration().getWriteType();
+                        if (writeType == BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT || writeType == BluetoothGattCharacteristic.WRITE_TYPE_SIGNED ||
+                                writeType == BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) {
+                            gattCharacteristic.setWriteType(writeType);
                         }                        
                         if (!bluetoothGatt.writeCharacteristic(gattCharacteristic)) {
                             handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, true);
