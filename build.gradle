@@ -22,6 +22,12 @@ allprojects {
         jcenter()
         maven { url 'https://jitpack.io' }
     }
+
+    // 指定编码
+    tasks.withType(JavaCompile) {
+        options.encoding = "UTF-8"
+    }
+
     tasks.withType(Javadoc) {
         options{
             encoding "UTF-8"
