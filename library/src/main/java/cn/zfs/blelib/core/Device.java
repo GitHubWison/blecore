@@ -76,7 +76,7 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
     }
 
     public boolean isDisconnected() {
-        return connectionState == Connection.STATE_DISCONNECTED;
+        return connectionState == Connection.STATE_DISCONNECTED || connectionState == Connection.STATE_RELEASED;
     }
 
     public boolean isConnecting() {
