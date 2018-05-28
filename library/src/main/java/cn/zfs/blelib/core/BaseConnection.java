@@ -40,6 +40,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     private IRequestCallback requestCallback;
     private Handler handler;
     private HandlerThread handlerThread;
+    private boolean isReleased;
 
     BaseConnection(BluetoothDevice bluetoothDevice) {
         this.bluetoothDevice = bluetoothDevice;
@@ -52,19 +53,27 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     public void clearRequestQueue() {
         requestQueue.clear();
         currentRequest = null;
+        handler.removeCallbacksAndMessages(null);
     }
 
     public void release() {
+        isReleased = true;
         handlerThread.quit();
     }
 
+    private void checkIfRelease() {
+        if (isReleased) {
+            throw new RuntimeException("连接已被释放，需要重新实例化");
+        }
+    }
+    
     protected abstract @NonNull IRequestCallback getRequestCallback();
 
     /*
      * Clears the internal cache and forces a refresh of the services from the
      * remote device.
      */
-    public boolean refresh(BluetoothGatt bluetoothGatt) {
+    public static boolean refresh(BluetoothGatt bluetoothGatt) {
         try {
             Method localMethod = bluetoothGatt.getClass().getMethod("refresh");
             return (Boolean) localMethod.invoke(bluetoothGatt);
@@ -203,6 +212,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     }
 
     public void requestMtu(@NonNull final String requestId, final int mtu) {
+        checkIfRelease();
         handler.post(new Runnable() {
             @Override
             public void run() {
@@ -220,6 +230,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
      * @param requestId 请求码
      */
     public void requestCharacteristicValue(@NonNull final String requestId, final UUID service, final UUID characteristic) {
+        checkIfRelease();
         handler.post(new Runnable() {
             @Override
             public void run() {
@@ -239,6 +250,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
      * @param enable 开启还是关闭
      */
     public void requestCharacteristicNotification(@NonNull final String requestId, final UUID service, final UUID characteristic, final boolean enable) {
+        checkIfRelease();
         handler.post(new Runnable() {
             @Override
             public void run() {
@@ -256,6 +268,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
      * @param enable 开启还是关闭
      */
     public void requestCharacteristicIndication(@NonNull final String requestId, final UUID service, final UUID characteristic, final boolean enable) {
+        checkIfRelease();
         handler.post(new Runnable() {
             @Override
             public void run() {
@@ -270,6 +283,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     }
 
     public void requestDescriptorValue(@NonNull final String requestId, final UUID service, final UUID characteristic, final UUID descriptor) {
+        checkIfRelease();
         handler.post(new Runnable() {
             @Override
             public void run() {
@@ -283,6 +297,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     }
 
     public void writeCharacteristicValue(@NonNull final String requestId, final UUID service, final UUID characteristic, final byte[] value) {
+        checkIfRelease();
         handler.post(new Runnable() {
             @Override
             public void run() {
@@ -296,6 +311,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     }
 
     public void requestRssiValue(@NonNull final String requestId) {
+        checkIfRelease();
         handler.post(new Runnable() {
             @Override
             public void run() {
@@ -308,7 +324,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
         });
     }
 
-    private synchronized void processNextRequest() {
+    private void processNextRequest() {
         handler.post(new Runnable() {
             @Override
             public void run() {
