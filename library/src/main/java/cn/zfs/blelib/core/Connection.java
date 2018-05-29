@@ -23,20 +23,7 @@ import java.util.List;
 
 import cn.zfs.blelib.callback.ConnectionCallback;
 import cn.zfs.blelib.callback.IRequestCallback;
-import cn.zfs.blelib.event.CharacteristicChangedEvent;
-import cn.zfs.blelib.event.CharacteristicReadEvent;
-import cn.zfs.blelib.event.CharacteristicWriteEvent;
-import cn.zfs.blelib.event.ConnectTimeoutEvent;
-import cn.zfs.blelib.event.ConnectionCreateFailedEvent;
-import cn.zfs.blelib.event.ConnectionStateChangedEvent;
-import cn.zfs.blelib.event.DescriptorReadEvent;
-import cn.zfs.blelib.event.IndicationRegisteredEvent;
-import cn.zfs.blelib.event.IndicationUnregisteredEvent;
-import cn.zfs.blelib.event.MtuChangedEvent;
-import cn.zfs.blelib.event.NotificationRegisteredEvent;
-import cn.zfs.blelib.event.NotificationUnregisteredEvent;
-import cn.zfs.blelib.event.ReadRemoteRssiEvent;
-import cn.zfs.blelib.event.RequestFailedEvent;
+import cn.zfs.blelib.event.Events;
 import cn.zfs.blelib.util.BleUtils;
 
 /**
@@ -102,7 +89,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
                                                long connectDelay, ConnectionCallback connectionCallback) {
 		if (bluetoothAdapter == null || device == null || device.addr == null || !device.addr.matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
 			Ble.println(Connection.class, Log.ERROR, "BluetoothAdapter not initialized or unspecified address.");
-			Ble.getInstance().getPublisher().post(new ConnectionCreateFailedEvent(device, "BluetoothAdapter not initialized or unspecified address."));
+			Ble.getInstance().getPublisher().post(new Events.ConnectionCreateFailed(device, "BluetoothAdapter not initialized or unspecified address."));
 			return null;
 		}
 		//初始化并建立连接
@@ -289,7 +276,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
                     type = TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES;
                 }
                 if (notifyTimeout) {
-                    Ble.getInstance().getPublisher().post(new ConnectTimeoutEvent(device, type));
+                    Ble.getInstance().getPublisher().post(new Events.ConnectTimeout(device, type));
                 }
                 notifyTimeout = true;
             }
@@ -365,7 +352,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
 	    if (connectionCallback != null) {
 	        connectionCallback.onConnectionStateChange(device.connectionState);
 	    }
-        Ble.getInstance().getPublisher().post(new ConnectionStateChangedEvent(device, device.connectionState));
+        Ble.getInstance().getPublisher().post(new Events.ConnectionStateChanged(device, device.connectionState));
     }
     
     void setAutoReconnectEnable(boolean enable) {
@@ -427,69 +414,69 @@ public class Connection extends BaseConnection implements IRequestCallback {
 
     @Override
     public void onCharacteristicRead(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-        Ble.getInstance().getPublisher().post(new CharacteristicReadEvent(device, requestId, characteristic));
+        Ble.getInstance().getPublisher().post(new Events.CharacteristicRead(device, requestId, characteristic));
         Ble.println(Connection.class, Log.DEBUG, "onCharacteristicRead！请求ID：" + requestId +
                 ", value: " + BleUtils.bytesToHexString(characteristic.getValue()) + ", mac: " + device.addr);
     }
 
     @Override
     public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-        Ble.getInstance().getPublisher().post(new CharacteristicChangedEvent(device, characteristic));
+        Ble.getInstance().getPublisher().post(new Events.CharacteristicChanged(device, characteristic));
     }
 
     @Override
     public void onReadRemoteRssi(@NonNull String requestId, BluetoothGatt gatt, int rssi) {
-        Ble.getInstance().getPublisher().post(new ReadRemoteRssiEvent(device, requestId, rssi));
+        Ble.getInstance().getPublisher().post(new Events.ReadRemoteRssi(device, requestId, rssi));
         Ble.println(Connection.class, Log.DEBUG, "读到信号强度！rssi: "+ rssi + ", mac: " + device.addr);
     }
 
     @Override
     public void onMtuChanged(@NonNull String requestId, BluetoothGatt gatt, int mtu) {
-        Ble.getInstance().getPublisher().post(new MtuChangedEvent(device, requestId, mtu));
+        Ble.getInstance().getPublisher().post(new Events.MtuChanged(device, requestId, mtu));
         Ble.println(Connection.class, Log.DEBUG, "Mtu修改成功！mtu: "+ mtu + ", mac: " + device.addr);
     }
 
     @Override
     public void onRequestFialed(@NonNull String requestId, @NonNull Request.RequestType requestType, int failType, byte[] value) {
-        Ble.getInstance().getPublisher().post(new RequestFailedEvent(requestId, requestType, failType, value));
+        Ble.getInstance().getPublisher().post(new Events.RequestFailed(requestId, requestType, failType, value));
         Ble.println(Connection.class, Log.ERROR, "请求失败！请求ID：" + requestId +
                 ", failType: " + failType + ", mac: " + device.addr);
     }
 
     @Override
     public void onDescriptorRead(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
-        Ble.getInstance().getPublisher().post(new DescriptorReadEvent(device, requestId, descriptor));
+        Ble.getInstance().getPublisher().post(new Events.DescriptorRead(device, requestId, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "onDescriptorRead！请求ID：" + requestId +
                 ", value: " + BleUtils.bytesToHexString(descriptor.getValue()) + ", mac: " + device.addr);
     }
 
     @Override
     public void onNotificationRegistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
-        Ble.getInstance().getPublisher().post(new NotificationRegisteredEvent(device, requestId, descriptor));
+        Ble.getInstance().getPublisher().post(new Events.NotificationRegistered(device, requestId, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "NOTIFICATION_REGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
     public void onNotificationUnregistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
-        Ble.getInstance().getPublisher().post(new NotificationUnregisteredEvent(device, requestId, descriptor));
+        Ble.getInstance().getPublisher().post(new Events.NotificationUnregistered(device, requestId, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "NOTIFICATION_UNREGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
     public void onIndicationRegistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
-        Ble.getInstance().getPublisher().post(new IndicationRegisteredEvent(device, requestId, descriptor));
+        Ble.getInstance().getPublisher().post(new Events.IndicationRegistered(device, requestId, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "INDICATION_REGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
     public void onIndicationUnregistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
-        Ble.getInstance().getPublisher().post(new IndicationUnregisteredEvent(device, requestId, descriptor));
+        Ble.getInstance().getPublisher().post(new Events.IndicationUnregistered(device, requestId, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "INDICATION_UNREGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
     public void onCharacteristicWrite(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-        Ble.getInstance().getPublisher().post(new CharacteristicWriteEvent(device, requestId, characteristic));
+        Ble.getInstance().getPublisher().post(new Events.CharacteristicWrite(device, requestId, characteristic));
         Ble.println(Connection.class, Log.DEBUG, "写入成功！value: "+ BleUtils.bytesToHexString(characteristic.getValue()) +
                 ", 请求ID：" + requestId + ", mac: " + device.addr);
     }

@@ -11,9 +11,7 @@ import cn.zfs.bledebuger.util.ToastUtils
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Device
 import cn.zfs.blelib.core.Request
-import cn.zfs.blelib.event.CharacteristicWriteEvent
-import cn.zfs.blelib.event.MtuChangedEvent
-import cn.zfs.blelib.event.RequestFailedEvent
+import cn.zfs.blelib.event.Events
 import cn.zfs.blelib.util.BleUtils
 import kotlinx.android.synthetic.main.activity_request_mtu.*
 import org.greenrobot.eventbus.Subscribe
@@ -110,7 +108,7 @@ class RequestMtuActivity : AppCompatActivity() {
     }
     
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onMtuChanged(e: MtuChangedEvent) {
+    fun onMtuChanged(e: Events.MtuChanged) {
         if (e.requestId == "REQUEST_MTU") {
             mtu = e.mtu
             tvMtu.text = "当前MTU： $mtu"
@@ -120,14 +118,14 @@ class RequestMtuActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.POSTING)
-    fun onCharacteristicWrite(e: CharacteristicWriteEvent) {
+    fun onCharacteristicWrite(e: Events.CharacteristicWrite) {
         if (e.requestId == "write" && !loop) {
             ToastUtils.showShort("写入成功")
         }
     }
 
     @Subscribe(threadMode = ThreadMode.POSTING)
-    fun onRequestFialed(e: RequestFailedEvent) {
+    fun onRequestFialed(e: Events.RequestFailed) {
         if (!loop) {
             if (e.requestId == "REQUEST_MTU" && e.requestType == Request.RequestType.SET_MTU) {
                 ToastUtils.showShort("MTU修改失败")

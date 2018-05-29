@@ -15,7 +15,7 @@ import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Connection
 import cn.zfs.blelib.core.Device
 import cn.zfs.blelib.core.Request
-import cn.zfs.blelib.event.*
+import cn.zfs.blelib.event.Events
 import cn.zfs.blelib.util.BleUtils
 import kotlinx.android.synthetic.main.activity_comm.*
 import org.greenrobot.eventbus.Subscribe
@@ -168,17 +168,17 @@ class CommActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onConnectionStateChange(e: ConnectionStateChangedEvent) {
+    fun onConnectionStateChange(e: Events.ConnectionStateChanged) {
         updateState(e.state)
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onConnectionCreateFailed(e: ConnectionCreateFailedEvent) {
+    fun onConnectionCreateFailed(e: Events.ConnectionCreateFailed) {
         tvState.text = "无法建立连接： ${e.error}"
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onCharacteristicChanged(e: CharacteristicChangedEvent) {
+    fun onCharacteristicChanged(e: Events.CharacteristicChanged) {
         if (!pause) {
             if (tvLogs.text.length > 1024 * 1024) {
                 tvLogs.text = ""
@@ -194,14 +194,14 @@ class CommActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
-    fun onRequestFialed(e: RequestFailedEvent) {
+    fun onRequestFialed(e: Events.RequestFailed) {
         if (e.requestType == Request.RequestType.WRITE_CHARACTERISTIC) {
             failCount++
         }
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
-    fun onCharacteristicWrite(e: CharacteristicWriteEvent) {
+    fun onCharacteristicWrite(e: Events.CharacteristicWrite) {
         successCount++
     }
     

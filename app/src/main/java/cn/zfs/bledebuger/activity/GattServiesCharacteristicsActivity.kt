@@ -14,7 +14,7 @@ import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Connection
 import cn.zfs.blelib.core.Device
 import cn.zfs.blelib.core.Request
-import cn.zfs.blelib.event.*
+import cn.zfs.blelib.event.Events
 import kotlinx.android.synthetic.main.activity_gatt_services_characteristics.*
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -81,7 +81,7 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onConnectionStateChange(e: ConnectionStateChangedEvent) {
+    fun onConnectionStateChange(e: Events.ConnectionStateChanged) {
         when (e.state) {
             Connection.STATE_CONNECTED -> {
                 ToastUtils.showShort("连接成功，等待发现服务")
@@ -122,12 +122,12 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onConnectionCreateFailed(e: ConnectionCreateFailedEvent) {
+    fun onConnectionCreateFailed(e: Events.ConnectionCreateFailed) {
         ToastUtils.showShort("无法建立连接： ${e.error}")
     }
     
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onRequestFialed(e: RequestFailedEvent) {
+    fun onRequestFialed(e: Events.RequestFailed) {
         when (e.requestType) {
             Request.RequestType.CHARACTERISTIC_NOTIFICATION -> {
                 if (e.requestId.endsWith("_1")) {
@@ -142,19 +142,19 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onCharacteristicRead(e: CharacteristicReadEvent) {
+    fun onCharacteristicRead(e: Events.CharacteristicRead) {
         itemList.firstOrNull { e.requestId == it.toString() }?.value = e.characteristic.value
         adapter?.notifyDataSetChanged()
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onNotificationRegistered(e: NotificationRegisteredEvent) {
+    fun onNotificationRegistered(e: Events.NotificationRegistered) {
         itemList.firstOrNull { e.requestId == "${it}_1" }?.notification = true
         adapter?.notifyDataSetChanged()
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onNotificationUnregistered(e: NotificationUnregisteredEvent) {
+    fun onNotificationUnregistered(e: Events.NotificationUnregistered) {
         itemList.firstOrNull { e.requestId == "${it}_0" }?.notification = false
         adapter?.notifyDataSetChanged()
         notifyService = null
@@ -162,19 +162,19 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onIndicationRegistered(e: IndicationRegisteredEvent) {
+    fun onIndicationRegistered(e: Events.IndicationRegistered) {
         itemList.firstOrNull { e.requestId == "${it}_1" }?.notification = true
         adapter?.notifyDataSetChanged()
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onIndicationUnregistered(e: IndicationUnregisteredEvent) {
+    fun onIndicationUnregistered(e: Events.IndicationUnregistered) {
         itemList.firstOrNull { e.requestId == "${it}_0" }?.notification = false
         adapter?.notifyDataSetChanged()
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onDescriptorRead(e: DescriptorReadEvent) {
+    fun onDescriptorRead(e: Events.DescriptorRead) {
         itemList.firstOrNull { e.requestId == it.toString() }?.value = e.descriptor.value
         adapter?.notifyDataSetChanged()
     }

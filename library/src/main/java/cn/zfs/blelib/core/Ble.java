@@ -35,7 +35,7 @@ import java.util.concurrent.Executors;
 import cn.zfs.blelib.callback.ConnectionCallback;
 import cn.zfs.blelib.callback.InitCallback;
 import cn.zfs.blelib.callback.ScanListener;
-import cn.zfs.blelib.event.BluetoothStateChangedEvent;
+import cn.zfs.blelib.event.Events;
 import cn.zfs.blelib.util.LogController;
 
 /**
@@ -155,7 +155,7 @@ public class Ble {
         public void onReceive(Context context, Intent intent) {
             if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(intent.getAction())) {//蓝牙开关状态变化                 
                 if (bluetoothAdapter != null) {
-                    publisher.post(new BluetoothStateChangedEvent(bluetoothAdapter.getState()));
+                    publisher.post(new Events.BluetoothStateChanged(bluetoothAdapter.getState()));
                     if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {//蓝牙关闭了
                         handleScanCallback(false, null, null);
                         //主动断开，停止定时器和重连尝试
