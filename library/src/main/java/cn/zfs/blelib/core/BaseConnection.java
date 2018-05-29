@@ -414,20 +414,29 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     }
 
     private void performCharacteristicWrite(final String requestId, final UUID service, final UUID characteristic, final byte[] value) {
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                int packSize = Ble.getInstance().getConfiguration().getPackageSize();
-                if (value.length > packSize) {
-                    List<byte[]> list = BleUtils.splitPackage(value, packSize);
-                    for (byte[] bytes : list) {
-                        doWrite(requestId, service, characteristic, bytes);
-                    }
-                } else {
-                    doWrite(requestId, service, characteristic, value);
+        int writeDelayMillis = Ble.getInstance().getConfiguration().getWriteDelayMillis();
+        if (writeDelayMillis > 0) {
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    performWrite(value, requestId, service, characteristic);
                 }
+            }, writeDelayMillis);
+        } else {
+            performWrite(value, requestId, service, characteristic);
+        }        
+    }
+
+    private void performWrite(byte[] value, String requestId, UUID service, UUID characteristic) {
+        int packSize = Ble.getInstance().getConfiguration().getPackageSize();
+        if (value.length > packSize) {
+            List<byte[]> list = BleUtils.splitPackage(value, packSize);
+            for (byte[] bytes : list) {
+                doWrite(requestId, service, characteristic, bytes);
             }
-        }, Ble.getInstance().getConfiguration().getWriteDelayMillis());
+        } else {
+            doWrite(requestId, service, characteristic, value);
+        }
     }
 
     private void doWrite(String requestId, UUID service, UUID characteristic, byte[] value) {
