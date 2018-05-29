@@ -47,7 +47,7 @@ public class Events {
     }
 
     /**
-     * 描述: onCharacteristicRead，读取到特征字的值
+     * onCharacteristicRead，读取到特征字的值
      */
     public static class CharacteristicRead extends BothDeviceAndRequestIdEvent<Device> {
         public BluetoothGattCharacteristic characteristic;
@@ -59,7 +59,7 @@ public class Events {
     }
 
     /**
-     * 描述: onCharacteristicWrite，写入成功
+     * onCharacteristicWrite，写入成功
      */
     public static class CharacteristicWrite extends BothDeviceAndRequestIdEvent<Device> {
         public BluetoothGattCharacteristic characteristic;
@@ -71,9 +71,7 @@ public class Events {
     }
 
     /**
-     * 描述: 连接创建失败
-     * 时间: 2018/5/19 19:35
-     * 作者: zengfansheng
+     * 连接创建失败
      */
     public static class ConnectionCreateFailed {
         /** 设备 */
@@ -88,9 +86,7 @@ public class Events {
     }
 
     /**
-     * 描述: 连接状态变化
-     * 时间: 2018/5/19 19:42
-     * 作者: zengfansheng
+     * 连接状态变化
      */
     public static class ConnectionStateChanged extends DeviceEvent<Device> {
         /**
@@ -112,9 +108,7 @@ public class Events {
     }
 
     /**
-     * 描述: 连接超时
-     * 时间: 2018/5/19 19:51
-     * 作者: zengfansheng
+     * 连接超时
      */
     public static class ConnectTimeout extends DeviceEvent<Device> {
         /**
@@ -131,11 +125,6 @@ public class Events {
         }
     }
 
-    /**
-     * 描述: onDescriptorRead
-     * 时间: 2018/5/19 20:19
-     * 作者: zengfansheng
-     */
     public static class DescriptorRead extends BothDeviceAndRequestIdEvent<Device> {
         public BluetoothGattDescriptor descriptor;
 
@@ -146,9 +135,7 @@ public class Events {
     }
 
     /**
-     * 描述: indication注册成功
-     * 时间: 2018/5/19 20:21
-     * 作者: zengfansheng
+     * indication注册成功
      */
     public static class IndicationRegistered extends BothDeviceAndRequestIdEvent<Device> {
         public BluetoothGattDescriptor descriptor;
@@ -160,9 +147,7 @@ public class Events {
     }
 
     /**
-     * 描述: indication取消注册成功
-     * 时间: 2018/5/19 20:21
-     * 作者: zengfansheng
+     * indication取消注册成功
      */
     public static class IndicationUnregistered extends BothDeviceAndRequestIdEvent<Device> {
         public BluetoothGattDescriptor descriptor;
@@ -174,9 +159,7 @@ public class Events {
     }
 
     /**
-     * 描述: onMtuChanged，MTU修改成功
-     * 时间: 2018/5/19 20:10
-     * 作者: zengfansheng
+     * onMtuChanged，MTU修改成功
      */
     public static class MtuChanged extends BothDeviceAndRequestIdEvent<Device> {
         /** 新的MTU值 */
@@ -189,9 +172,7 @@ public class Events {
     }
 
     /**
-     * 描述: notification注册成功
-     * 时间: 2018/5/19 20:21
-     * 作者: zengfansheng
+     * notification注册成功
      */
     public static class NotificationRegistered extends BothDeviceAndRequestIdEvent<Device> {
         public BluetoothGattDescriptor descriptor;
@@ -203,9 +184,7 @@ public class Events {
     }
 
     /**
-     * 描述: notification取消注册成功
-     * 时间: 2018/5/19 20:21
-     * 作者: zengfansheng
+     * notification取消注册成功
      */
     public static class NotificationUnregistered extends BothDeviceAndRequestIdEvent<Device> {
         public BluetoothGattDescriptor descriptor;
@@ -217,9 +196,7 @@ public class Events {
     }
 
     /**
-     * 描述: onReadRemoteRssi，读取到信息强度
-     * 时间: 2018/5/19 20:08
-     * 作者: zengfansheng
+     * onReadRemoteRssi，读取到信息强度
      */
     public static class ReadRemoteRssi extends BothDeviceAndRequestIdEvent<Device> {
         public int rssi;
@@ -231,7 +208,7 @@ public class Events {
     }
 
     /**
-     * 描述: 请求失败事件，如读特征值、写特征值、开启notification等等
+     * 请求失败事件，如读特征值、写特征值、开启notification等等
      */
     public static class RequestFailed extends RequestIdEvent {
 
