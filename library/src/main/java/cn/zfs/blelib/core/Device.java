@@ -1,5 +1,6 @@
 package cn.zfs.blelib.core;
 
+import android.bluetooth.BluetoothDevice;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
@@ -33,7 +34,14 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
 
     public Device() {
     }
-        
+     
+    public static Device valueOf(BluetoothDevice device) {
+        Device dev = new Device();
+        dev.name = device.getName();
+        dev.addr = device.getAddress();
+        return dev;
+    }
+    
     @Override
     public Device clone() {
         Device device = null;
