@@ -457,6 +457,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                         if (!bluetoothGatt.writeCharacteristic(gattCharacteristic)) {
                             handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, true);
                         } else if (!currentRequest.waitWriteResult) {
+                            onCharacteristicWrite(bluetoothGatt, gattCharacteristic, BluetoothGatt.GATT_SUCCESS);
                             processNextRequest();
                         }
                     } else {

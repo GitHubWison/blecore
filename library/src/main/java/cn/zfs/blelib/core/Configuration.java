@@ -1,5 +1,6 @@
 package cn.zfs.blelib.core;
 
+import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 
 import cn.zfs.blelib.callback.ConnectionCallback;
@@ -199,8 +200,8 @@ public class Configuration {
     }
 
     /**
-     * 是否等待写入结果，不等待则直接处理下一个请求，否则等待onCharacteristicWrite回调后再处理下一请求，默认不等待。
-     * 不等待的话也不会处理写入结果回调，也意味着不会发布写入结果的消息
+     * 是否等待写入结果，不等待则直接处理下一个请求，否则等待onCharacteristicWrite回调后再处理下一请求，默认不等待。<br>
+     * 不等待的话onCharacteristicWrite回调不是由系统调用，而是在writeCharacteristic后直接调onCharacteristicWrite，并且标识结果为{@link BluetoothGatt#GATT_SUCCESS}
      */
     public void setWaitWriteResult(boolean waitWriteResult) {
         this.waitWriteResult = waitWriteResult;
