@@ -113,6 +113,10 @@ public class Connection extends BaseConnection implements IRequestCallback {
     public Device getDevice() {
         return device;
     }
+    
+    public BluetoothGatt getBluetoothGatt() {
+        return bluetoothGatt;
+    }
 
     /**
      * 获取蓝牙服务列表
