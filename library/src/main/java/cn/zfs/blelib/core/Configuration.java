@@ -201,7 +201,7 @@ public class Configuration {
 
     /**
      * 是否等待写入结果，不等待则直接处理下一个请求，否则等待onCharacteristicWrite回调后再处理下一请求，默认不等待。<br>
-     * 不等待的话onCharacteristicWrite回调不是由系统调用，而是在writeCharacteristic后直接调onCharacteristicWrite，并且标识结果为{@link BluetoothGatt#GATT_SUCCESS}
+     * 不等待的话onCharacteristicWrite回调不会处理，而是在writeCharacteristic发布onCharacteristicWrite信息，并且标识结果为{@link BluetoothGatt#GATT_SUCCESS}
      */
     public void setWaitWriteResult(boolean waitWriteResult) {
         this.waitWriteResult = waitWriteResult;
