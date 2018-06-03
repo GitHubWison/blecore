@@ -39,8 +39,8 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
             finish()
             return
         }
-        Ble.getInstance().connect(this, device, true)
-        Ble.getInstance().registerSubscriber(this)
+		Ble.getInstance().registerSubscriber(this)
+        Ble.getInstance().connect(this, device, true)        
         initViews()
     }
 
