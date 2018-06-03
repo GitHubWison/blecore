@@ -40,7 +40,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     private IRequestCallback requestCallback;
     private Handler handler;
     private HandlerThread handlerThread;
-    private boolean isReleased;
+    protected boolean isReleased;
 
     BaseConnection(BluetoothDevice bluetoothDevice) {
         this.bluetoothDevice = bluetoothDevice;

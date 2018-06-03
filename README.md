@@ -3,7 +3,7 @@
 ## 代码托管
 [![JitPack](https://img.shields.io/badge/JitPack-blecore-green.svg?style=flat)](https://jitpack.io/#fszeng2011/blecore)
 [![Download](https://api.bintray.com/packages/fszeng2017/maven/blecore/images/download.svg) ](https://bintray.com/fszeng2017/maven/blecore/_latestVersion)
-[![JCenter](https://img.shields.io/badge/JCenter-2.1.12-green.svg?style=flat)](http://jcenter.bintray.com/com/github/fszeng2011/blecore/2.1.12/)
+[![JCenter](https://img.shields.io/badge/JCenter-2.1.13-green.svg?style=flat)](http://jcenter.bintray.com/com/github/fszeng2011/blecore/2.1.13/)
 
 ## 搜索设备
     

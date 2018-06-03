@@ -129,7 +129,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
     }
     
     public synchronized void onScanResult(String addr) {
-	    if (device.addr.equals(addr) && device.connectionState == STATE_RECONNECTING) {
+	    if (!isReleased && device.addr.equals(addr) && device.connectionState == STATE_RECONNECTING) {
             device.connectionState = STATE_CONNECTING;
             sendConnectionCallback();
             handler.sendEmptyMessage(MSG_CONNECT);
@@ -137,7 +137,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
     }
     
     public synchronized void onScanStop() {
-	    if (device.connectionState == STATE_RECONNECTING) {
+	    if (!isReleased && device.connectionState == STATE_RECONNECTING) {
 	        if (Ble.getInstance().getConfiguration().getTryReconnectTimes() == Configuration.TRY_RECONNECT_TIMES_INFINITE ||
                     tryReconnectTimes < Ble.getInstance().getConfiguration().getTryReconnectTimes()) {
 	            tryReconnectTimes++;
