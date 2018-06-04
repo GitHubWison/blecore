@@ -187,13 +187,6 @@ public class Ble {
     public boolean isInitialized() {
         return isInited;
     }
-
-    //检查是否初始化过
-    private void checkIfInit() {
-        if (!isInited) {
-            throw new RuntimeException("BLE实例未初始化，请先调用initialize(Context context, InitCallback callback)初始化");
-        }
-    }
     
     public ExecutorService getExecutorService() {
         return executorService;
@@ -256,12 +249,11 @@ public class Ble {
      * 搜索蓝牙设备
      * @param context 用来检查app是否拥有相应权限
      */
-    public void startScan(Context context) {
-        checkIfInit();
+    public void startScan(Context context) {        
         if (noLocationPermission(context)) {
             println(Ble.class, Log.ERROR, "缺少定位权限，无法扫描到蓝牙设备");
         }
-        if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled() || scanning) {
+        if (!isInited || bluetoothAdapter == null || !bluetoothAdapter.isEnabled() || scanning) {
             return;
         }
         getSystemConnectedDevices();
@@ -338,10 +330,9 @@ public class Ble {
      * 停止搜索蓝牙设备
      */
     public void stopScan() {
-        if (!scanning) {
+        if (!isInited || !scanning) {
             return;
         }
-        checkIfInit();
         scanning = false;
         mainThreadHandler.removeCallbacks(stopScanRunnable);
         if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled())
@@ -420,7 +411,9 @@ public class Ble {
      * 建立连接
      */
     public synchronized void connect(Context context, Device device, boolean autoReconnect) {
-        checkIfInit();
+        if (!isInited) {
+            return;
+        }
         if (device != null) {
             Connection connection = connectionMap.get(device.addr);
             //此前这个设备建立过连接，销毁之前的连接重新创建
@@ -492,7 +485,9 @@ public class Ble {
      * 根据设备断开其连接
      */
     public void disconnectConnection(Device device) {
-        checkIfInit();
+        if (!isInited) {
+            return;
+        }
         if (device != null) {
             Connection connection = connectionMap.get(device.addr);
             if (connection != null) {
@@ -505,7 +500,9 @@ public class Ble {
      * 断开所有连接
      */
     public void disconnectAllConnection() {
-        checkIfInit();
+        if (!isInited) {
+            return;
+        }
         for (Connection connection : connectionMap.values()) {
             connection.disconnect();
         }
@@ -515,7 +512,9 @@ public class Ble {
      * 释放所有创建的连接
      */
     public synchronized void releaseAllConnections() {
-        checkIfInit();
+        if (!isInited) {
+            return;
+        }
         for (Connection connection : connectionMap.values()) {
             connection.release();
         }
@@ -526,7 +525,9 @@ public class Ble {
      * 根据设备释放连接
      */
     public synchronized void releaseConnection(Device device) {
-        checkIfInit();
+        if (!isInited) {
+            return;
+        }
         if (device != null) {
             Connection connection = connectionMap.remove(device.addr);
             if (connection != null) {
@@ -539,7 +540,9 @@ public class Ble {
      * 重连所有创建的连接
      */
     public void reconnectAll() {
-        checkIfInit();
+        if (!isInited) {
+            return;
+        }
         for (Connection connection : connectionMap.values()) {
             if (connection.getConnState() != Connection.STATE_SERVICE_DISCORVERED) {
                 connection.reconnect();
@@ -551,7 +554,9 @@ public class Ble {
      * 根据设备重连
      */
     public void reconnect(Device device) {
-        checkIfInit();
+        if (!isInited) {
+            return;
+        }
         if (device != null) {
             Connection connection = connectionMap.get(device.addr);
             if (connection != null && connection.getConnState() != Connection.STATE_SERVICE_DISCORVERED) {
@@ -585,7 +590,9 @@ public class Ble {
      * 刷新设备，清除缓存
      */
     public void refresh(Device device) {
-        checkIfInit();
+        if (!isInited) {
+            return;
+        }
         if (device != null) {
             Connection connection = connectionMap.get(device.addr);
             if (connection != null) {
@@ -601,7 +608,6 @@ public class Ble {
      * {@link BluetoothDevice#BOND_BONDED}.
      */
     public int getBondState(String addr) {
-        checkIfInit();
         try {
             BluetoothDevice device = bluetoothAdapter.getRemoteDevice(addr);
             return device.getBondState();
@@ -615,7 +621,6 @@ public class Ble {
      * 绑定设备
      */
     public boolean createBond(String addr) {
-        checkIfInit();
         try {
             BluetoothDevice device = bluetoothAdapter.getRemoteDevice(addr);
             return device.getBondState() != BluetoothDevice.BOND_NONE || device.createBond();
@@ -629,7 +634,9 @@ public class Ble {
      * 根据设置的过滤器清除已配对的设备
      */
     public void clearBondDevices(RemoveBondFilter filter) {
-        checkIfInit();
+        if (!isInited) {
+            return;
+        }
         Set<BluetoothDevice> devices = bluetoothAdapter.getBondedDevices();
         for (BluetoothDevice device : devices) {
             if (filter == null || filter.accept(device)) {
@@ -646,7 +653,9 @@ public class Ble {
      * 取消配对
      */
     public void removeBond(String addr) {
-        checkIfInit();
+        if (!isInited) {
+            return;
+        }
         try {
             BluetoothDevice device = bluetoothAdapter.getRemoteDevice(addr);
             if (device.getBondState() != BluetoothDevice.BOND_NONE) {
