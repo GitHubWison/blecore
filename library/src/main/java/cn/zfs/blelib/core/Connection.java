@@ -55,6 +55,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
     private static final int MSG_ARG1_NONE = 0;
     private static final int MSG_ARG1_RELEASE = 1;
     private static final int MSG_ARG1_RECONNECT = 2;
+    private static final int MSG_ARG1_NOTIFY = 3;
     
     private static final int MSG_CONNECT = 1;
     private static final int MSG_DISCONNECT = 2;
@@ -171,7 +172,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
                         conn.doConnect();
                 		break;
                     case MSG_DISCONNECT://处理断开
-                        conn.doDisconnect(msg.arg2 == MSG_ARG1_RECONNECT, msg.arg1 == MSG_ARG1_RELEASE);
+                        conn.doDisconnect(msg.arg2 == MSG_ARG1_RECONNECT, msg.arg1 == MSG_ARG1_RELEASE, true);
                 		break;
                     case MSG_REFRESH://手动刷新
                         conn.doRefresh(false);
@@ -181,7 +182,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
                         break;
                     case MSG_RELEASE://销毁连接
                         conn.autoReconnEnable = false;//停止重连
-                        conn.doDisconnect(false, true);
+                        conn.doDisconnect(false, true, msg.arg1 == MSG_ARG1_NOTIFY);
                         break;
                     case MSG_TIMER://定时器
                         conn.doTimer();
@@ -296,9 +297,9 @@ public class Connection extends BaseConnection implements IRequestCallback {
                 notifyTimeout = true;
             }
             if (autoReconnEnable) {
-                doDisconnect(true, false);
+                doDisconnect(true, false, true);
             } else {
-                doDisconnect(false, false);
+                doDisconnect(false, false, true);
             }
         }
         handler.sendEmptyMessageDelayed(MSG_TIMER, 1000);
@@ -335,7 +336,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
         }, 500);
     }
     
-    private void doDisconnect(boolean reconnect, boolean release) {
+    private void doDisconnect(boolean reconnect, boolean release, boolean notify) {
 	    doClearTaskAndRefresh(false);
         if (bluetoothGatt != null) {
             bluetoothGatt.disconnect();
@@ -350,7 +351,9 @@ public class Connection extends BaseConnection implements IRequestCallback {
             device.connectionState = STATE_RECONNECTING;
             tryReconnect();
         }        
-        sendConnectionCallback();
+        if (notify) {
+            sendConnectionCallback();
+        }
     }
 
     private void tryReconnect() {        
@@ -409,9 +412,18 @@ public class Connection extends BaseConnection implements IRequestCallback {
 	public void release() {
 	    super.release();
 	    handler.removeCallbacksAndMessages(null);//主动断开，停止定时器
-		handler.sendEmptyMessage(MSG_RELEASE);
+        Message.obtain(handler, MSG_RELEASE, MSG_ARG1_NOTIFY, 0).sendToTarget();
 	}
 
+    /**
+     * 销毁连接，不发布消息
+     */
+    public void releaseNoEvnet() {
+        super.release();
+        handler.removeCallbacksAndMessages(null);//主动断开，停止定时器
+        Message.obtain(handler, MSG_RELEASE, MSG_ARG1_NONE, 0).sendToTarget();
+    }
+	
     @NonNull
     @Override
     protected IRequestCallback getRequestCallback() {

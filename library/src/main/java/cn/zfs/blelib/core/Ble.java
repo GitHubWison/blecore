@@ -425,7 +425,7 @@ public class Ble {
             Connection connection = connectionMap.get(device.addr);
             //此前这个设备建立过连接，销毁之前的连接重新创建
             if (connection != null) {
-                connection.release();
+                connection.releaseNoEvnet();
             }
             ConnectionCallback callback = null;
             if (configuration.getConnectionCallbackClass() != null) {
