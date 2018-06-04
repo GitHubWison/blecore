@@ -215,6 +215,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
         if (isReleased) {
             gatt.disconnect();
             gatt.close();
+            return;
         }
         if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
             Ble.println(Connection.class, Log.DEBUG, "连接状态：STATE_CONNECTED, " +
@@ -243,6 +244,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
         if (isReleased) {
             gatt.disconnect();
             gatt.close();
+            return;
         }
         List<BluetoothGattService> services = gatt.getServices();
         if (status == BluetoothGatt.GATT_SUCCESS) {
