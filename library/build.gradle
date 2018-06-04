@@ -36,18 +36,6 @@ task sourcesJar(type: Jar) {
     classifier = 'sources'
 }
 
-//class包在终端执行gradlew makeJar
-task makeJar(type: Jar, dependsOn:['build']) {
-    from file('build/intermediates/classes/release')
-    archiveName = 'blecore-2.1.15.jar'
-    destinationDir = file('build/libs')
-    //过滤不需要的class
-    exclude "**/**/BuildConfig.class"
-    exclude "**/**/BuildConfig\$*.class"
-    exclude "**/R.class"
-    exclude "**/R\$*.class"
-}
-
 artifacts {
     archives sourcesJar
 }
