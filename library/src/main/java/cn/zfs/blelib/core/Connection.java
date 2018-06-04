@@ -211,6 +211,10 @@ public class Connection extends BaseConnection implements IRequestCallback {
     }
     
     private void doOnConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+        if (isReleased) {
+            gatt.disconnect();
+            gatt.close();
+        }
         if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
             Ble.println(Connection.class, Log.DEBUG, "连接状态：STATE_CONNECTED, " +
                     gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress());            
@@ -235,6 +239,10 @@ public class Connection extends BaseConnection implements IRequestCallback {
     }
     
     private void doOnServicesDiscovered(BluetoothGatt gatt, int status) {
+        if (isReleased) {
+            gatt.disconnect();
+            gatt.close();
+        }
         List<BluetoothGattService> services = gatt.getServices();
         if (status == BluetoothGatt.GATT_SUCCESS) {
             Ble.println(Connection.class, Log.DEBUG, "onServicesDiscovered. " + gatt.getDevice().getName() + ", " +
@@ -265,6 +273,9 @@ public class Connection extends BaseConnection implements IRequestCallback {
     }
     
     private void doTimer() {
+        if (isReleased) {
+            return;
+        }
         //连接超时。
         if (device.connectionState != STATE_SERVICE_DISCORVERED && System.currentTimeMillis() - connStartTime > 
                 Ble.getInstance().getConfiguration().getConnectTimeoutMillis()) {
@@ -317,7 +328,9 @@ public class Connection extends BaseConnection implements IRequestCallback {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                bluetoothGatt = bluetoothDevice.connectGatt(context, false, Connection.this);
+                if (!isReleased) {
+                    bluetoothGatt = bluetoothDevice.connectGatt(context, false, Connection.this);
+                }
             }
         }, 500);
     }
@@ -325,6 +338,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
     private void doDisconnect(boolean reconnect, boolean release) {
 	    doClearTaskAndRefresh(false);
         if (bluetoothGatt != null) {
+            bluetoothGatt.disconnect();
             bluetoothGatt.close();
         }
         device.connectionState = STATE_DISCONNECTED;
@@ -340,9 +354,11 @@ public class Connection extends BaseConnection implements IRequestCallback {
     }
 
     private void tryReconnect() {        
-        connStartTime = System.currentTimeMillis();
-        //开启扫描，扫描到才连接
-        Ble.getInstance().startScan(context);
+        if (!isReleased) {
+            connStartTime = System.currentTimeMillis();
+            //开启扫描，扫描到才连接
+            Ble.getInstance().startScan(context);
+        }
     }
 
     private void doClearTaskAndRefresh(boolean refresh) {
