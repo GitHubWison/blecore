@@ -51,7 +51,7 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
             override fun onItemClick(type: Int, node: Item) {
                 when (type) {
                     BleServiceListAdapter.READ -> {
-                        Ble.getInstance().getConnection(device)?.requestCharacteristicValue(node.toString(), node.service!!.uuid, node.characteristic!!.uuid)
+                        Ble.getInstance().getConnection(device)?.readCharacteristic(node.toString(), node.service!!.uuid, node.characteristic!!.uuid)
                     }
                     BleServiceListAdapter.SEND -> {
                         val i = Intent(this@GattServiesCharacteristicsActivity, CommActivity::class.java)

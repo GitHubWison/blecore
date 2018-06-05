@@ -5,7 +5,7 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.support.annotation.NonNull;
 
-import cn.zfs.blelib.callback.IRequestCallback;
+import cn.zfs.blelib.core.BaseConnection;
 import cn.zfs.blelib.core.Connection;
 import cn.zfs.blelib.core.Device;
 import cn.zfs.blelib.core.Request;
@@ -62,11 +62,11 @@ public class Events {
      * onCharacteristicWrite，写入成功
      */
     public static class CharacteristicWrite extends BothDeviceAndRequestIdEvent<Device> {
-        public BluetoothGattCharacteristic characteristic;
+        public byte[] value;
 
-        public CharacteristicWrite(@NonNull Device device, @NonNull String requestId, BluetoothGattCharacteristic characteristic) {
+        public CharacteristicWrite(@NonNull Device device, @NonNull String requestId, byte[] value) {
             super(device, requestId);
-            this.characteristic = characteristic;
+            this.value = value;
         }
     }
 
@@ -218,9 +218,9 @@ public class Events {
         public byte[] src;
 
         /**
-         * {@link IRequestCallback#NONE}<br>{@link IRequestCallback#NULL_CHARACTERISTIC}<br>{@link IRequestCallback#NULL_DESCRIPTOR},
-         * <br>{@link IRequestCallback#NULL_SERVICE}<br>{@link IRequestCallback#GATT_STATUS_REQUEST_NOT_SUPPORTED}
-         * <br>{@link IRequestCallback#GATT_IS_NULL}<br>{@link IRequestCallback#API_LEVEL_TOO_LOW}
+         * {@link BaseConnection#FAIL_TYPE_REQUEST_FAILED}<br>{@link BaseConnection#FAIL_TYPE_NULL_CHARACTERISTIC}<br>{@link BaseConnection#FAIL_TYPE_NULL_DESCRIPTOR},
+         * <br>{@link BaseConnection#FAIL_TYPE_NULL_SERVICE}<br>{@link BaseConnection#FAIL_TYPE_GATT_STATUS_FAILED}<br>{@link BaseConnection#FAIL_TYPE_GATT_IS_NULL}
+         * <br>{@link BaseConnection#FAIL_TYPE_API_LEVEL_TOO_LOW}<br>{@link BaseConnection#FAIL_TYPE_BLUETOOTH_ADAPTER_DISABLED}
          */
         public int failType;
 

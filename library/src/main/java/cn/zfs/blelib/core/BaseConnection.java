@@ -8,8 +8,6 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.os.Build;
-import android.os.Handler;
-import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 
 import java.lang.reflect.Method;
@@ -19,7 +17,6 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import cn.zfs.blelib.callback.IRequestCallback;
 import cn.zfs.blelib.util.BleUtils;
 
 /**
@@ -30,35 +27,44 @@ import cn.zfs.blelib.util.BleUtils;
 public abstract class BaseConnection extends BluetoothGattCallback {
     public static final UUID CLIENT_CHARACTERISTIC_CONFIG = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
 
-    private static final short  GATT_REQ_NOT_SUPPORTED = 6;
+    public static final int FAIL_TYPE_REQUEST_FAILED = 0;
+    public static final int FAIL_TYPE_NULL_CHARACTERISTIC = 1;
+    public static final int FAIL_TYPE_NULL_DESCRIPTOR = 2;
+    public static final int FAIL_TYPE_NULL_SERVICE = 3;
+    /** 请求的回调状态不是{@link BluetoothGatt#GATT_SUCCESS} */
+    public static final int FAIL_TYPE_GATT_STATUS_FAILED = 4;
+    public static final int FAIL_TYPE_GATT_IS_NULL = 5;
+    public static final int FAIL_TYPE_API_LEVEL_TOO_LOW = 6;
+    public static final int FAIL_TYPE_BLUETOOTH_ADAPTER_DISABLED = 7;
+    
     protected BluetoothDevice bluetoothDevice;
     protected BluetoothGatt bluetoothGatt;
     protected Queue<Request> requestQueue = new ConcurrentLinkedQueue<>();
     protected Request currentRequest;
+    private Request lastRequest;
     private BluetoothGattCharacteristic pendingCharacteristic;
     protected BluetoothAdapter bluetoothAdapter;
-    private IRequestCallback requestCallback;
-    private Handler handler;
-    private HandlerThread handlerThread;
     protected boolean isReleased;
+    private volatile boolean executorRunning;
+    private RequestRunnable requestRunnalbe;
+    private byte[] writeOverValue;
+    private boolean writeResult;
+    private final Object lock = new Object();
 
     BaseConnection(BluetoothDevice bluetoothDevice) {
         this.bluetoothDevice = bluetoothDevice;
-        requestCallback = getRequestCallback();
-        handlerThread = new HandlerThread("WriteThread");
-        handlerThread.start();
-        handler = new Handler(handlerThread.getLooper());
+        requestRunnalbe = new RequestRunnable();
     }
 
     public void clearRequestQueue() {
         requestQueue.clear();
         currentRequest = null;
-        handler.removeCallbacksAndMessages(null);
+        wakeThread();
     }
 
     public void release() {
         isReleased = true;
-        handlerThread.quit();
+        clearRequestQueue();
     }
 
     private void checkIfRelease() {
@@ -66,8 +72,28 @@ public abstract class BaseConnection extends BluetoothGattCallback {
             throw new RuntimeException("连接已被释放，需要重新实例化");
         }
     }
-    
-    protected abstract @NonNull IRequestCallback getRequestCallback();
+
+    public abstract void onCharacteristicRead(@NonNull String requestId, BluetoothGattCharacteristic characteristic);
+
+    public abstract void onCharacteristicChanged(BluetoothGattCharacteristic characteristic);
+
+    public abstract void onReadRemoteRssi(@NonNull String requestId, int rssi);
+
+    public abstract void onMtuChanged(@NonNull String requestId, int mtu);
+
+    public abstract void onRequestFialed(@NonNull String requestId, @NonNull Request.RequestType requestType, int failType, byte[] value);
+
+    public abstract void onDescriptorRead(@NonNull String requestId, BluetoothGattDescriptor descriptor);
+
+    public abstract void onNotificationRegistered(@NonNull String requestId, BluetoothGattDescriptor descriptor);
+
+    public abstract void onNotificationUnregistered(@NonNull String requestId, BluetoothGattDescriptor descriptor);
+
+    public abstract void onIndicationRegistered(@NonNull String requestId, BluetoothGattDescriptor descriptor);
+
+    public abstract void onIndicationUnregistered(@NonNull String requestId, BluetoothGattDescriptor descriptor);
+
+    public abstract void onCharacteristicWrite(@NonNull String requestId, byte[] value);
 
     /*
      * Clears the internal cache and forces a refresh of the services from the
@@ -86,162 +112,163 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     @Override
     public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
         // 读取到值
-        if (currentRequest != null && currentRequest.type == Request.RequestType.READ_CHARACTERISTIC) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                requestCallback.onCharacteristicRead(currentRequest.requestId, gatt, characteristic);
-            } else {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, false);
+        Request request = currentRequest;
+        if (request != null) {
+            if (request.type == Request.RequestType.READ_CHARACTERISTIC) {
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    onCharacteristicRead(request.requestId, characteristic);
+                } else {
+                    handleFaildCallback(request.requestId, request.type, FAIL_TYPE_GATT_STATUS_FAILED, request.value, false);
+                }
+                processNextRequest();
             }
-            processNextRequest();
         }
     }
 
     @Override
     public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-        if (currentRequest != null && currentRequest.waitWriteResult && currentRequest.type == Request.RequestType.WRITE_CHARACTERISTIC) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                requestCallback.onCharacteristicWrite(currentRequest.requestId, gatt, characteristic);
-            } else if (status == GATT_REQ_NOT_SUPPORTED) {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_STATUS_REQUEST_NOT_SUPPORTED, currentRequest.value, false);
-            } else {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, false);
+        Request request = currentRequest;
+        if (request != null) {
+            if (request.waitWriteResult && request.type == Request.RequestType.WRITE_CHARACTERISTIC && writeOverValue != null) {
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    writeResult = false;
+                }
+                byte[] value = characteristic.getValue();
+                writeOverValue = Arrays.copyOf(writeOverValue, writeOverValue.length + value.length);
+                System.arraycopy(value, 0, writeOverValue, writeOverValue.length - value.length, value.length);
+                if (Arrays.equals(writeOverValue, request.value)) {
+                    if (writeResult) {
+                        onCharacteristicWrite(request.requestId, request.value);
+                    } else {
+                        handleFaildCallback(request.requestId, request.type, FAIL_TYPE_GATT_STATUS_FAILED, request.value, false);
+                    }
+                    writeResult = false;
+                    writeOverValue = null;
+                    processNextRequest();
+                }
             }
-            processNextRequest();
         }
     }
 
     @Override
     public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
         // 收到设备notify值 （设备上报值）
-        requestCallback.onCharacteristicChanged(gatt, characteristic);
+        onCharacteristicChanged(characteristic);
     }
 
     @Override
     public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
-        if (currentRequest != null && currentRequest.type == Request.RequestType.READ_RSSI) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                requestCallback.onReadRemoteRssi(currentRequest.requestId, gatt, rssi);
-            } else if (status == GATT_REQ_NOT_SUPPORTED) {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_STATUS_REQUEST_NOT_SUPPORTED, currentRequest.value, false);
-            } else {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, false);
+        Request request = currentRequest;
+        if (request != null) {
+            if (request.type == Request.RequestType.READ_RSSI) {
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    onReadRemoteRssi(request.requestId, rssi);
+                } else {
+                    handleFaildCallback(request.requestId, request.type, FAIL_TYPE_GATT_STATUS_FAILED, request.value, false);
+                }
+                processNextRequest();
             }
-            processNextRequest();
         }
     }
 
     @Override
     public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-        if (currentRequest == null) return;
-        BluetoothGattCharacteristic characteristic = descriptor.getCharacteristic();
-        if (currentRequest.type == Request.RequestType.CHARACTERISTIC_NOTIFICATION) {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, false);
-            }
-            if (characteristic.getService().getUuid().equals(pendingCharacteristic.getService().getUuid()) && characteristic.getUuid().equals(pendingCharacteristic.getUuid())) {
-                if (!enableNotification(Arrays.equals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE, currentRequest.value), characteristic)) {
-                    handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, false);
+        Request request = currentRequest;
+        if (request != null) {
+            BluetoothGattCharacteristic characteristic = descriptor.getCharacteristic();
+            if (request.type == Request.RequestType.CHARACTERISTIC_NOTIFICATION) {
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    handleFaildCallback(request.requestId, request.type, FAIL_TYPE_GATT_STATUS_FAILED, request.value, false);
                 }
-            }
-        } else if (currentRequest.type == Request.RequestType.CHARACTERISTIC_INDICATION) {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, false);
-            }
-            if (characteristic.getService().getUuid().equals(pendingCharacteristic.getService().getUuid()) && characteristic.getUuid().equals(pendingCharacteristic.getUuid())) {
-                if (!enableIndication(Arrays.equals(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE, currentRequest.value), characteristic)) {
-                    handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, false);
+                if (characteristic.getService().getUuid().equals(pendingCharacteristic.getService().getUuid()) && characteristic.getUuid().equals(pendingCharacteristic.getUuid())) {
+                    if (!enableNotificationOrIndication(Arrays.equals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE, request.value), true, characteristic)) {
+                        handleFaildCallback(request.requestId, request.type, FAIL_TYPE_GATT_STATUS_FAILED, request.value, false);
+                    }
                 }
+            } else if (request.type == Request.RequestType.CHARACTERISTIC_INDICATION) {
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    handleFaildCallback(request.requestId, request.type, FAIL_TYPE_GATT_STATUS_FAILED, request.value, false);
+                }
+                if (characteristic.getService().getUuid().equals(pendingCharacteristic.getService().getUuid()) && characteristic.getUuid().equals(pendingCharacteristic.getUuid())) {
+                    if (!enableNotificationOrIndication(Arrays.equals(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE, request.value), false, characteristic)) {
+                        handleFaildCallback(request.requestId, request.type, FAIL_TYPE_GATT_STATUS_FAILED, request.value, false);
+                    }
+                }
+            } else if (request.type == Request.RequestType.READ_DESCRIPTOR) {
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    onDescriptorRead(request.requestId, descriptor);
+                } else {
+                    handleFaildCallback(request.requestId, request.type, FAIL_TYPE_GATT_STATUS_FAILED, request.value, false);
+                }
+                processNextRequest();
             }
-        } else if (currentRequest.type == Request.RequestType.READ_DESCRIPTOR) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                requestCallback.onDescriptorRead(currentRequest.requestId, gatt, descriptor);
-            } else {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, false);
-            }
-            processNextRequest();
         }
     }
 
     @Override
     public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-        if (currentRequest == null) return;
-        if (currentRequest.type == Request.RequestType.CHARACTERISTIC_NOTIFICATION) {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, false);
-            } else {
-                if (Arrays.equals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE, currentRequest.value)) {
-                    requestCallback.onNotificationRegistered(currentRequest.requestId, gatt, descriptor);
+        Request request = currentRequest;
+        if (request != null) {
+            if (request.type == Request.RequestType.CHARACTERISTIC_NOTIFICATION) {
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    handleFaildCallback(request.requestId, request.type, FAIL_TYPE_GATT_STATUS_FAILED, request.value, false);
                 } else {
-                    requestCallback.onNotificationUnregistered(currentRequest.requestId, gatt, descriptor);
+                    if (Arrays.equals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE, request.value)) {
+                        onNotificationRegistered(request.requestId, descriptor);
+                    } else {
+                        onNotificationUnregistered(request.requestId, descriptor);
+                    }
                 }
-            }
-            processNextRequest();
-        } else if (currentRequest.type == Request.RequestType.CHARACTERISTIC_INDICATION) {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, false);
-            } else {
-                if (Arrays.equals(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE, currentRequest.value)) {
-                    requestCallback.onIndicationRegistered(currentRequest.requestId, gatt, descriptor);
+                processNextRequest();
+            } else if (request.type == Request.RequestType.CHARACTERISTIC_INDICATION) {
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    handleFaildCallback(request.requestId, request.type, FAIL_TYPE_GATT_STATUS_FAILED, request.value, false);
                 } else {
-                    requestCallback.onIndicationUnregistered(currentRequest.requestId, gatt, descriptor);
+                    if (Arrays.equals(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE, request.value)) {
+                        onIndicationRegistered(request.requestId, descriptor);
+                    } else {
+                        onIndicationUnregistered(request.requestId, descriptor);
+                    }
                 }
+                processNextRequest();
             }
-            processNextRequest();
         }
     }
 
     @Override
     public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
-        if (currentRequest != null && currentRequest.type == Request.RequestType.SET_MTU) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                requestCallback.onMtuChanged(currentRequest.requestId, gatt, mtu);
-            } else if (status == GATT_REQ_NOT_SUPPORTED) {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_STATUS_REQUEST_NOT_SUPPORTED, currentRequest.value, false);
-            } else {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, false);
+        Request request = currentRequest;
+        if (request != null) {
+            if (request.type == Request.RequestType.CHANGE_MTU) {
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    onMtuChanged(request.requestId, mtu);
+                } else {
+                    handleFaildCallback(request.requestId, request.type, FAIL_TYPE_GATT_STATUS_FAILED, request.value, false);
+                }
+                processNextRequest();
             }
-            processNextRequest();
         }
     }
 
     private void handleFaildCallback(String requestId, Request.RequestType requestType, int failType, byte[] value, boolean processNext) {
-        requestCallback.onRequestFialed(requestId, requestType, failType, value);
+        onRequestFialed(requestId, requestType, failType, value);
         if (processNext) {
             processNextRequest();
         }
     }
 
-    public void requestMtu(@NonNull final String requestId, final int mtu) {
+    public void changeMtu(@NonNull final String requestId, final int mtu) {
         checkIfRelease();
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performRequestMtu(requestId, mtu);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.SET_MTU, requestId, null, null, null, BleUtils.numberToBytes(mtu, false)));
-                }
-            }
-        });
+        enqueue(new Request(Request.RequestType.CHANGE_MTU, requestId, null, null, null, BleUtils.numberToBytes(mtu, false)));
     }
 
     /*
      * 请求读取characteristic的值
      * @param requestId 请求码
      */
-    public void requestCharacteristicValue(@NonNull final String requestId, final UUID service, final UUID characteristic) {
+    public void readCharacteristic(@NonNull String requestId, UUID service, UUID characteristic) {
         checkIfRelease();
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performCharacteristicValueRequest(requestId, service, characteristic);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.READ_CHARACTERISTIC, requestId, service, characteristic,
-                            null));
-                }
-            }
-        });
+        enqueue(new Request(Request.RequestType.READ_CHARACTERISTIC, requestId, service, characteristic, null));
     }
 
     /**
@@ -249,323 +276,239 @@ public abstract class BaseConnection extends BluetoothGattCallback {
      * @param requestId 请求码
      * @param enable 开启还是关闭
      */
-    public void requestCharacteristicNotification(@NonNull final String requestId, final UUID service, final UUID characteristic, final boolean enable) {
+    public void requestCharacteristicNotification(@NonNull String requestId, UUID service, UUID characteristic, boolean enable) {
         checkIfRelease();
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performNotificationRequest(requestId, service, characteristic, enable ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.CHARACTERISTIC_NOTIFICATION, requestId, service,
-                            characteristic, null));
-                }
-            }
-        });
+        enqueue(new Request(Request.RequestType.CHARACTERISTIC_NOTIFICATION, requestId, service,
+                characteristic, null, enable ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE));
     }
 
     /**
      * @param enable 开启还是关闭
      */
-    public void requestCharacteristicIndication(@NonNull final String requestId, final UUID service, final UUID characteristic, final boolean enable) {
+    public void requestCharacteristicIndication(@NonNull String requestId, UUID service, UUID characteristic, boolean enable) {
         checkIfRelease();
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performIndicationRequest(requestId, service, characteristic, enable ? BluetoothGattDescriptor.ENABLE_INDICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.CHARACTERISTIC_INDICATION, requestId, service,
-                            characteristic, null));
-                }
-            }
-        });
+        enqueue(new Request(Request.RequestType.CHARACTERISTIC_INDICATION, requestId, service,
+                characteristic, null, enable ? BluetoothGattDescriptor.ENABLE_INDICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE));
     }
 
-    public void requestDescriptorValue(@NonNull final String requestId, final UUID service, final UUID characteristic, final UUID descriptor) {
+    public void readDescriptor(@NonNull final String requestId, final UUID service, final UUID characteristic, final UUID descriptor) {
         checkIfRelease();
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performDescriptorValueRequest(requestId, service, characteristic, descriptor);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.READ_DESCRIPTOR, requestId, service, characteristic, descriptor));
-                }
-            }
-        });
+        enqueue(new Request(Request.RequestType.READ_DESCRIPTOR, requestId, service, characteristic, descriptor));
     }
 
-    public void writeCharacteristicValue(@NonNull final String requestId, final UUID service, final UUID characteristic, final byte[] value) {
+    public void writeCharacteristic(@NonNull String requestId, UUID service, UUID characteristic, byte[] value) {
         checkIfRelease();
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performCharacteristicWrite(requestId, service, characteristic, value);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.WRITE_CHARACTERISTIC, requestId, service, characteristic, null, value));
-                }
-            }
-        });
+        if (value == null || value.length == 0) {
+            return;
+        }
+        enqueue(new Request(Request.RequestType.WRITE_CHARACTERISTIC, requestId, service, characteristic, null, value));
     }
 
-    public void requestRssiValue(@NonNull final String requestId) {
+    public void readRssi(@NonNull String requestId) {
         checkIfRelease();
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentRequest == null) {
-                    performRssiValueRequest(requestId);
-                } else {
-                    requestQueue.add(new Request(Request.RequestType.READ_RSSI, requestId, null, null, null));
-                }
+        enqueue(new Request(Request.RequestType.READ_RSSI, requestId, null, null, null));
+    }
+    
+    private void enqueue(Request request) {
+        synchronized (this) {
+            requestQueue.add(request);
+            if (!executorRunning) {
+                executorRunning = true;
+                processNextRequest();
+                Ble.getInstance().getExecutorService().execute(requestRunnalbe);
+            } else {
+                wakeThread();
             }
-        });
+        }
+    }
+    
+    private class RequestRunnable implements Runnable {
+        @Override
+        public void run() {
+            try {
+                while (true) {
+                    Request request = currentRequest;
+                    if (request == null) {
+                        synchronized (this) {
+                            request = currentRequest;
+                            if (request == null) {
+                                executorRunning = false;
+                                return;
+                            }
+                        }
+                    }
+                    if (lastRequest != request) {
+                        lastRequest = request;
+                        executeRequest(request);
+                    } else {
+                        synchronized(lock) {
+                            try {
+                                lock.wait();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                executorRunning = false;
+            }
+        }
     }
 
-    private void processNextRequest() {
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (requestQueue.isEmpty()) {
-                    currentRequest = null;
-                    return;
-                }
-                Request request = requestQueue.remove();
-                switch (request.type) {
-                    case CHARACTERISTIC_NOTIFICATION:
-                        performNotificationRequest(request.requestId, request.service, request.characteristic, request.value);
-                        break;
-                    case CHARACTERISTIC_INDICATION:
-                        performIndicationRequest(request.requestId, request.service, request.characteristic, request.value);
-                        break;
-                    case READ_CHARACTERISTIC:
-                        performCharacteristicValueRequest(request.requestId, request.service, request.characteristic);
-                        break;
-                    case READ_DESCRIPTOR:
-                        performDescriptorValueRequest(request.requestId, request.service, request.characteristic, request.descriptor);
-                        break;
-                    case WRITE_CHARACTERISTIC:
-                        performCharacteristicWrite(request.requestId, request.service, request.characteristic, request.value);
-                        break;
+    private void executeRequest(Request request) {
+        if (bluetoothAdapter.isEnabled()) {
+            if (bluetoothGatt != null) {
+                switch(request.type) {                    
                     case READ_RSSI:
-                        performRssiValueRequest(request.requestId);
+                        executeReadRssi(request);
                         break;
-                    case SET_MTU:
-                        performRequestMtu(request.requestId, (int) BleUtils.bytesToLong(request.value, false));
+                    case CHANGE_MTU:
+                        executeChangeMtu(request);
                         break;
-                }
-            }
-        });
-    }
-
-    private void performRequestMtu(String requestId, int mtu) {
-        if (bluetoothAdapter.isEnabled()) {
-            currentRequest = new Request(Request.RequestType.SET_MTU, requestId, null, null, null);
-            if (bluetoothGatt != null) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    if (!bluetoothGatt.requestMtu(mtu)) {
-                        handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, true);
-                    }
-                } else {
-                    handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.API_LEVEL_TOO_LOW, currentRequest.value, true);
-                }
-            } else {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_IS_NULL, currentRequest.value, true);
-            }
-        }
-    }
-
-    private void performRssiValueRequest(String requestId) {
-        if (bluetoothAdapter.isEnabled()) {
-            currentRequest = new Request(Request.RequestType.READ_RSSI, requestId, null, null, null);
-            if (bluetoothGatt != null) {
-                if (!bluetoothGatt.readRemoteRssi()) {
-                    handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, true);
-                }
-            } else {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_IS_NULL, currentRequest.value, true);
-            }
-        }
-    }
-
-    private void performCharacteristicValueRequest(String requestId, UUID service, UUID characteristic) {
-        if (bluetoothAdapter.isEnabled()) {
-            currentRequest = new Request(Request.RequestType.READ_CHARACTERISTIC, requestId, service, characteristic, null);
-            if (bluetoothGatt != null) {
-                BluetoothGattService gattService = bluetoothGatt.getService(service);
-                if (gattService != null) {
-                    BluetoothGattCharacteristic gattCharacteristic = gattService.getCharacteristic(characteristic);
-                    if (gattCharacteristic != null) {
-                        if (!bluetoothGatt.readCharacteristic(gattCharacteristic)) {
-                            handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, true);
-                        }
-                    } else {
-                        handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_CHARACTERISTIC, currentRequest.value, true);
-                    }
-                } else {
-                    handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_SERVICE, currentRequest.value, true);
-                }
-            } else {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_IS_NULL, currentRequest.value, true);
-            }
-        }
-    }
-
-    private void performCharacteristicWrite(final String requestId, final UUID service, final UUID characteristic, final byte[] value) {
-        int writeDelayMillis = Ble.getInstance().getConfiguration().getWriteDelayMillis();
-        if (writeDelayMillis > 0) {
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    performWrite(value, requestId, service, characteristic);
-                }
-            }, writeDelayMillis);
-        } else {
-            performWrite(value, requestId, service, characteristic);
-        }        
-    }
-
-    private void performWrite(byte[] value, String requestId, UUID service, UUID characteristic) {
-        int packSize = Ble.getInstance().getConfiguration().getPackageSize();
-        if (value.length > packSize) {
-            List<byte[]> list = BleUtils.splitPackage(value, packSize);
-            for (byte[] bytes : list) {
-                doWrite(requestId, service, characteristic, bytes);
-            }
-        } else {
-            doWrite(requestId, service, characteristic, value);
-        }
-    }
-
-    private void doWrite(String requestId, UUID service, UUID characteristic, byte[] value) {
-        if (bluetoothAdapter.isEnabled()) {
-            currentRequest = new Request(Request.RequestType.WRITE_CHARACTERISTIC, requestId, service, characteristic, null, value);
-            currentRequest.waitWriteResult = Ble.getInstance().getConfiguration().isWaitWriteResult();
-            if (bluetoothGatt != null) {
-                BluetoothGattService gattService = bluetoothGatt.getService(service);
-                if (gattService != null) {
-                    BluetoothGattCharacteristic gattCharacteristic = gattService.getCharacteristic(characteristic);
-                    if (gattCharacteristic != null) {
-                        gattCharacteristic.setValue(value);
-                        int writeType = Ble.getInstance().getConfiguration().getWriteType();
-                        if (writeType == BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT || writeType == BluetoothGattCharacteristic.WRITE_TYPE_SIGNED ||
-                                writeType == BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) {
-                            gattCharacteristic.setWriteType(writeType);
-                        }
-                        if (!bluetoothGatt.writeCharacteristic(gattCharacteristic)) {
-                            handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, true);
-                        } else if (!currentRequest.waitWriteResult) {
-                            requestCallback.onCharacteristicWrite(currentRequest.requestId, bluetoothGatt, gattCharacteristic);
-                            processNextRequest();
-                        }
-                    } else {
-                        handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_CHARACTERISTIC, currentRequest.value, true);
-                    }
-                } else {
-                    handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_SERVICE, currentRequest.value, true);
-                }
-            } else {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_IS_NULL, currentRequest.value, true);
-            }
-        }
-    }
-
-    private void performDescriptorValueRequest(String requestId, UUID service, UUID characteristic, UUID descriptor) {
-        if (bluetoothAdapter.isEnabled()) {
-            currentRequest = new Request(Request.RequestType.READ_DESCRIPTOR, requestId, service, characteristic, descriptor);
-            if (bluetoothGatt != null) {
-                BluetoothGattService gattService = bluetoothGatt.getService(service);
-                if (gattService != null) {
-                    BluetoothGattCharacteristic gattCharacteristic = gattService.getCharacteristic(characteristic);
-                    if (gattCharacteristic != null) {
-                        BluetoothGattDescriptor gattDescriptor = gattCharacteristic.getDescriptor(descriptor);
-                        if (gattDescriptor != null) {
-                            if (!bluetoothGatt.readDescriptor(gattDescriptor)) {
-                                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, true);
+                    default:
+                        BluetoothGattService gattService = bluetoothGatt.getService(request.service);
+                        if (gattService != null) {
+                            BluetoothGattCharacteristic gattCharacteristic = gattService.getCharacteristic(request.characteristic);
+                            if (gattCharacteristic != null) {
+                                switch(request.type) {
+                                    case CHARACTERISTIC_NOTIFICATION:
+                                    case CHARACTERISTIC_INDICATION:
+                                        executeIndicationOrNotification(gattCharacteristic, request.requestId, request.type, request.value);
+                                        break;
+                                    case READ_CHARACTERISTIC:
+                                        executeReadCharacteristic(gattCharacteristic, request.requestId);
+                                        break;
+                                    case READ_DESCRIPTOR:
+                                        executeReadDescriptor(gattCharacteristic, request.descriptor, request.requestId);
+                                        break;
+                                    case WRITE_CHARACTERISTIC:
+                                        request.waitWriteResult = Ble.getInstance().getConfiguration().isWaitWriteResult();
+                                        executeWriteCharacteristic(gattCharacteristic, request.requestId, request.value, request.waitWriteResult);
+                                        break;
+                                }
+                            } else {
+                                handleFaildCallback(request.requestId, request.type, FAIL_TYPE_NULL_CHARACTERISTIC, request.value, true);
                             }
                         } else {
-                            handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_DESCRIPTOR, currentRequest.value, true);
-                        }
-                    } else {
-                        handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_CHARACTERISTIC, currentRequest.value, true);
-                    }
-                } else {
-                    handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_SERVICE, currentRequest.value, true);
+                            handleFaildCallback(request.requestId, request.type, FAIL_TYPE_NULL_SERVICE, request.value, true);
+                        }                        
+                        break;
                 }
             } else {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_IS_NULL, currentRequest.value, true);
+                handleFaildCallback(request.requestId, request.type, FAIL_TYPE_GATT_IS_NULL, request.value, true);
             }
-        }
-    }
-
-    private void performIndicationRequest(String requestId, UUID service, UUID characteristic, byte[] value) {
-        if (bluetoothAdapter.isEnabled()) {
-            currentRequest = new Request(Request.RequestType.CHARACTERISTIC_INDICATION, requestId, service, characteristic, null, value);
-            if (bluetoothGatt != null) {
-                BluetoothGattService gattService = bluetoothGatt.getService(service);
-                if (gattService != null) {
-                    pendingCharacteristic = gattService.getCharacteristic(characteristic);
-                    if (pendingCharacteristic != null) {
-                        BluetoothGattDescriptor gattDescriptor = pendingCharacteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG);
-                        if (gattDescriptor == null || !bluetoothGatt.readDescriptor(gattDescriptor)) {
-                            handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, true);
-                        }
-                    } else {
-                        handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_CHARACTERISTIC, currentRequest.value, true);
-                    }
-                } else {
-                    handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_SERVICE, currentRequest.value, true);
-                }
-            } else {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_IS_NULL, currentRequest.value, true);
-            }
-        }
-    }
-
-    private void performNotificationRequest(String requestId, UUID service, UUID characteristic, byte[] value) {
-        if (bluetoothAdapter.isEnabled()) {
-            currentRequest = new Request(Request.RequestType.CHARACTERISTIC_NOTIFICATION, requestId, service, characteristic, null, value);
-            if (bluetoothGatt != null) {
-                BluetoothGattService gattService = bluetoothGatt.getService(service);
-                if (gattService != null) {
-                    pendingCharacteristic = gattService.getCharacteristic(characteristic);
-                    if (pendingCharacteristic != null) {
-                        BluetoothGattDescriptor gattDescriptor = pendingCharacteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG);
-                        if (gattDescriptor == null || !bluetoothGatt.readDescriptor(gattDescriptor)) {
-                            handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NONE, currentRequest.value, true);
-                        }
-                    } else {
-                        handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_CHARACTERISTIC, currentRequest.value, true);
-                    }
-                } else {
-                    handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.NULL_SERVICE, currentRequest.value, true);
-                }
-            } else {
-                handleFaildCallback(currentRequest.requestId, currentRequest.type, IRequestCallback.GATT_IS_NULL, currentRequest.value, true);
-            }
-        }
-    }
-
-
-    private boolean enableNotification(boolean enable, BluetoothGattCharacteristic characteristic) {
-        if (!bluetoothAdapter.isEnabled() || bluetoothGatt == null || !bluetoothGatt.setCharacteristicNotification(characteristic, enable)) {
-            return false;
-        }
-        BluetoothGattDescriptor descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG);
-        if (descriptor == null) {
-            return false;
-        }
-        if (enable) {
-            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
         } else {
-            descriptor.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+            handleFaildCallback(request.requestId, request.type, FAIL_TYPE_BLUETOOTH_ADAPTER_DISABLED, request.value, true);
         }
-        return bluetoothGatt.writeDescriptor(descriptor);
     }
 
-    private boolean enableIndication(boolean enable, BluetoothGattCharacteristic characteristic) {
+    private void wakeThread() {
+        synchronized (lock) {
+            lock.notifyAll();
+        }
+    }
+    
+    private synchronized void processNextRequest() {
+        if (requestQueue.isEmpty()) {
+            currentRequest = null;
+            wakeThread();
+            return;
+        }
+        currentRequest = requestQueue.remove();
+        wakeThread();
+    }
+    
+    private void executeChangeMtu(Request request) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (!bluetoothGatt.requestMtu((int) BleUtils.bytesToLong(request.value, false))) {
+                handleFaildCallback(request.requestId, request.type, FAIL_TYPE_REQUEST_FAILED, request.value, true);
+            }
+        } else {
+            handleFaildCallback(request.requestId, request.type, FAIL_TYPE_API_LEVEL_TOO_LOW, request.value, true);
+        }
+    }
+    
+    private void executeReadRssi(Request request) {
+        if (!bluetoothGatt.readRemoteRssi()) {
+            handleFaildCallback(request.requestId, request.type, FAIL_TYPE_REQUEST_FAILED, request.value, true);
+        }
+    }
+    
+    private void executeReadCharacteristic(BluetoothGattCharacteristic gattCharacteristic, String requestId) {
+        if (!bluetoothGatt.readCharacteristic(gattCharacteristic)) {
+            handleFaildCallback(requestId, Request.RequestType.READ_CHARACTERISTIC, FAIL_TYPE_REQUEST_FAILED, null, true);
+        }
+    }
+
+    private void executeWriteCharacteristic(BluetoothGattCharacteristic gattCharacteristic, String requestId, byte[] value, boolean waitWriteResult) {
+        try {
+            Thread.sleep(Ble.getInstance().getConfiguration().getWriteDelayMillis());
+            int packSize = Ble.getInstance().getConfiguration().getPackageSize();
+            writeOverValue = new byte[0];
+            writeResult = true;            
+            if (value.length > packSize) {
+                List<byte[]> list = BleUtils.splitPackage(value, packSize);
+                for (byte[] bytes : list) {
+                    if (!doWrite(gattCharacteristic, bytes)) {//写失败
+                        performWriteFailed(requestId, value);
+                        return;
+                    }
+                }
+            } else if (!doWrite(gattCharacteristic, value)) {
+                performWriteFailed(requestId, value);
+                return;
+            }
+            if (!waitWriteResult) {
+                writeOverValue = null;
+                writeResult = false;
+                onCharacteristicWrite(requestId, value);
+                processNextRequest();
+            }           
+        } catch (InterruptedException e) {
+            performWriteFailed(requestId, value);
+        }
+    }
+
+    private void performWriteFailed(String requestId, byte[] value) {
+        writeOverValue = null;
+        writeResult = false;
+        handleFaildCallback(requestId, Request.RequestType.WRITE_CHARACTERISTIC, FAIL_TYPE_REQUEST_FAILED, value, true);
+        
+    }
+
+    private boolean doWrite(BluetoothGattCharacteristic gattCharacteristic, byte[] value) {
+        gattCharacteristic.setValue(value);
+        int writeType = Ble.getInstance().getConfiguration().getWriteType();
+        if (writeType == BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT || writeType == BluetoothGattCharacteristic.WRITE_TYPE_SIGNED ||
+                writeType == BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) {
+            gattCharacteristic.setWriteType(writeType);
+        }
+        return bluetoothGatt.writeCharacteristic(gattCharacteristic);
+    }
+    
+    private void executeReadDescriptor(BluetoothGattCharacteristic characteristic, UUID descriptor, String requestId) {
+        BluetoothGattDescriptor gattDescriptor = characteristic.getDescriptor(descriptor);
+        if (gattDescriptor != null) {
+            if (!bluetoothGatt.readDescriptor(gattDescriptor)) {
+                handleFaildCallback(requestId, Request.RequestType.READ_DESCRIPTOR, FAIL_TYPE_REQUEST_FAILED, null, true);
+            }
+        } else {
+            handleFaildCallback(requestId, Request.RequestType.READ_DESCRIPTOR, FAIL_TYPE_NULL_DESCRIPTOR, null, true);
+        }
+    }
+    
+    private void executeIndicationOrNotification(BluetoothGattCharacteristic characteristic, String requestId, Request.RequestType requestType, byte[] value) {
+        pendingCharacteristic = characteristic;
+        BluetoothGattDescriptor gattDescriptor = pendingCharacteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG);
+        if (gattDescriptor == null || !bluetoothGatt.readDescriptor(gattDescriptor)) {
+            handleFaildCallback(requestId, requestType, FAIL_TYPE_REQUEST_FAILED, value, true);
+        }
+    }
+
+    private boolean enableNotificationOrIndication(boolean enable, boolean notification, BluetoothGattCharacteristic characteristic) {
         if (!bluetoothAdapter.isEnabled() || bluetoothGatt == null || !bluetoothGatt.setCharacteristicNotification(characteristic, enable)) {
             return false;
         }
@@ -574,9 +517,8 @@ public abstract class BaseConnection extends BluetoothGattCallback {
             return false;
         }
         if (enable) {
-            descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
-        }
-        else {
+            descriptor.setValue(notification ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
+        } else {
             descriptor.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
         }
         return bluetoothGatt.writeDescriptor(descriptor);

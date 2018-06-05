@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cn.zfs.blelib.callback.ConnectionCallback;
-import cn.zfs.blelib.callback.IRequestCallback;
 import cn.zfs.blelib.event.Events;
 import cn.zfs.blelib.util.BleUtils;
 
@@ -31,7 +30,7 @@ import cn.zfs.blelib.util.BleUtils;
  * 时间: 2018/4/11 15:29
  * 作者: zengfansheng
  */
-public class Connection extends BaseConnection implements IRequestCallback {
+public class Connection extends BaseConnection {
     //----------蓝牙连接状态-------------   
     public static final int STATE_DISCONNECTED = 0;
     public static final int STATE_CONNECTING = 1;
@@ -104,7 +103,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
         conn.connStartTime = System.currentTimeMillis();
         conn.sendConnectionCallback();
         conn.handler.sendEmptyMessageDelayed(MSG_CONNECT, connectDelay);//连接
-        conn.handler.sendEmptyMessageDelayed(MSG_TIMER, connectDelay + 1000);//启动定时器，用于断线重连
+        conn.handler.sendEmptyMessageDelayed(MSG_TIMER, connectDelay + 500);//启动定时器，用于断线重连
 		return conn;
 	}
 
@@ -304,7 +303,7 @@ public class Connection extends BaseConnection implements IRequestCallback {
                 doDisconnect(false, false, true);
             }
         }
-        handler.sendEmptyMessageDelayed(MSG_TIMER, 1000);
+        handler.sendEmptyMessageDelayed(MSG_TIMER, 500);
     }
     
     //处理刷新
@@ -388,16 +387,22 @@ public class Connection extends BaseConnection implements IRequestCallback {
         return autoReconnEnable;
     }
     
-    public synchronized void reconnect() {
-	    tryReconnectTimes = 0;
-        handler.removeMessages(MSG_TIMER);//停止定时器
-        handler.sendMessage(Message.obtain(handler, MSG_DISCONNECT, MSG_ARG1_RECONNECT));
-        handler.sendEmptyMessageDelayed(MSG_TIMER, 1000);//重启定时器
+    public boolean reconnect() {
+	    if (!isReleased) {
+            tryReconnectTimes = 0;
+            handler.removeMessages(MSG_TIMER);//停止定时器
+            Message.obtain(handler, MSG_DISCONNECT, MSG_ARG1_RECONNECT).sendToTarget();
+            handler.sendEmptyMessageDelayed(MSG_TIMER, 500);//重启定时器
+            return true;
+	    }
+	    return false;
 	}
 
     public void disconnect() {
-        handler.removeMessages(MSG_TIMER);//主动断开，停止定时器
-        handler.sendMessage(Message.obtain(handler, MSG_DISCONNECT, MSG_ARG1_NONE));
+        if (!isReleased) {
+            handler.removeMessages(MSG_TIMER);//主动断开，停止定时器
+            Message.obtain(handler, MSG_DISCONNECT, MSG_ARG1_NONE).sendToTarget();
+        }
 	}
 	
     /**
@@ -426,12 +431,6 @@ public class Connection extends BaseConnection implements IRequestCallback {
         Message.obtain(handler, MSG_RELEASE, MSG_ARG1_NONE, 0).sendToTarget();
     }
 	
-    @NonNull
-    @Override
-    protected IRequestCallback getRequestCallback() {
-        return this;
-    }
-
     public int getConnState() {
 		return device.connectionState;
 	}
@@ -447,25 +446,25 @@ public class Connection extends BaseConnection implements IRequestCallback {
 	}
 
     @Override
-    public void onCharacteristicRead(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+    public void onCharacteristicRead(@NonNull String requestId, BluetoothGattCharacteristic characteristic) {
         Ble.getInstance().getPublisher().post(new Events.CharacteristicRead(device, requestId, characteristic));
         Ble.println(Connection.class, Log.DEBUG, "onCharacteristicRead！请求ID：" + requestId +
                 ", value: " + BleUtils.bytesToHexString(characteristic.getValue()) + ", mac: " + device.addr);
     }
 
     @Override
-    public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+    public void onCharacteristicChanged(BluetoothGattCharacteristic characteristic) {
         Ble.getInstance().getPublisher().post(new Events.CharacteristicChanged(device, characteristic));
     }
 
     @Override
-    public void onReadRemoteRssi(@NonNull String requestId, BluetoothGatt gatt, int rssi) {
+    public void onReadRemoteRssi(@NonNull String requestId, int rssi) {
         Ble.getInstance().getPublisher().post(new Events.ReadRemoteRssi(device, requestId, rssi));
         Ble.println(Connection.class, Log.DEBUG, "读到信号强度！rssi: "+ rssi + ", mac: " + device.addr);
     }
 
     @Override
-    public void onMtuChanged(@NonNull String requestId, BluetoothGatt gatt, int mtu) {
+    public void onMtuChanged(@NonNull String requestId, int mtu) {
         Ble.getInstance().getPublisher().post(new Events.MtuChanged(device, requestId, mtu));
         Ble.println(Connection.class, Log.DEBUG, "Mtu修改成功！mtu: "+ mtu + ", mac: " + device.addr);
     }
@@ -478,40 +477,40 @@ public class Connection extends BaseConnection implements IRequestCallback {
     }
 
     @Override
-    public void onDescriptorRead(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
+    public void onDescriptorRead(@NonNull String requestId, BluetoothGattDescriptor descriptor) {
         Ble.getInstance().getPublisher().post(new Events.DescriptorRead(device, requestId, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "onDescriptorRead！请求ID：" + requestId +
                 ", value: " + BleUtils.bytesToHexString(descriptor.getValue()) + ", mac: " + device.addr);
     }
 
     @Override
-    public void onNotificationRegistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
+    public void onNotificationRegistered(@NonNull String requestId, BluetoothGattDescriptor descriptor) {
         Ble.getInstance().getPublisher().post(new Events.NotificationRegistered(device, requestId, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "NOTIFICATION_REGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
-    public void onNotificationUnregistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
+    public void onNotificationUnregistered(@NonNull String requestId, BluetoothGattDescriptor descriptor) {
         Ble.getInstance().getPublisher().post(new Events.NotificationUnregistered(device, requestId, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "NOTIFICATION_UNREGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
-    public void onIndicationRegistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
+    public void onIndicationRegistered(@NonNull String requestId, BluetoothGattDescriptor descriptor) {
         Ble.getInstance().getPublisher().post(new Events.IndicationRegistered(device, requestId, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "INDICATION_REGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
-    public void onIndicationUnregistered(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattDescriptor descriptor) {
+    public void onIndicationUnregistered(@NonNull String requestId, BluetoothGattDescriptor descriptor) {
         Ble.getInstance().getPublisher().post(new Events.IndicationUnregistered(device, requestId, descriptor));
         Ble.println(Connection.class, Log.DEBUG, "INDICATION_UNREGISTERED！请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
-    public void onCharacteristicWrite(@NonNull String requestId, BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-        Ble.getInstance().getPublisher().post(new Events.CharacteristicWrite(device, requestId, characteristic));
-        Ble.println(Connection.class, Log.DEBUG, "写入成功！value: "+ BleUtils.bytesToHexString(characteristic.getValue()) +
+    public void onCharacteristicWrite(@NonNull String requestId, byte[] value) {
+        Ble.getInstance().getPublisher().post(new Events.CharacteristicWrite(device, requestId, value));
+        Ble.println(Connection.class, Log.DEBUG, "写入成功！value: "+ BleUtils.bytesToHexString(value) +
                 ", 请求ID：" + requestId + ", mac: " + device.addr);
     }
 }

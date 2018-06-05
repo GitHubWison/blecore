@@ -85,23 +85,17 @@ class CommActivity : AppCompatActivity() {
                     }
                     bytes[i] = Integer.valueOf(str, 16).toByte()
                 }
-                Ble.getInstance().getConnection(device)?.writeCharacteristicValue("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
                 while (run && loop) {
-                    Ble.getInstance().getConnection(device)?.writeCharacteristicValue("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
+                    Ble.getInstance().getConnection(device)?.writeCharacteristic("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
                     Thread.sleep(delay)
                     if (System.currentTimeMillis() - lastUpdateTime > 500) {
                         lastUpdateTime = System.currentTimeMillis()
-                        runOnUiThread {
-                            tvSuccessCount.text = "成功:$successCount"
-                            tvFailCount.text = "失败$failCount"
-                        }
+                        updateCount()
                     }
                 }
-                runOnUiThread {
-                    tvSuccessCount.text = "成功:$successCount"
-                    tvFailCount.text = "失败$failCount"
-                }
                 Ble.getInstance().getConnection(device)?.clearRequestQueue()
+                Ble.getInstance().getConnection(device)?.writeCharacteristic("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
+                updateCount()                
             } catch (e: Exception) {
                 ToastUtils.showShort("输入格式错误")
             }
@@ -127,12 +121,23 @@ class CommActivity : AppCompatActivity() {
                 delay = d
             }
         })
-        btnClearCont.setOnClickListener {
-            successCount = 0
-            failCount = 0
+        btnClearCount.setOnClickListener {
+            clearCount()
+        }
+    }
+
+    private fun updateCount() {
+        runOnUiThread {
             tvSuccessCount.text = "成功:$successCount"
             tvFailCount.text = "失败$failCount"
         }
+    }
+
+    private fun clearCount() {
+        successCount = 0
+        failCount = 0
+        tvSuccessCount.text = "成功:$successCount"
+        tvFailCount.text = "失败$failCount"
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -197,12 +202,18 @@ class CommActivity : AppCompatActivity() {
     fun onRequestFialed(e: Events.RequestFailed) {
         if (e.requestType == Request.RequestType.WRITE_CHARACTERISTIC) {
             failCount++
+            if (!loop) {
+                updateCount()
+            }
         }
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     fun onCharacteristicWrite(e: Events.CharacteristicWrite) {
         successCount++
+        if (!loop) {
+            updateCount()
+        }
     }
     
     private fun updateState(state: Int) {
@@ -224,6 +235,7 @@ class CommActivity : AppCompatActivity() {
             }
             Connection.STATE_SERVICE_DISCORVERED -> {
                 tvState.text = "连接成功，并成功发现服务"
+                clearCount()
                 if (notifyService != null && notifyCharacteristic != null) {
                     Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("1", notifyService!!.uuid,
                             notifyCharacteristic!!.uuid, true)

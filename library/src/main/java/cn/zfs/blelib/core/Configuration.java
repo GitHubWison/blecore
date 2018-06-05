@@ -3,7 +3,6 @@ package cn.zfs.blelib.core;
 import android.bluetooth.BluetoothGattCharacteristic;
 
 import cn.zfs.blelib.callback.ConnectionCallback;
-import cn.zfs.blelib.callback.IRequestCallback;
 
 /**
  * 描述: 蓝牙配置
@@ -17,7 +16,6 @@ public class Configuration {
     private IScanHandler scanHandler;
     private long discoverServicesDelayMillis = DEFAULT_DISCOVER_SERVICES_DELAY_MILLIS;
     private int connectTimeoutMillis = DEFAULT_CONN_TIMEOUT_MILLIS;
-    private Class<? extends IRequestCallback> requestCallbackClass;
     private Class<? extends ConnectionCallback> connectionCallbackClass;
     private Class<? extends Device> deviceClass;
     private int tryReconnectTimes = TRY_RECONNECT_TIMES_INFINITE;
@@ -66,18 +64,6 @@ public class Configuration {
      */
     public Configuration setConnectionCallbackClass(Class<? extends ConnectionCallback> connectionCallbackClass) {
         this.connectionCallbackClass = connectionCallbackClass;
-        return this;
-    }
-
-    public Class<? extends IRequestCallback> getRequestCallbackClass() {
-        return requestCallbackClass;
-    }
-
-    /**
-     * 设置请求回调，数据交互
-     */
-    public Configuration setRequestCallbackClass(Class<? extends IRequestCallback> requestCallbackClass) {
-        this.requestCallbackClass = requestCallbackClass;
         return this;
     }
 

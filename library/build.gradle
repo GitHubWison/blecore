@@ -8,8 +8,8 @@ android {
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 47
-        versionName "2.1.17"
+        versionCode 48
+        versionName "2.1.18"
 
     }
 
@@ -44,7 +44,7 @@ publish {
     userOrg = 'fszeng2017' //bintray.com用户名  
     groupId = 'com.github.fszeng2011' //jcenter上的路径  
     artifactId = 'blecore' //项目名称  
-    publishVersion = '2.1.17' //版本号  
+    publishVersion = '2.1.18' //版本号  
     desc = 'android ble lib'
     website = 'https://github.com/fszeng2011'
 }

@@ -35,11 +35,13 @@ class RequestMtuActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         run = false
+        Ble.getInstance().unregisterSubscriber(this)
         super.onDestroy()
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Ble.getInstance().registerSubscriber(this)
         device = intent.getParcelableExtra("device")
         writeService = intent.getParcelableExtra("writeService")
         writeCharacteristic = intent.getParcelableExtra("writeCharacteristic")
@@ -55,7 +57,7 @@ class RequestMtuActivity : AppCompatActivity() {
                 numStr.isEmpty() -> ToastUtils.showShort("请设置数值")
                 numStr.toInt() > 512 -> ToastUtils.showShort("数值超过范围")
                 numStr.toInt() < 20 -> ToastUtils.showShort("数值不合法")
-                else -> Ble.getInstance().getConnection(device)?.requestMtu("REQUEST_MTU", numStr.toInt())
+                else -> Ble.getInstance().getConnection(device)?.changeMtu("REQUEST_MTU", numStr.toInt())
             }
         }
         btnGenerateByteArr.setOnClickListener {
@@ -74,10 +76,10 @@ class RequestMtuActivity : AppCompatActivity() {
         }
         btnSendData.setOnClickListener {
             thread {
-                Ble.getInstance().getConnection(device)?.writeCharacteristicValue("write", writeService!!.uuid,
+                Ble.getInstance().getConnection(device)?.writeCharacteristic("write", writeService!!.uuid,
                         writeCharacteristic!!.uuid, data)
                 while (run && loop) {
-                    Ble.getInstance().getConnection(device)?.writeCharacteristicValue("write", writeService!!.uuid,
+                    Ble.getInstance().getConnection(device)?.writeCharacteristic("write", writeService!!.uuid,
                             writeCharacteristic!!.uuid, data)                    
                     Thread.sleep(delay)
                 }
@@ -127,7 +129,7 @@ class RequestMtuActivity : AppCompatActivity() {
     @Subscribe(threadMode = ThreadMode.POSTING)
     fun onRequestFialed(e: Events.RequestFailed) {
         if (!loop) {
-            if (e.requestId == "REQUEST_MTU" && e.requestType == Request.RequestType.SET_MTU) {
+            if (e.requestId == "REQUEST_MTU" && e.requestType == Request.RequestType.CHANGE_MTU) {
                 ToastUtils.showShort("MTU修改失败")
             } else if (e.requestId == "write" && e.requestType == Request.RequestType.WRITE_CHARACTERISTIC) {
                 ToastUtils.showShort("写入失败")
