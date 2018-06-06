@@ -61,7 +61,7 @@ class RequestMtuActivity : AppCompatActivity() {
             }
         }
         btnGenerateByteArr.setOnClickListener {
-            var max = mtu
+            var max = if (mtu == 23) 20 else mtu
             val numStr = etMtu.text.toString()
             if (!numStr.isEmpty()) {
                 max = Math.min(mtu, numStr.toInt())
@@ -75,15 +75,19 @@ class RequestMtuActivity : AppCompatActivity() {
             tvData.text = BleUtils.bytesToHexString(data)
         }
         btnSendData.setOnClickListener {
-            thread {
+            Ble.getInstance().configuration.packageSize = data.size
+            if (loop) {
+                thread {
+                    while (run && loop) {
+                        Ble.getInstance().getConnection(device)?.writeCharacteristic("write", writeService!!.uuid,
+                                writeCharacteristic!!.uuid, data)
+                        Thread.sleep(delay)
+                    }
+                    Ble.getInstance().getConnection(device)?.clearRequestQueue()                
+                }                
+            } else {
                 Ble.getInstance().getConnection(device)?.writeCharacteristic("write", writeService!!.uuid,
                         writeCharacteristic!!.uuid, data)
-                while (run && loop) {
-                    Ble.getInstance().getConnection(device)?.writeCharacteristic("write", writeService!!.uuid,
-                            writeCharacteristic!!.uuid, data)                    
-                    Thread.sleep(delay)
-                }
-                Ble.getInstance().getConnection(device)?.clearRequestQueue()
             }
         }
         etDelay.addTextChangedListener(object : TextWatcher {

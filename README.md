@@ -3,7 +3,27 @@
 ## 代码托管
 [![JitPack](https://img.shields.io/badge/JitPack-blecore-green.svg?style=flat)](https://jitpack.io/#fszeng2011/blecore)
 [![Download](https://api.bintray.com/packages/fszeng2017/maven/blecore/images/download.svg) ](https://bintray.com/fszeng2017/maven/blecore/_latestVersion)
-[![JCenter](https://img.shields.io/badge/JCenter-2.1.18-green.svg?style=flat)](http://jcenter.bintray.com/com/github/fszeng2011/blecore/2.1.18/)
+[![JCenter](https://img.shields.io/badge/JCenter-2.1.19-green.svg?style=flat)](http://jcenter.bintray.com/com/github/fszeng2011/blecore/2.1.19/)
+
+## 配置
+	
+	Ble.getInstance().configuration.setPackageSize(20)//分包大小
+                .setBondController { device ->
+                    //连接时配对控制
+                    device.name.startsWith("zfs")
+                }
+                .setConnectTimeoutMillis(8000)//连接超时时间
+                .setDiscoverServicesDelayMillis(500)//连接成功后延时执行发现服务操作的时间
+                .setScanHandler { device, scanRecord -> 
+                    //扫描过滤器，符合规则的才会在扫描回调中
+                    device.name.startsWith("zfs")
+                }
+                .setTryReconnectTimes(3)//尝试重连的次数，默认无限重连
+                .setScanPeriodMillis(10000)//扫描周期
+                .setUseBluetoothLeScanner(true)//是否使用新版api的扫描器
+                .setWaitWriteResult(true)//写入时是否等待写入回调后再写下一包
+                .setWriteDelayMillis(10)//每包的写入延时
+                .setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)//写入类型
 
 ## 搜索设备
     
@@ -108,11 +128,14 @@
         //设备notifycation的数据
     }
 
+## 读特征值
+
+	Ble.getInstance().getConnection(device)?.readCharacteristic("4", serviceUuid, characteristicUuid)
+
 ## 写数据
 
-	Ble.getInstance().getConnection(device)?.writeCharacteristic("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
+	Ble.getInstance().getConnection(device)?.writeCharacteristic("3", serviceUuid, characteristicUuid, bytes)
 
 ## 开启notifycation
 
-	Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("1", notifyService!!.uuid,
-                            notifyCharacteristic!!.uuid, true)
+	Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("1", serviceUuid, characteristicUuid, true)

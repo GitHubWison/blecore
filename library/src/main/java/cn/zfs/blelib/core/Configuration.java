@@ -18,6 +18,7 @@ public class Configuration {
     private int connectTimeoutMillis = DEFAULT_CONN_TIMEOUT_MILLIS;
     private Class<? extends ConnectionCallback> connectionCallbackClass;
     private Class<? extends Device> deviceClass;
+    private IBondController bondController;
     private int tryReconnectTimes = TRY_RECONNECT_TIMES_INFINITE;
     private int writeDelayMillis;
     private int scanPeriodMillis = 10000;
@@ -68,13 +69,6 @@ public class Configuration {
     }
 
     /**
-     * 连接时是否执行绑定
-     */
-    public boolean isBondWhenConnect(Device device) {
-        return false;
-    }
-
-    /**
      * 获取连接超时时间
      */
     public int getConnectTimeoutMillis() {
@@ -122,8 +116,9 @@ public class Configuration {
     /**
      * 设置发送延时，默认不延时
      */
-    public void setWriteDelayMillis(int writeDelayMillis) {
+    public Configuration setWriteDelayMillis(int writeDelayMillis) {
         this.writeDelayMillis = writeDelayMillis;
+        return this;
     }
 
     public int getScanPeriodMillis() {
@@ -147,8 +142,9 @@ public class Configuration {
     /**
      * 控制是否使用新版的扫描器
      */
-    public void setUseBluetoothLeScanner(boolean useBluetoothLeScanner) {
+    public Configuration setUseBluetoothLeScanner(boolean useBluetoothLeScanner) {
         this.useBluetoothLeScanner = useBluetoothLeScanner;
+        return this;
     }
 
     public int getPackageSize() {
@@ -176,8 +172,9 @@ public class Configuration {
      * @param writeType {@link BluetoothGattCharacteristic#WRITE_TYPE_NO_RESPONSE}<br>{@link BluetoothGattCharacteristic#WRITE_TYPE_DEFAULT}<br>
      *                  {@link BluetoothGattCharacteristic#WRITE_TYPE_SIGNED}
      */
-    public void setWriteType(int writeType) {
+    public Configuration setWriteType(int writeType) {
         this.writeType = writeType;
+        return this;
     }
 
     public boolean isWaitWriteResult() {
@@ -188,7 +185,17 @@ public class Configuration {
      * 是否等待写入结果，不等待则直接处理下一个请求，否则等待onCharacteristicWrite回调后再处理下一请求，默认不等待。<br>
      * 不等待的话onCharacteristicWrite回调不会处理，而是在writeCharacteristic发布onCharacteristicWrite信息
      */
-    public void setWaitWriteResult(boolean waitWriteResult) {
+    public Configuration setWaitWriteResult(boolean waitWriteResult) {
         this.waitWriteResult = waitWriteResult;
+        return this;
+    }
+
+    public IBondController getBondController() {
+        return bondController;
+    }
+
+    public Configuration setBondController(IBondController bondController) {
+        this.bondController = bondController;
+        return this;
     }
 }

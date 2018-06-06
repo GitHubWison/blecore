@@ -64,6 +64,7 @@ public class Ble {
         scanListeners = new ArrayList<>();
         executorService = Executors.newCachedThreadPool();
         publisher = EventBus.builder().build();
+        LogController.printLevelControl = LogController.NONE;
     }
 
     private static class Holder {
@@ -429,7 +430,8 @@ public class Ble {
                     e.printStackTrace();
                 }
             }
-            if (configuration.isBondWhenConnect(device)) {
+            IBondController bondController = configuration.getBondController();
+            if (bondController != null && bondController.bond(device)) {
                 BluetoothDevice bd = bluetoothAdapter.getRemoteDevice(device.addr);
                 if (bd.getBondState() == BluetoothDevice.BOND_BONDED) {
                     connection = Connection.newInstance(bluetoothAdapter, context, device, 0, callback);

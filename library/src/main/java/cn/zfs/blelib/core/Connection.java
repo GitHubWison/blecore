@@ -51,10 +51,10 @@ public class Connection extends BaseConnection {
     @Retention(RetentionPolicy.SOURCE)
     public @interface STATE {}
     
-    private static final int MSG_ARG1_NONE = 0;
-    private static final int MSG_ARG1_RELEASE = 1;
-    private static final int MSG_ARG1_RECONNECT = 2;
-    private static final int MSG_ARG1_NOTIFY = 3;
+    private static final int MSG_ARG_NONE = 0;
+    private static final int MSG_ARG_RELEASE = 1;
+    private static final int MSG_ARG_RECONNECT = 2;
+    private static final int MSG_ARG_NOTIFY = 3;
     
     private static final int MSG_CONNECT = 1;
     private static final int MSG_DISCONNECT = 2;
@@ -171,7 +171,7 @@ public class Connection extends BaseConnection {
                         conn.doConnect();
                 		break;
                     case MSG_DISCONNECT://处理断开
-                        conn.doDisconnect(msg.arg2 == MSG_ARG1_RECONNECT, msg.arg1 == MSG_ARG1_RELEASE, true);
+                        conn.doDisconnect(msg.arg2 == MSG_ARG_RECONNECT, msg.arg1 == MSG_ARG_RELEASE, true);
                 		break;
                     case MSG_REFRESH://手动刷新
                         conn.doRefresh(false);
@@ -181,7 +181,7 @@ public class Connection extends BaseConnection {
                         break;
                     case MSG_RELEASE://销毁连接
                         conn.autoReconnEnable = false;//停止重连
-                        conn.doDisconnect(false, true, msg.arg1 == MSG_ARG1_NOTIFY);
+                        conn.doDisconnect(false, true, msg.arg1 == MSG_ARG_NOTIFY);
                         break;
                     case MSG_TIMER://定时器
                         conn.doTimer();
@@ -391,7 +391,7 @@ public class Connection extends BaseConnection {
 	    if (!isReleased) {
             tryReconnectTimes = 0;
             handler.removeMessages(MSG_TIMER);//停止定时器
-            Message.obtain(handler, MSG_DISCONNECT, MSG_ARG1_RECONNECT).sendToTarget();
+            Message.obtain(handler, MSG_DISCONNECT, MSG_ARG_RECONNECT).sendToTarget();
             handler.sendEmptyMessageDelayed(MSG_TIMER, 500);//重启定时器
             return true;
 	    }
@@ -401,7 +401,7 @@ public class Connection extends BaseConnection {
     public void disconnect() {
         if (!isReleased) {
             handler.removeMessages(MSG_TIMER);//主动断开，停止定时器
-            Message.obtain(handler, MSG_DISCONNECT, MSG_ARG1_NONE).sendToTarget();
+            Message.obtain(handler, MSG_DISCONNECT, MSG_ARG_NONE).sendToTarget();
         }
 	}
 	
@@ -419,7 +419,7 @@ public class Connection extends BaseConnection {
 	public void release() {
 	    super.release();
 	    handler.removeCallbacksAndMessages(null);//主动断开，停止定时器
-        Message.obtain(handler, MSG_RELEASE, MSG_ARG1_NOTIFY, 0).sendToTarget();
+        Message.obtain(handler, MSG_RELEASE, MSG_ARG_NOTIFY, 0).sendToTarget();
 	}
 
     /**
@@ -428,7 +428,7 @@ public class Connection extends BaseConnection {
     public void releaseNoEvnet() {
         super.release();
         handler.removeCallbacksAndMessages(null);//主动断开，停止定时器
-        Message.obtain(handler, MSG_RELEASE, MSG_ARG1_NONE, 0).sendToTarget();
+        Message.obtain(handler, MSG_RELEASE, MSG_ARG_NONE, 0).sendToTarget();
     }
 	
     public int getConnState() {

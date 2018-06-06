@@ -22,6 +22,7 @@ import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.concurrent.thread
 
 /**
  * 描述:
@@ -85,17 +86,22 @@ class CommActivity : AppCompatActivity() {
                     }
                     bytes[i] = Integer.valueOf(str, 16).toByte()
                 }
-                while (run && loop) {
-                    Ble.getInstance().getConnection(device)?.writeCharacteristic("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
-                    Thread.sleep(delay)
-                    if (System.currentTimeMillis() - lastUpdateTime > 500) {
-                        lastUpdateTime = System.currentTimeMillis()
+                if (loop) {
+                    thread {
+                        while (run && loop) {
+                            Ble.getInstance().getConnection(device)?.writeCharacteristic("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
+                            Thread.sleep(delay)
+                            if (System.currentTimeMillis() - lastUpdateTime > 500) {
+                                lastUpdateTime = System.currentTimeMillis()
+                                updateCount()
+                            }
+                        }
+                        Ble.getInstance().getConnection(device)?.clearRequestQueue()
                         updateCount()
                     }
-                }
-                Ble.getInstance().getConnection(device)?.clearRequestQueue()
-                Ble.getInstance().getConnection(device)?.writeCharacteristic("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
-                updateCount()                
+                } else {
+                    Ble.getInstance().getConnection(device)?.writeCharacteristic("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
+                }                                
             } catch (e: Exception) {
                 ToastUtils.showShort("输入格式错误")
             }

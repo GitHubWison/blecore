@@ -9,6 +9,7 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.os.Build;
 import android.support.annotation.NonNull;
+import android.util.Log;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -46,9 +47,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     protected BluetoothAdapter bluetoothAdapter;
     protected boolean isReleased;
     private volatile boolean executorRunning;
-    private RequestRunnable requestRunnalbe;
-    private byte[] writeOverValue;
-    private boolean writeResult;
+    private RequestRunnable requestRunnalbe;    
     private final Object lock = new Object();
 
     BaseConnection(BluetoothDevice bluetoothDevice) {
@@ -126,28 +125,36 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     }
 
     @Override
-    public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-        Request request = currentRequest;
-        if (request != null) {
-            if (request.waitWriteResult && request.type == Request.RequestType.WRITE_CHARACTERISTIC && writeOverValue != null) {
-                if (status != BluetoothGatt.GATT_SUCCESS) {
-                    writeResult = false;
-                }
-                byte[] value = characteristic.getValue();
-                writeOverValue = Arrays.copyOf(writeOverValue, writeOverValue.length + value.length);
-                System.arraycopy(value, 0, writeOverValue, writeOverValue.length - value.length, value.length);
-                if (Arrays.equals(writeOverValue, request.value)) {
-                    if (writeResult) {
-                        onCharacteristicWrite(request.requestId, request.value);
+    public void onCharacteristicWrite(BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic, final int status) {
+        Ble.println(BaseConnection.class, Log.INFO, "onCharacteristicWrite: " + BleUtils.bytesToHexString(characteristic.getValue()));
+        Ble.getInstance().getExecutorService().execute(new Runnable() {
+            @Override
+            public void run() {
+                Request request = currentRequest;
+                if (request != null && request.waitWriteResult && request.type == Request.RequestType.WRITE_CHARACTERISTIC && request.writeOverValue != null) {
+                    if (status == BluetoothGatt.GATT_SUCCESS) {
+                        byte[] value = characteristic.getValue();
+                        request.writeOverValue = Arrays.copyOf(request.writeOverValue, request.writeOverValue.length + value.length);
+                        System.arraycopy(value, 0, request.writeOverValue, request.writeOverValue.length - value.length, value.length);
+                        if (Arrays.equals(request.writeOverValue, request.value)) {
+                            onCharacteristicWrite(request.requestId, request.value);
+                            request.writeOverValue = null;
+                            processNextRequest();
+                        } else if (request.remainQueue != null && !request.remainQueue.isEmpty()) {
+                            try {
+                                Thread.sleep(request.writeDelay);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            doWrite(characteristic, request.remainQueue.remove());
+                        }
                     } else {
+                        request.writeOverValue = null;//不让再次进入
                         handleFaildCallback(request.requestId, request.type, FAIL_TYPE_GATT_STATUS_FAILED, request.value, false);
                     }
-                    writeResult = false;
-                    writeOverValue = null;
-                    processNextRequest();
                 }
             }
-        }
+        });
     }
 
     @Override
@@ -257,9 +264,13 @@ public abstract class BaseConnection extends BluetoothGattCallback {
         }
     }
 
-    public void changeMtu(@NonNull final String requestId, final int mtu) {
+    public void changeMtu(@NonNull String requestId, int mtu) {
         checkIfRelease();
-        enqueue(new Request(Request.RequestType.CHANGE_MTU, requestId, null, null, null, BleUtils.numberToBytes(mtu, false)));
+        if (mtu < 23) {//小于23时，不会回调onMtuChanged，所以直接返回
+            onMtuChanged(requestId, 23);
+        } else {
+            enqueue(new Request(Request.RequestType.CHANGE_MTU, requestId, null, null, null, BleUtils.numberToBytes(mtu, false)));
+        }        
     }
 
     /*
@@ -384,9 +395,8 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                                     case READ_DESCRIPTOR:
                                         executeReadDescriptor(gattCharacteristic, request.descriptor, request.requestId);
                                         break;
-                                    case WRITE_CHARACTERISTIC:
-                                        request.waitWriteResult = Ble.getInstance().getConfiguration().isWaitWriteResult();
-                                        executeWriteCharacteristic(gattCharacteristic, request.requestId, request.value, request.waitWriteResult);
+                                    case WRITE_CHARACTERISTIC:                                        
+                                        executeWriteCharacteristic(gattCharacteristic, request);
                                         break;
                                 }
                             } else {
@@ -443,40 +453,51 @@ public abstract class BaseConnection extends BluetoothGattCallback {
         }
     }
 
-    private void executeWriteCharacteristic(BluetoothGattCharacteristic gattCharacteristic, String requestId, byte[] value, boolean waitWriteResult) {
+    private void executeWriteCharacteristic(BluetoothGattCharacteristic gattCharacteristic, Request request) {
         try {
-            Thread.sleep(Ble.getInstance().getConfiguration().getWriteDelayMillis());
-            int packSize = Ble.getInstance().getConfiguration().getPackageSize();
-            writeOverValue = new byte[0];
-            writeResult = true;            
-            if (value.length > packSize) {
-                List<byte[]> list = BleUtils.splitPackage(value, packSize);
-                for (byte[] bytes : list) {
-                    if (!doWrite(gattCharacteristic, bytes)) {//写失败
-                        performWriteFailed(requestId, value);
+            request.waitWriteResult = Ble.getInstance().getConfiguration().isWaitWriteResult();
+            request.writeDelay = Ble.getInstance().getConfiguration().getWriteDelayMillis();
+            request.writeOverValue = new byte[0];
+            int packSize = Ble.getInstance().getConfiguration().getPackageSize();                        
+            if (request.value.length > packSize) {
+                List<byte[]> list = BleUtils.splitPackage(request.value, packSize);  
+                if (!request.waitWriteResult) {//不等待则遍历发送
+                    for (byte[] bytes : list) {
+                        Thread.sleep(request.writeDelay);
+                        if (!doWrite(gattCharacteristic, bytes)) {//写失败
+                            performWriteFailed(request);
+                            return;
+                        }
+                    }
+                } else {//等待则只直接发送第一包，剩下的添加到队列等待回调
+                    request.remainQueue = new ConcurrentLinkedQueue<>();
+                    request.remainQueue.addAll(list);
+                    Thread.sleep(request.writeDelay);
+                    if (!doWrite(gattCharacteristic, request.remainQueue.remove())) {//写失败
+                        performWriteFailed(request);
                         return;
                     }
                 }
-            } else if (!doWrite(gattCharacteristic, value)) {
-                performWriteFailed(requestId, value);
-                return;
-            }
-            if (!waitWriteResult) {
-                writeOverValue = null;
-                writeResult = false;
-                onCharacteristicWrite(requestId, value);
+            } else {
+                Thread.sleep(request.writeDelay);
+                if (!doWrite(gattCharacteristic, request.value)) {
+                    performWriteFailed(request);
+                    return;
+                }
+            }                       
+            if (!request.waitWriteResult) {
+                onCharacteristicWrite(request.requestId, request.value);
                 processNextRequest();
-            }           
+            }
         } catch (InterruptedException e) {
-            performWriteFailed(requestId, value);
+            performWriteFailed(request);
         }
     }
 
-    private void performWriteFailed(String requestId, byte[] value) {
-        writeOverValue = null;
-        writeResult = false;
-        handleFaildCallback(requestId, Request.RequestType.WRITE_CHARACTERISTIC, FAIL_TYPE_REQUEST_FAILED, value, true);
-        
+    private void performWriteFailed(Request request) {
+        request.writeOverValue = null;
+        request.remainQueue = null;
+        handleFaildCallback(request.requestId, Request.RequestType.WRITE_CHARACTERISTIC, FAIL_TYPE_REQUEST_FAILED, request.value, true);        
     }
 
     private boolean doWrite(BluetoothGattCharacteristic gattCharacteristic, byte[] value) {

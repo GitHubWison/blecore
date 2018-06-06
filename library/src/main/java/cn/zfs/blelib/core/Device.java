@@ -88,7 +88,8 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
     }
 
     public boolean isConnecting() {
-        return connectionState != Connection.STATE_DISCONNECTED && connectionState != Connection.STATE_SERVICE_DISCORVERED;
+        return connectionState != Connection.STATE_DISCONNECTED && connectionState != Connection.STATE_SERVICE_DISCORVERED &&
+                connectionState != Connection.STATE_RELEASED;
     }
 
     @Override
