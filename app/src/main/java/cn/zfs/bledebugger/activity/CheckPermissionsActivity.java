@@ -1,4 +1,4 @@
-package cn.zfs.bledebuger.activity;
+package cn.zfs.bledebugger.activity;
 
 import android.Manifest;
 import android.app.AlertDialog;
@@ -16,7 +16,7 @@ import android.support.v7.app.AppCompatActivity;
 import java.util.ArrayList;
 import java.util.List;
 
-import cn.zfs.bledebuger.R;
+import cn.zfs.bledebugger.R;
 
 /**
  * Created by zeng on 2016/9/11.

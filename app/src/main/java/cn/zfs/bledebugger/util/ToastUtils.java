@@ -1,8 +1,8 @@
-package cn.zfs.bledebuger.util;
+package cn.zfs.bledebugger.util;
 
 
-import cn.zfs.bledebuger.App;
-import cn.zfs.bledebuger.entity.AnyDurationToast;
+import cn.zfs.bledebugger.App;
+import cn.zfs.bledebugger.entity.AnyDurationToast;
 
 /**
  * 时间: 2017/10/10 15:10

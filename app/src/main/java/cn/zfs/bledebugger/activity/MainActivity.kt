@@ -1,4 +1,4 @@
-package cn.zfs.bledebuger.activity
+package cn.zfs.bledebugger.activity
 
 import android.app.AlertDialog
 import android.bluetooth.BluetoothAdapter
@@ -10,10 +10,10 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
-import cn.zfs.bledebuger.R
-import cn.zfs.bledebuger.base.BaseHolder
-import cn.zfs.bledebuger.base.BaseListAdapter
-import cn.zfs.bledebuger.util.ToastUtils
+import cn.zfs.bledebugger.R
+import cn.zfs.bledebugger.base.BaseHolder
+import cn.zfs.bledebugger.base.BaseListAdapter
+import cn.zfs.bledebugger.util.ToastUtils
 import cn.zfs.blelib.callback.InitCallback
 import cn.zfs.blelib.callback.ScanListener
 import cn.zfs.blelib.core.Ble

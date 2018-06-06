@@ -1,4 +1,4 @@
-package cn.zfs.bledebuger.adapter
+package cn.zfs.bledebugger.adapter
 
 import android.bluetooth.BluetoothGattCharacteristic
 import android.content.Context
@@ -7,10 +7,10 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.ListView
 import android.widget.TextView
-import cn.zfs.bledebuger.R
-import cn.zfs.bledebuger.entity.Item
-import cn.zfs.bledebuger.util.UiUtils
-import cn.zfs.bledebuger.util.UuidLib
+import cn.zfs.bledebugger.R
+import cn.zfs.bledebugger.entity.Item
+import cn.zfs.bledebugger.util.UiUtils
+import cn.zfs.bledebugger.util.UuidLib
 import cn.zfs.blelib.util.BleUtils
 import cn.zfs.treeadapter.TreeAdapter
 

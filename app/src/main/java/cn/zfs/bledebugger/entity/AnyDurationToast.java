@@ -1,4 +1,4 @@
-package cn.zfs.bledebuger.entity;
+package cn.zfs.bledebugger.entity;
 
 import android.content.Context;
 import android.widget.Toast;

@@ -1,4 +1,4 @@
-package cn.zfs.bledebuger.activity
+package cn.zfs.bledebugger.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -9,8 +9,8 @@ import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.ScrollView
-import cn.zfs.bledebuger.R
-import cn.zfs.bledebuger.util.ToastUtils
+import cn.zfs.bledebugger.R
+import cn.zfs.bledebugger.util.ToastUtils
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Connection
 import cn.zfs.blelib.core.Device

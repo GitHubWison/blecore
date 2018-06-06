@@ -1,4 +1,4 @@
-package cn.zfs.bledebuger.entity
+package cn.zfs.bledebugger.entity
 
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattService

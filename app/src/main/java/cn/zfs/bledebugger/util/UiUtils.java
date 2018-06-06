@@ -1,4 +1,4 @@
-package cn.zfs.bledebuger.util;
+package cn.zfs.bledebugger.util;
 
 import android.app.Activity;
 import android.content.Context;
@@ -18,7 +18,7 @@ import android.view.ViewParent;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import cn.zfs.bledebuger.App;
+import cn.zfs.bledebugger.App;
 
 
 /**

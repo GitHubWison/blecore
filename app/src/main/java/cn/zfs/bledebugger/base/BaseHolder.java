@@ -1,4 +1,4 @@
-package cn.zfs.bledebuger.base;
+package cn.zfs.bledebugger.base;
 
 import android.view.View;
 

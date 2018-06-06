@@ -1,4 +1,4 @@
-package cn.zfs.bledebuger.activity
+package cn.zfs.bledebugger.activity
 
 import android.os.Bundle
 import android.os.ParcelUuid
@@ -6,8 +6,8 @@ import android.support.v7.app.AppCompatActivity
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
-import cn.zfs.bledebuger.R
-import cn.zfs.bledebuger.util.ToastUtils
+import cn.zfs.bledebugger.R
+import cn.zfs.bledebugger.util.ToastUtils
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Device
 import cn.zfs.blelib.core.Request

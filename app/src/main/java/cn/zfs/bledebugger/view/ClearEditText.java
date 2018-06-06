@@ -1,4 +1,4 @@
-package cn.zfs.bledebuger.view;
+package cn.zfs.bledebugger.view;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;

@@ -5,7 +5,7 @@ apply plugin: 'kotlin-android-extensions'
 android {
     compileSdkVersion 27
     defaultConfig {
-        applicationId "cn.zfs.bledebuger"
+        applicationId "cn.zfs.bledebugger"
         minSdkVersion 19
         targetSdkVersion 27
         versionCode 4

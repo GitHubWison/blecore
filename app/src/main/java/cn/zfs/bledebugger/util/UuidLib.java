@@ -1,4 +1,4 @@
-package cn.zfs.bledebuger.util;
+package cn.zfs.bledebugger.util;
 
 import java.io.BufferedReader;
 import java.io.InputStream;

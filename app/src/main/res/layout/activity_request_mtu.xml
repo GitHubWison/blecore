@@ -8,7 +8,7 @@
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
-        <cn.zfs.bledebuger.view.ClearEditText
+        <cn.zfs.bledebugger.view.ClearEditText
             android:id="@+id/etMtu"
             android:hint="MTU数值"
             android:inputType="number"
@@ -52,7 +52,7 @@
             android:text="循环"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
-        <cn.zfs.bledebuger.view.ClearEditText
+        <cn.zfs.bledebugger.view.ClearEditText
             android:id="@+id/etDelay"
             android:inputType="number"
             android:hint="延时ms"

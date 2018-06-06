@@ -1,4 +1,4 @@
-package cn.zfs.bledebuger.activity
+package cn.zfs.bledebugger.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -6,10 +6,10 @@ import android.os.ParcelUuid
 import android.support.v7.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
-import cn.zfs.bledebuger.R
-import cn.zfs.bledebuger.adapter.BleServiceListAdapter
-import cn.zfs.bledebuger.entity.Item
-import cn.zfs.bledebuger.util.ToastUtils
+import cn.zfs.bledebugger.R
+import cn.zfs.bledebugger.adapter.BleServiceListAdapter
+import cn.zfs.bledebugger.entity.Item
+import cn.zfs.bledebugger.util.ToastUtils
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Connection
 import cn.zfs.blelib.core.Device

@@ -1,4 +1,4 @@
-package cn.zfs.bledebuger;
+package cn.zfs.bledebugger;
 
 import android.app.ActivityManager;
 import android.app.Application;
