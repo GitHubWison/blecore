@@ -11,6 +11,7 @@ import android.view.Menu
 import android.view.View
 import android.widget.TextView
 import cn.zfs.bledebugger.R
+import cn.zfs.bledebugger.R.id.*
 import cn.zfs.bledebugger.base.BaseHolder
 import cn.zfs.bledebugger.base.BaseListAdapter
 import cn.zfs.bledebugger.util.ToastUtils
@@ -132,6 +133,7 @@ class MainActivity : CheckPermissionsActivity() {
         }
 
         override fun onScanStop() {
+            refreshLayout.isRefreshing = false
             scanning = false
         }
 
