@@ -3,24 +3,8 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/menuProgress"
-        android:title=""
-        android:checkable="false"
-        android:orderInCategory="1"
-        app:showAsAction="ifRoom"/>
-    <item
-        android:id="@+id/menuScan"
-        android:title="扫描"
-        android:orderInCategory="100"
-        app:showAsAction="ifRoom|withText"/>
-    <item
-        android:id="@+id/menuStop"
-        android:title="停止"
-        android:orderInCategory="101"
-        app:showAsAction="ifRoom|withText"/>
-    <item
         android:id="@+id/menuAbout"
         android:title="about"
-        android:orderInCategory="102"
+        android:orderInCategory="100"
         app:showAsAction="ifRoom"/>
 </menu>

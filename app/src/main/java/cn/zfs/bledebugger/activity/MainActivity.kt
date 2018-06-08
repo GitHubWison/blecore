@@ -5,9 +5,9 @@ import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.support.v4.content.ContextCompat
 import android.text.Html
 import android.view.Menu
-import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
 import cn.zfs.bledebugger.R
@@ -32,14 +32,14 @@ class MainActivity : CheckPermissionsActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         initViews()
-        Ble.getInstance().configuration.setDiscoverServicesDelayMillis(2000)
-        
+        Ble.getInstance().configuration.setDiscoverServicesDelayMillis(2000)        
         Ble.getInstance().setLogPrintLevelControl(LogController.ALL)//输出日志
-        Ble.getInstance().addScanListener(scanListener)     
-        Ble.getInstance().configuration.isWaitWriteResult = true        
+        Ble.getInstance().addScanListener(scanListener)
+        Ble.getInstance().configuration.isWaitWriteResult = true
     }
 
     private fun initViews() {
+        refreshLayout.setColorSchemeColors(ContextCompat.getColor(this, R.color.colorAccent))
         listAdapter = ListAdapter(this, devList)
         lv.adapter = listAdapter
         lv.setOnItemClickListener { _, _, position, _ ->
@@ -47,12 +47,20 @@ class MainActivity : CheckPermissionsActivity() {
             i.putExtra("device", devList[position])
             startActivity(i)
         }
+        refreshLayout.setOnRefreshListener {
+            if (Ble.getInstance().isInitialized) {
+                doStartScan()
+            }
+        }
     }
 
     override fun onResume() {
         super.onResume()
         if (Ble.getInstance().isInitialized) {
             if (Ble.getInstance().isBluetoothAdapterEnabled) {
+                if (!refreshLayout.isRefreshing) {
+                    refreshLayout.isRefreshing = true
+                }
                 doStartScan()
             } else {
                 startActivity(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
@@ -114,53 +122,29 @@ class MainActivity : CheckPermissionsActivity() {
                         .setNegativeButton("OK", null).show()
             }
         }
-        menu?.findItem(R.id.menuAbout)?.actionView = aboutView        
-        if (!Ble.getInstance().isInitialized) {
-            menu?.findItem(R.id.menuStop)?.isVisible = false
-            menu?.findItem(R.id.menuScan)?.isVisible = false
-            menu?.findItem(R.id.menuProgress)?.actionView = null
-        } else if (!scanning) {
-            menu?.findItem(R.id.menuStop)?.isVisible = false
-            menu?.findItem(R.id.menuScan)?.isVisible = true
-            menu?.findItem(R.id.menuProgress)?.actionView = null
-        } else {
-            menu?.findItem(R.id.menuStop)?.isVisible = true
-            menu?.findItem(R.id.menuScan)?.isVisible = false
-            menu?.findItem(R.id.menuProgress)?.setActionView(R.layout.progress)
-        }
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.menuScan -> {
-                doStartScan()
-            }
-            R.id.menuStop -> {
-                Ble.getInstance().stopScan()
-            }
-        }
+        menu?.findItem(R.id.menuAbout)?.actionView = aboutView
         return true
     }
 
     private val scanListener = object : ScanListener {
         override fun onScanStart() {
             scanning = true
-            invalidateOptionsMenu()
         }
 
         override fun onScanStop() {
             scanning = false
-            invalidateOptionsMenu()
         }
 
         override fun onScanResult(device: Device, scanRecord: ByteArray?) {
+            refreshLayout.isRefreshing = false
+            layoutEmpty.visibility = View.INVISIBLE
             listAdapter?.add(device)
         }
     }
     
     private fun doStartScan() {
         listAdapter?.clear()
+        layoutEmpty.visibility = View.VISIBLE
         Ble.getInstance().startScan(this)
     }
 

@@ -2,7 +2,6 @@ package cn.zfs.bledebugger.activity
 
 import android.os.Bundle
 import android.os.ParcelUuid
-import android.support.v7.app.AppCompatActivity
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
@@ -23,7 +22,7 @@ import kotlin.concurrent.thread
  * 时间: 2018/5/17 15:32
  * 作者: zengfansheng
  */
-class RequestMtuActivity : AppCompatActivity() {
+class RequestMtuActivity : BaseActivity() {
     private var device: Device? = null
     private var writeService: ParcelUuid? = null
     private var writeCharacteristic: ParcelUuid? = null

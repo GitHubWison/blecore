@@ -3,7 +3,6 @@ package cn.zfs.bledebugger.activity
 import android.content.Intent
 import android.os.Bundle
 import android.os.ParcelUuid
-import android.support.v7.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
 import cn.zfs.bledebugger.R
@@ -24,7 +23,7 @@ import org.greenrobot.eventbus.ThreadMode
  * 时间: 2018/4/27 10:44
  * 作者: zengfansheng
  */
-class GattServiesCharacteristicsActivity : AppCompatActivity() {
+class GattServiesCharacteristicsActivity : BaseActivity() {
     private var device: Device? = null
     private var itemList = ArrayList<Item>()
     private var adapter: BleServiceListAdapter? = null
@@ -203,7 +202,7 @@ class GattServiesCharacteristicsActivity : AppCompatActivity() {
             R.id.menuUtf8 -> adapter?.setShowInHex(false)
         }
         invalidateOptionsMenu()
-        return true
+        return super.onOptionsItemSelected(item)
     }
     
     override fun onDestroy() {

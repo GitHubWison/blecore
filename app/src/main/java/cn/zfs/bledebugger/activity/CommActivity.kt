@@ -61,7 +61,6 @@ class CommActivity : AppCompatActivity() {
         tvAddr.text = device!!.addr
         initEvents()
         updateState(device!!.connectionState)
-        Ble.getInstance().registerSubscriber(this)
     }
 
     private fun initEvents() {
@@ -175,7 +174,7 @@ class CommActivity : AppCompatActivity() {
             }
         }
         invalidateOptionsMenu()
-        return true
+        return super.onOptionsItemSelected(item)
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -217,7 +216,7 @@ class CommActivity : AppCompatActivity() {
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     fun onCharacteristicWrite(e: Events.CharacteristicWrite) {
         successCount++
-        if (!loop) {
+        if (!loop) {            
             updateCount()
         }
     }
