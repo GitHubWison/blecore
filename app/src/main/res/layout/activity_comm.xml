@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -81,21 +82,35 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"/>
-        <Button
+        <cn.zfs.common.view.RoundButton
             android:id="@+id/btnClear"
             android:text="清空"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"/>
-        <Button
+            app:rbNormalFillColor="@color/colorPrimary"
+            app:rbPressedFillColor="@color/colorPrimaryDark"
+            android:textColor="@color/white"
+            app:rbCornerRadius="3dp"
+            android:layout_height="30dp"
+            android:layout_width="wrap_content"/>
+        <cn.zfs.common.view.RoundButton
             android:id="@+id/btnStart"
             android:text="开始"
+            android:layout_marginStart="3dp"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"/>
-        <Button
+            app:rbNormalFillColor="@color/colorPrimary"
+            app:rbPressedFillColor="@color/colorPrimaryDark"
+            android:textColor="@color/white"
+            app:rbCornerRadius="3dp"
+            android:layout_height="30dp"/>
+        <cn.zfs.common.view.RoundButton
             android:id="@+id/btnPause"
             android:text="暂停"
+            android:layout_marginStart="3dp"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"/>
+            app:rbNormalFillColor="@color/colorPrimary"
+            app:rbPressedFillColor="@color/colorPrimaryDark"
+            android:textColor="@color/white"
+            app:rbCornerRadius="3dp"
+            android:layout_height="30dp"/>
     </LinearLayout>
     
     <ScrollView
@@ -126,11 +141,15 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="40dp"/>
-        <Button
+        <cn.zfs.common.view.RoundButton
             android:id="@+id/btnSend"
             android:text="发送"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"/>
+            app:rbNormalFillColor="@color/colorPrimary"
+            app:rbPressedFillColor="@color/colorPrimaryDark"
+            android:textColor="@color/white"
+            app:rbCornerRadius="3dp"
+            android:layout_height="30dp"/>
     </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"
@@ -156,11 +175,15 @@
         android:layout_marginStart="8dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
-        <Button
+        <cn.zfs.common.view.RoundButton
             android:id="@+id/btnClearCount"
             android:text="清零"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"/>
+            app:rbNormalFillColor="@color/colorPrimary"
+            app:rbPressedFillColor="@color/colorPrimaryDark"
+            android:textColor="@color/white"
+            app:rbCornerRadius="3dp"
+            android:layout_height="30dp"/>
         <TextView
             android:id="@+id/tvSuccessCount"
             android:text="成功:0"

@@ -21,6 +21,7 @@ import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Device
 import cn.zfs.blelib.util.LogController
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlin.system.exitProcess
 
 
 class MainActivity : CheckPermissionsActivity() {
@@ -167,5 +168,6 @@ class MainActivity : CheckPermissionsActivity() {
     override fun onDestroy() {
         Ble.getInstance().release(this)
         super.onDestroy()
+        exitProcess(0)
     }
 }

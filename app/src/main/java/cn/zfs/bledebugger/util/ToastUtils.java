@@ -1,7 +1,7 @@
 package cn.zfs.bledebugger.util;
 
 
-import cn.zfs.bledebugger.App;
+import cn.zfs.bledebugger.MyApp;
 import cn.zfs.bledebugger.entity.AnyDurationToast;
 
 /**
@@ -15,11 +15,11 @@ public class ToastUtils {
     private static AnyDurationToast toast;
     
     private static void show(final Object obj, final int duration) {
-        App.getHandler().post(new Runnable() {
+        MyApp.getHandler().post(new Runnable() {
             @Override
             public void run() {
                 if (toast == null) {
-                    toast = new AnyDurationToast(App.getInst());
+                    toast = new AnyDurationToast(MyApp.getInst());
                 }
                 if (obj instanceof CharSequence) {
                     toast.setText((CharSequence) obj);

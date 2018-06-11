@@ -1,76 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="vertical"
-              android:padding="10dp"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent">
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="10dp">
 
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
+
         <cn.zfs.bledebugger.view.ClearEditText
             android:id="@+id/etMtu"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
             android:hint="MTU数值"
             android:inputType="number"
-            android:textSize="14dp"
-            android:layout_width="wrap_content"
-            android:layout_height="50dp"/>
-        <Button
+            android:textSize="14dp"/>
+
+        <cn.zfs.common.view.RoundButton
             android:id="@+id/btnRequest"
-            android:text="修改MTU"
-            android:layout_marginStart="20dp"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"/>
+            android:layout_height="40dp"
+            android:layout_marginStart="20dp"
+            android:text="修改MTU"
+            android:textColor="@color/white"
+            app:rbCornerRadius="3dp"
+            app:rbNormalFillColor="@color/colorPrimary"
+            app:rbPressedFillColor="@color/colorPrimaryDark"/>
+
         <TextView
             android:id="@+id/tvMtu"
-            android:textSize="14dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginStart="20dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:textSize="14dp"/>
     </LinearLayout>
-    
+
     <LinearLayout
-        android:layout_marginTop="10dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
+
         <Button
-            android:id="@+id/btnGenerateByteArr" 
-            android:visibility="invisible"
-            android:text="生成数据"
+            android:id="@+id/btnGenerateByteArr"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"/>
+            android:layout_height="40dp"
+            android:text="生成数据"
+            android:visibility="invisible"/>
+
         <Button
             android:id="@+id/btnSendData"
-            android:visibility="invisible"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
             android:layout_marginStart="10dp"
             android:text="发送"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"/>
+            android:visibility="invisible"/>
+
         <CheckBox
             android:id="@+id/chk"
-            android:textSize="12dp"
-            android:text="循环"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:text="循环"
+            android:textSize="12dp"/>
+
         <cn.zfs.bledebugger.view.ClearEditText
             android:id="@+id/etDelay"
-            android:inputType="number"
-            android:hint="延时ms"
-            android:layout_marginStart="6dp"
-            android:textSize="12dp"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:hint="延时ms"
+            android:inputType="number"
+            android:textSize="12dp"/>
     </LinearLayout>
-    
+
     <TextView
-        android:text="生成的数据："
-        android:layout_marginTop="10dp"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-    
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="生成的数据："/>
+
     <TextView
         android:id="@+id/tvData"
-        android:layout_marginTop="5dp"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"/>
 </LinearLayout>

@@ -18,7 +18,7 @@ import android.view.ViewParent;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import cn.zfs.bledebugger.App;
+import cn.zfs.bledebugger.MyApp;
 
 
 /**
@@ -27,11 +27,11 @@ import cn.zfs.bledebugger.App;
  */
 public class UiUtils {
     public static Context getContext() {
-        return App.getInst();
+        return MyApp.getInst();
     }
     
     public static Resources getResources() {
-        return App.getInst().getResources();
+        return MyApp.getInst().getResources();
     }
     
     /**
@@ -81,7 +81,7 @@ public class UiUtils {
 		if (isMainThread()) {
 		    runnable.run();
 		} else {
-		    App.getHandler().post(runnable);
+		    MyApp.getHandler().post(runnable);
 		}
 	}
 
@@ -89,21 +89,21 @@ public class UiUtils {
 	 * 延时执行Runnable任务
 	 */
 	public static boolean postDelayed(Runnable task, long delayMillis) {
-		return App.getHandler().postDelayed(task, delayMillis);
+		return MyApp.getHandler().postDelayed(task, delayMillis);
 	}
 
 	/**
 	 * 停止Runnable任务
 	 */
 	public static void cancel(Runnable task) {
-		App.getHandler().removeCallbacks(task);
+		MyApp.getHandler().removeCallbacks(task);
 	}
 
 	/**
 	 * 判断当前是否是主线程
 	 */
 	public static boolean isMainThread() {
-		return Process.myTid() == App.getMainTid();
+		return Process.myTid() == MyApp.getMainTid();
 	}
     
     /**
@@ -151,7 +151,7 @@ public class UiUtils {
 	}
     
     public static void sendBroadcast(Intent intent) {
-        App.getInst().sendBroadcast(intent);
+        MyApp.getInst().sendBroadcast(intent);
     }
 
     /**
@@ -198,7 +198,7 @@ public class UiUtils {
      * @param path 字体在assets的路径
      */
     public static Typeface getTypeface(String path) {
-        return Typeface.createFromAsset(App.getInst().getAssets(), path);
+        return Typeface.createFromAsset(MyApp.getInst().getAssets(), path);
     }
 
 	/**
