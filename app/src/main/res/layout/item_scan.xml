@@ -1,44 +1,86 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="60dp"
-    android:minHeight="60dp"
+    android:layout_height="74dp"
+    android:minHeight="74dp"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <TextView
-        android:id="@+id/tvName"
-        android:textSize="18dp"
-        android:text="device name"
-        android:textColor="#505050"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="6dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+    <ImageView
+        android:id="@+id/ivType"
+        android:layout_marginStart="10dp"
+        android:layout_centerVertical="true"
+        android:background="@drawable/bluetooth"
+        android:layout_width="44dp"
+        android:layout_height="44dp"/>
+
+    <cn.zfs.common.view.RoundButton
+        android:id="@+id/btnConnect"
+        android:text="CONNECT"
+        android:textSize="12dp"
+        android:focusable="false"
+        android:layout_marginEnd="10dp"
+        android:layout_centerVertical="true"
+        android:layout_alignParentEnd="true"
+        app:rbCornerRadius="2dp"
+        app:rbNormalTextColor="@color/colorPrimary"
+        app:rbNormalStrokeColor="@color/colorPrimary"
+        app:rbNormalFillColor="@color/transparent"
+        app:rbPressedTextColor="@color/white"
+        app:rbPressedFillColor="@color/colorPrimary"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="30dp"/>
     
-    <TextView
-        android:id="@+id/tvAddr"
-        android:textColor="#909090"
-        android:textSize="14dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginBottom="6dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:text="00:00:00:00:00:00"
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_marginEnd="10dp"
+        android:layout_marginStart="10dp"
+        android:layout_toEndOf="@id/ivType"
+        android:layout_toStartOf="@id/btnConnect"
+        android:layout_centerVertical="true"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-    
-    <TextView
-        android:id="@+id/tvRssi"
-        android:text="-100"
-        android:textSize="14dp"
-        android:textColor="#909090"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="20dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
-</android.support.constraint.ConstraintLayout>
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/tvName"
+            android:lines="1"
+            android:ellipsize="end"
+            android:textSize="18dp"
+            android:text="Device name"
+            android:textStyle="bold"
+            android:textColor="#000"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:id="@+id/tvAddr"
+            android:textColor="#333"
+            android:textSize="13dp"
+            android:text="00:00:00:00:00:00"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/tvBondState"
+                android:textColor="#333"
+                android:text="NOT BONDED"
+                android:textSize="13dp"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"/>
+            <TextView
+                android:id="@+id/tvRssi"
+                android:layout_marginStart="30dp"
+                android:text="-100 dBm"
+                android:textSize="13dp"
+                android:textColor="#505050"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+    </LinearLayout>
+</RelativeLayout>

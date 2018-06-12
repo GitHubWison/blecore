@@ -9,7 +9,6 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.os.Build;
 import android.support.annotation.NonNull;
-import android.util.Log;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -126,7 +125,6 @@ public abstract class BaseConnection extends BluetoothGattCallback {
 
     @Override
     public void onCharacteristicWrite(BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic, final int status) {
-        Ble.println(BaseConnection.class, Log.INFO, "onCharacteristicWrite: " + BleUtils.bytesToHexString(characteristic.getValue()));
         Ble.getInstance().getExecutorService().execute(new Runnable() {
             @Override
             public void run() {

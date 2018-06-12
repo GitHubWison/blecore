@@ -11,37 +11,62 @@ import android.support.annotation.NonNull;
  * 作者: zengfansheng
  */
 public class Device implements Comparable<Device>, Cloneable, Parcelable {
-    /** 设备名称 */
+    /**
+     * 原始设备
+     */
+    public BluetoothDevice originalDevice;
+    /**
+     * 广播数据
+     */
+    public byte[] scanRecord;
+    /**
+     * 设备名称
+     */
     public String name = "";
-    /** 设备id */
+    /**
+     * 设备id
+     */
     public String devId = "";
-    /** 设备地址 */
+    /**
+     * 设备地址
+     */
     public String addr = "";
-    /** 固件版本 */
+    /**
+     * 固件版本
+     */
     public String firmware = "";
-    /** 硬件版本 */
+    /**
+     * 硬件版本
+     */
     public String hardware = "";
-    /** 设备类型 */
+    /**
+     * 设备类型
+     */
     public int type = -1;
-    /** 电量 */
+    /**
+     * 电量
+     */
     public int battery = -1;
-    /** 信号强度 */
+    /**
+     * 信号强度
+     */
     public int rssi = -1000;
-    /** 工作模式 */
+    /**
+     * 工作模式
+     */
     public int mode;
-    /** 连接状态 */
+    /**
+     * 连接状态
+     */
     public int connectionState = Connection.STATE_DISCONNECTED;
+    /**
+     * 配对状态
+     */
+    public int bondState;
 
     public Device() {
     }
-     
-    public static Device valueOf(BluetoothDevice device) {
-        Device dev = new Device();
-        dev.name = device.getName();
-        dev.addr = device.getAddress();
-        return dev;
-    }
-    
+
     @Override
     public Device clone() {
         Device device = null;
@@ -55,7 +80,7 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
 
     @Override
     public boolean equals(Object obj) {
-        return obj != null && obj instanceof Device && addr.equals(((Device)obj).addr);
+        return obj != null && obj instanceof Device && addr.equals(((Device) obj).addr);
     }
 
     @Override
@@ -99,6 +124,8 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
+        dest.writeParcelable(this.originalDevice, flags);
+        dest.writeByteArray(this.scanRecord);
         dest.writeString(this.name);
         dest.writeString(this.devId);
         dest.writeString(this.addr);
@@ -107,11 +134,14 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         dest.writeInt(this.type);
         dest.writeInt(this.battery);
         dest.writeInt(this.rssi);
-        dest.writeInt(this.mode);        
+        dest.writeInt(this.mode);
         dest.writeInt(this.connectionState);
+        dest.writeInt(this.bondState);
     }
 
     protected Device(Parcel in) {
+        this.originalDevice = in.readParcelable(BluetoothDevice.class.getClassLoader());
+        this.scanRecord = in.createByteArray();
         this.name = in.readString();
         this.devId = in.readString();
         this.addr = in.readString();
@@ -120,11 +150,12 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         this.type = in.readInt();
         this.battery = in.readInt();
         this.rssi = in.readInt();
-        this.mode = in.readInt();        
+        this.mode = in.readInt();
         this.connectionState = in.readInt();
+        this.bondState = in.readInt();
     }
 
-    public static final Creator<Device> CREATOR = new Creator<Device>() {
+    public static final Parcelable.Creator<Device> CREATOR = new Parcelable.Creator<Device>() {
         @Override
         public Device createFromParcel(Parcel source) {
             return new Device(source);

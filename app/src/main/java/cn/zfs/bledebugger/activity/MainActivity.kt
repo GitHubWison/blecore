@@ -2,6 +2,8 @@ package cn.zfs.bledebugger.activity
 
 import android.app.AlertDialog
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothClass
+import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -9,17 +11,17 @@ import android.support.v4.content.ContextCompat
 import android.text.Html
 import android.view.Menu
 import android.view.View
+import android.widget.ImageView
 import android.widget.TextView
 import cn.zfs.bledebugger.R
-import cn.zfs.bledebugger.R.id.*
-import cn.zfs.bledebugger.base.BaseHolder
-import cn.zfs.bledebugger.base.BaseListAdapter
-import cn.zfs.bledebugger.util.ToastUtils
 import cn.zfs.blelib.callback.InitCallback
 import cn.zfs.blelib.callback.ScanListener
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Device
 import cn.zfs.blelib.util.LogController
+import cn.zfs.common.base.BaseHolder
+import cn.zfs.common.base.BaseListAdapter
+import cn.zfs.common.utils.ToastUtils
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlin.system.exitProcess
 
@@ -45,9 +47,7 @@ class MainActivity : CheckPermissionsActivity() {
         listAdapter = ListAdapter(this, devList)
         lv.adapter = listAdapter
         lv.setOnItemClickListener { _, _, position, _ ->
-            val i = Intent(this, GattServiesCharacteristicsActivity::class.java)
-            i.putExtra("device", devList[position])
-            startActivity(i)
+            
         }
         refreshLayout.setOnRefreshListener {
             if (Ble.getInstance().isInitialized) {
@@ -77,25 +77,45 @@ class MainActivity : CheckPermissionsActivity() {
         }
     }
     
-    private class ListAdapter(context: Context?, data: MutableList<Device>?) : BaseListAdapter<Device>(context, data) {
-        override fun getHolder(): BaseHolder<Device> {
+    private class ListAdapter(context: Context, data: List<Device>) : BaseListAdapter<Device>(context, data) {
+        override fun getHolder(position: Int): BaseHolder<Device> {
             return object : BaseHolder<Device>() {
                 var tvName: TextView? = null
                 var tvAddr: TextView? = null
                 var tvRssi: TextView? = null
+                var tvBondState: TextView? = null
+                var ivType: ImageView? = null
 
                 override fun createConvertView(): View {
                     val view = View.inflate(context, R.layout.item_scan, null)
                     tvName = view.findViewById(R.id.tvName)
                     tvAddr = view.findViewById(R.id.tvAddr)
                     tvRssi = view.findViewById(R.id.tvRssi)
+                    ivType = view.findViewById(R.id.ivType)
+                    tvBondState = view.findViewById(R.id.tvBondState)
+                    view.findViewById<View>(R.id.btnConnect).setOnClickListener { 
+                        val pos = tvName?.tag.toString().toInt()
+                        val i = Intent(context, GattServiesCharacteristicsActivity::class.java)
+                        i.putExtra("device", data[pos])
+                        context.startActivity(i)
+                    }
                     return view
                 }
 
-                override fun setData(data: Device?, position: Int) {
-                    tvName?.text = data?.name
-                    tvAddr?.text = data?.addr
-                    tvRssi?.text = data?.rssi?.toString()
+                override fun setData(data: Device, position: Int) {
+                    tvName?.tag = position
+                    tvName?.text = data.name
+                    tvAddr?.text = data.addr
+                    tvRssi?.text = "${data.rssi} dBm"
+                    tvBondState?.text = if (data.bondState == BluetoothDevice.BOND_BONDED) "BONDED" else "NOT BONDED"
+                    val bluetoothClass = data.originalDevice.bluetoothClass
+                    if (bluetoothClass != null) {
+                        when (bluetoothClass.majorDeviceClass) {
+                            BluetoothClass.Device.Major.COMPUTER -> ivType?.setBackgroundResource(R.drawable.computer)
+                            BluetoothClass.Device.Major.PHONE -> ivType?.setBackgroundResource(R.drawable.phone)
+                            else -> ivType?.setBackgroundResource(R.drawable.bluetooth)
+                        }
+                    }
                 }
             }
         }
@@ -106,10 +126,13 @@ class MainActivity : CheckPermissionsActivity() {
         }
 
         fun add(device: Device) {
-            if (!data.contains(device)) {
+            val dev = data.firstOrNull { it.addr == device.addr }
+            if (dev == null) {
                 data.add(device)
-                notifyDataSetChanged()
+            } else {
+                dev.rssi = device.rssi
             }
+            notifyDataSetChanged()
         }
     }
 
@@ -138,7 +161,7 @@ class MainActivity : CheckPermissionsActivity() {
             scanning = false
         }
 
-        override fun onScanResult(device: Device, scanRecord: ByteArray?) {
+        override fun onScanResult(device: Device) {
             refreshLayout.isRefreshing = false
             layoutEmpty.visibility = View.INVISIBLE
             listAdapter?.add(device)

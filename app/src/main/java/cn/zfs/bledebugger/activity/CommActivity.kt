@@ -10,13 +10,13 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.ScrollView
 import cn.zfs.bledebugger.R
-import cn.zfs.bledebugger.util.ToastUtils
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Connection
 import cn.zfs.blelib.core.Device
 import cn.zfs.blelib.core.Request
 import cn.zfs.blelib.event.Events
 import cn.zfs.blelib.util.BleUtils
+import cn.zfs.common.utils.ToastUtils
 import kotlinx.android.synthetic.main.activity_comm.*
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode

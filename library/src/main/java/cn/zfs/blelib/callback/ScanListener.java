@@ -22,7 +22,6 @@ public interface ScanListener {
     /**
      * 扫描结果
      * @param device 设备
-     * @param scanRecord 广播内容
      */
-    void onScanResult(@NonNull Device device, byte[] scanRecord);
+    void onScanResult(@NonNull Device device);
 }

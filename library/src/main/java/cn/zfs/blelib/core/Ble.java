@@ -158,7 +158,7 @@ public class Ble {
                 if (bluetoothAdapter != null) {
                     publisher.post(new Events.BluetoothStateChanged(bluetoothAdapter.getState()));
                     if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {//蓝牙关闭了
-                        handleScanCallback(false, null, null);
+                        handleScanCallback(false, null);
                         //主动断开，停止定时器和重连尝试
                         for (Connection connection : connectionMap.values()) {
                             connection.disconnect();
@@ -275,17 +275,17 @@ public class Ble {
             bluetoothAdapter.startLeScan(leScanCallback);
         }
         scanning = true;
-        handleScanCallback(true, null, null);       
+        handleScanCallback(true, null);       
         mainThreadHandler.postDelayed(stopScanRunnable, configuration.getScanPeriodMillis());
     }
 
-    private void handleScanCallback(final boolean start, final Device device, final byte[] scanRecord) {
+    private void handleScanCallback(final boolean start, final Device device) {
         mainThreadHandler.post(new Runnable() {
             @Override
             public void run() {
                 for (ScanListener listener : scanListeners) {
                     if (device != null) {
-                        listener.onScanResult(device, scanRecord);
+                        listener.onScanResult(device);
                     } else if (start) {
                         listener.onScanStart();
                     } else {
@@ -346,7 +346,7 @@ public class Ble {
         if (leScanCallback != null) {
             bluetoothAdapter.stopLeScan(leScanCallback);
         }
-        handleScanCallback(false, null, null);
+        handleScanCallback(false, null);
         for (Connection connection : connectionMap.values()) {
             connection.onScanStop();
         }
@@ -380,16 +380,19 @@ public class Ble {
         }
         //生成
         final Device dev = createDevice();
-        dev.name = TextUtils.isEmpty(device.getName()) ? "unknown device" : device.getName();
+        dev.name = TextUtils.isEmpty(device.getName()) ? "Unknown Device" : device.getName();
         dev.addr = device.getAddress();
         dev.rssi = rssi;
+        dev.bondState = device.getBondState();
+        dev.originalDevice = device;
+        dev.scanRecord = scanRecord;
         if (configuration.getScanHandler() != null) {
             //只在指定的过滤器通知
             if (configuration.getScanHandler().handle(dev, scanRecord)) {
-                handleScanCallback(false, dev, scanRecord);
+                handleScanCallback(false, dev);
             }
         } else {
-            handleScanCallback(false, dev, scanRecord);
+            handleScanCallback(false, dev);
         }
         println(Ble.class, Log.DEBUG, "扫描到设备：" + dev.name + "  " + dev.addr);
     }

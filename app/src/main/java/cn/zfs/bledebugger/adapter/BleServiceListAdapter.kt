@@ -9,9 +9,9 @@ import android.widget.ListView
 import android.widget.TextView
 import cn.zfs.bledebugger.R
 import cn.zfs.bledebugger.entity.Item
-import cn.zfs.bledebugger.util.UiUtils
 import cn.zfs.bledebugger.util.UuidLib
 import cn.zfs.blelib.util.BleUtils
+import cn.zfs.common.utils.UiUtils
 import cn.zfs.treeadapter.TreeAdapter
 
 

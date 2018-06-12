@@ -23,10 +23,10 @@ public class Request {
     public String requestId;
     public byte[] value;
     boolean waitWriteResult;
+    int writeDelay;
     //-----分包发送时用到-----
     Queue<byte[]> remainQueue;
     byte[] writeOverValue;
-    int writeDelay;
     //----------------------
 
     public Request(@NonNull RequestType type, @NonNull String requestId, UUID service, UUID characteristic, UUID descriptor) {

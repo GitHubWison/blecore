@@ -8,12 +8,12 @@ import android.view.MenuItem
 import cn.zfs.bledebugger.R
 import cn.zfs.bledebugger.adapter.BleServiceListAdapter
 import cn.zfs.bledebugger.entity.Item
-import cn.zfs.bledebugger.util.ToastUtils
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Connection
 import cn.zfs.blelib.core.Device
 import cn.zfs.blelib.core.Request
 import cn.zfs.blelib.event.Events
+import cn.zfs.common.utils.ToastUtils
 import kotlinx.android.synthetic.main.activity_gatt_services_characteristics.*
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
