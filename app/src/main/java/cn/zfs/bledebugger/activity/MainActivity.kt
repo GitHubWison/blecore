@@ -10,24 +10,22 @@ import android.os.Bundle
 import android.support.v4.content.ContextCompat
 import android.text.Html
 import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import cn.zfs.bledebugger.R
-import cn.zfs.blelib.callback.InitCallback
 import cn.zfs.blelib.callback.ScanListener
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Device
 import cn.zfs.blelib.util.LogController
 import cn.zfs.common.base.BaseHolder
 import cn.zfs.common.base.BaseListAdapter
-import cn.zfs.common.utils.ToastUtils
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlin.system.exitProcess
 
 
 class MainActivity : CheckPermissionsActivity() {
-    private var aboutView: View? = null
     private var scanning = false
     private var listAdapter: ListAdapter? = null
     private val devList = ArrayList<Device>()
@@ -149,17 +147,19 @@ class MainActivity : CheckPermissionsActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.main, menu)
-        if (aboutView == null) {
-            aboutView = layoutInflater.inflate(R.layout.about, null)
-            aboutView!!.setOnClickListener {
-                val verName = packageManager.getPackageInfo(packageName, 0).versionName
-                AlertDialog.Builder(this).setTitle("关于")
-                        .setMessage(Html.fromHtml("<b>作者:</b>  Zeng Fansheng<br/><b>版本:</b>  $verName"))
-                        .setNegativeButton("OK", null).show()
-            }
-        }
-        menu?.findItem(R.id.menuAbout)?.actionView = aboutView
         return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        if (item?.itemId == R.id.menuAbout) {
+            val verName = packageManager.getPackageInfo(packageName, 0).versionName
+            AlertDialog.Builder(this).setTitle("关于")
+                    .setMessage(Html.fromHtml("<b>作者:</b>  Zeng Fansheng<br/><b>版本:</b>  $verName"))
+                    .setNegativeButton("OK", null).show()
+        } else if (item?.itemId == R.id.menuFeedback) {
+            startActivity(Intent(this, FeedbackActivity::class.java))
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     private val scanListener = object : ScanListener {
@@ -187,15 +187,7 @@ class MainActivity : CheckPermissionsActivity() {
 
     override fun onPermissionsRequestResult(hasPermission: Boolean) {
         if (hasPermission) {
-            Ble.getInstance().initialize(this, object : InitCallback {
-                override fun onSuccess() {
-                    ToastUtils.showShort("初始化成功")
-                }
-
-                override fun onFail(errorCode: Int) {
-                    ToastUtils.showShort("初始化失败：$errorCode")
-                }
-            })
+            Ble.getInstance().initialize(this, null)
         }
     }
 

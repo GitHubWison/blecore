@@ -193,8 +193,13 @@ public class Ble {
         return executorService;
     }
     
-    public EventBus getPublisher() {
-        return publisher;
+    public void postEvent(final Object event) {
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                publisher.post(event);
+            }
+        });
     }
     
     /**

@@ -37,7 +37,7 @@ public class CheckPermissionsActivity extends AppCompatActivity {
         List<String> list = new ArrayList<>();
         list.add(Manifest.permission.ACCESS_FINE_LOCATION);
         list.add(Manifest.permission.ACCESS_COARSE_LOCATION);
-//        list.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        list.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
 //        list.add(Manifest.permission.ACCESS_NETWORK_STATE);
 //        list.add(Manifest.permission.READ_PHONE_STATE);
 //        list.add(Manifest.permission.WRITE_SETTINGS);

@@ -3,8 +3,14 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/menuAbout"
-        android:title="about"
+        android:id="@+id/menuFeedback"
+        android:title="建议和反馈"
         android:orderInCategory="100"
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="never"/>
+    
+    <item
+        android:id="@+id/menuAbout"
+        android:title="关于"
+        android:orderInCategory="101"
+        app:showAsAction="never"/>
 </menu>

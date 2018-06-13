@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#f7f8f8">
+
+    <cn.zfs.common.view.ClearEditText
+        android:id="@+id/etContent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:background="@color/white"
+        android:gravity="top"
+        android:hint="请输入问题描述或建议"
+        android:minHeight="200dp"
+        android:padding="5dp"
+        android:textColor="@color/textColor"
+        android:textColorHint="@color/subTextColor"
+        android:textSize="14dp"/>
+
+    <cn.zfs.common.view.RoundButton
+        android:id="@+id/btnAdd"
+        android:text="添加图片"
+        android:textColor="@color/white"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        app:rbCornerRadius="2dp"
+        app:rbStrokeWidth="1dp"
+        app:rbNormalFillColor="@color/colorPrimary"
+        app:rbPressedFillColor="@color/colorPrimaryDark"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"/>
+
+    <ListView
+        android:id="@+id/lv"  
+        android:background="@color/white"
+        android:layout_margin="10dp"
+        android:scrollbars="none"
+        android:overScrollMode="never"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:divider="@null"
+        android:listSelector="@color/transparent"/>
+</LinearLayout>
