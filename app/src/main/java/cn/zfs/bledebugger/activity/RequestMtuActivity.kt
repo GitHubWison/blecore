@@ -48,6 +48,7 @@ class RequestMtuActivity : BaseActivity() {
             finish()
             return
         }
+        title = "修改MTU"
         device = Ble.getInstance().getConnection(device)?.device
         setContentView(R.layout.activity_request_mtu)
         btnRequest.setOnClickListener { 

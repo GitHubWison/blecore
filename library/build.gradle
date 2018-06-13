@@ -30,6 +30,18 @@ dependencies {
     implementation 'org.greenrobot:eventbus:3.1.1'
 }
 
+//class包在终端执行gradlew makeJar
+task makeJar(type: Jar, dependsOn:['build']) {
+    from file('build/intermediates/classes/release')
+    archiveName = 'blecore-2.1.20.jar'
+    destinationDir = file('build/libs')
+    //过滤不需要的class
+    exclude "**/**/BuildConfig.class"
+    exclude "**/**/BuildConfig\$*.class"
+    exclude "**/R.class"
+    exclude "**/R\$*.class"
+}
+
 // 打包源码
 task sourcesJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs

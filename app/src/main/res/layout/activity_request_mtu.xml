@@ -14,7 +14,7 @@
         <cn.zfs.bledebugger.view.ClearEditText
             android:id="@+id/etMtu"
             android:layout_width="wrap_content"
-            android:layout_height="50dp"
+            android:layout_height="40dp"
             android:hint="MTU数值"
             android:inputType="number"
             android:textSize="14dp"/>
@@ -22,13 +22,16 @@
         <cn.zfs.common.view.RoundButton
             android:id="@+id/btnRequest"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"
+            style="@style/RoundButtonStyle"
+            android:layout_height="34dp"
             android:layout_marginStart="20dp"
             android:text="修改MTU"
-            android:textColor="@color/white"
-            app:rbCornerRadius="3dp"
-            app:rbNormalFillColor="@color/colorPrimary"
-            app:rbPressedFillColor="@color/colorPrimaryDark"/>
+            app:rbCornerRadius="2dp"
+            app:rbNormalTextColor="@color/colorPrimary"
+            app:rbNormalStrokeColor="@color/colorPrimary"
+            app:rbNormalFillColor="@color/transparent"
+            app:rbPressedTextColor="@color/white"
+            app:rbPressedFillColor="@color/colorPrimary"/>
 
         <TextView
             android:id="@+id/tvMtu"
@@ -43,20 +46,34 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp">
 
-        <Button
+        <cn.zfs.common.view.RoundButton
             android:id="@+id/btnGenerateByteArr"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"
+            android:layout_height="34dp"
             android:text="生成数据"
-            android:visibility="invisible"/>
+            style="@style/RoundButtonStyle"
+            android:visibility="invisible"
+            app:rbCornerRadius="2dp"
+            app:rbNormalTextColor="@color/colorPrimary"
+            app:rbNormalStrokeColor="@color/colorPrimary"
+            app:rbNormalFillColor="@color/transparent"
+            app:rbPressedTextColor="@color/white"
+            app:rbPressedFillColor="@color/colorPrimary"/>
 
-        <Button
+        <cn.zfs.common.view.RoundButton
             android:id="@+id/btnSendData"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"
+            android:layout_height="34dp"
             android:layout_marginStart="10dp"
             android:text="发送"
-            android:visibility="invisible"/>
+            style="@style/RoundButtonStyle"
+            android:visibility="invisible"
+            app:rbCornerRadius="2dp"
+            app:rbNormalTextColor="@color/colorPrimary"
+            app:rbNormalStrokeColor="@color/colorPrimary"
+            app:rbNormalFillColor="@color/transparent"
+            app:rbPressedTextColor="@color/white"
+            app:rbPressedFillColor="@color/colorPrimary"/>
 
         <CheckBox
             android:id="@+id/chk"

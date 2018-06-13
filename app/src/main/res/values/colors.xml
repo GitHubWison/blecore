@@ -3,6 +3,9 @@
     <color name="colorPrimary">#4C61D9</color>
     <color name="colorPrimaryDark">#3F51B5</color>
     <color name="colorAccent">#FF4081</color>
+    <color name="black">#000</color>
     <color name="white">#FFF</color>
     <color name="transparent">#0000</color>
+    <color name="textColor">#333</color>
+    <color name="subTextColor">#808080</color>
 </resources>

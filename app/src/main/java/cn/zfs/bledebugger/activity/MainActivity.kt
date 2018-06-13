@@ -31,10 +31,12 @@ class MainActivity : CheckPermissionsActivity() {
     private var scanning = false
     private var listAdapter: ListAdapter? = null
     private val devList = ArrayList<Device>()
+    private var broadcastContentDialog: BroadcastContentDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        title = "蓝牙设备"
         initViews()
         Ble.getInstance().configuration.setDiscoverServicesDelayMillis(2000)        
         Ble.getInstance().setLogPrintLevelControl(LogController.ALL)//输出日志
@@ -47,7 +49,15 @@ class MainActivity : CheckPermissionsActivity() {
         listAdapter = ListAdapter(this, devList)
         lv.adapter = listAdapter
         lv.setOnItemClickListener { _, _, position, _ ->
-            
+            //解析广播
+            if (broadcastContentDialog == null) {
+                broadcastContentDialog = BroadcastContentDialog(this)
+            }
+            val scanRecord = devList[position].scanRecord
+            if (scanRecord != null) {
+                broadcastContentDialog!!.setData(scanRecord)
+                broadcastContentDialog!!.show()
+            }
         }
         refreshLayout.setOnRefreshListener {
             if (Ble.getInstance().isInitialized) {
@@ -107,12 +117,13 @@ class MainActivity : CheckPermissionsActivity() {
                     tvName?.text = data.name
                     tvAddr?.text = data.addr
                     tvRssi?.text = "${data.rssi} dBm"
-                    tvBondState?.text = if (data.bondState == BluetoothDevice.BOND_BONDED) "BONDED" else "NOT BONDED"
+                    tvBondState?.text = if (data.bondState == BluetoothDevice.BOND_BONDED) "已配对" else "未配对"
                     val bluetoothClass = data.originalDevice.bluetoothClass
                     if (bluetoothClass != null) {
                         when (bluetoothClass.majorDeviceClass) {
                             BluetoothClass.Device.Major.COMPUTER -> ivType?.setBackgroundResource(R.drawable.computer)
                             BluetoothClass.Device.Major.PHONE -> ivType?.setBackgroundResource(R.drawable.phone)
+                            BluetoothClass.Device.Major.WEARABLE -> ivType?.setBackgroundResource(R.drawable.wear)
                             else -> ivType?.setBackgroundResource(R.drawable.bluetooth)
                         }
                     }
@@ -142,8 +153,8 @@ class MainActivity : CheckPermissionsActivity() {
             aboutView = layoutInflater.inflate(R.layout.about, null)
             aboutView!!.setOnClickListener {
                 val verName = packageManager.getPackageInfo(packageName, 0).versionName
-                AlertDialog.Builder(this).setTitle("About")
-                        .setMessage(Html.fromHtml("<b>Author:</b>  Zeng Fansheng<br/><b>Ver:</b>  $verName"))
+                AlertDialog.Builder(this).setTitle("关于")
+                        .setMessage(Html.fromHtml("<b>作者:</b>  Zeng Fansheng<br/><b>版本:</b>  $verName"))
                         .setNegativeButton("OK", null).show()
             }
         }

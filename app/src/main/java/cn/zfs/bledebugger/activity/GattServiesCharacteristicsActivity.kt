@@ -38,6 +38,7 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
             finish()
             return
         }
+        title = device!!.name
 		Ble.getInstance().registerSubscriber(this)
         Ble.getInstance().connect(this, device, true)        
         initViews()

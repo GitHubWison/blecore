@@ -148,7 +148,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                         }
                     } else {
                         request.writeOverValue = null;//不让再次进入
-                        handleFaildCallback(request.requestId, request.type, FAIL_TYPE_GATT_STATUS_FAILED, request.value, false);
+                        handleFaildCallback(request.requestId, request.type, FAIL_TYPE_GATT_STATUS_FAILED, request.value, true);
                     }
                 }
             }

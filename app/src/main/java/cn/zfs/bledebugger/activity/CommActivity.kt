@@ -3,7 +3,6 @@ package cn.zfs.bledebugger.activity
 import android.content.Intent
 import android.os.Bundle
 import android.os.ParcelUuid
-import android.support.v7.app.AppCompatActivity
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.Menu
@@ -29,7 +28,7 @@ import kotlin.concurrent.thread
  * 时间: 2018/4/16 16:28
  * 作者: zengfansheng
  */
-class CommActivity : AppCompatActivity() {
+class CommActivity : BaseActivity() {
     private var device: Device? = null
     private var writeService: ParcelUuid? = null
     private var writeCharacteristic: ParcelUuid? = null
@@ -57,7 +56,7 @@ class CommActivity : AppCompatActivity() {
             return
         }
         device = Ble.getInstance().getConnection(device)?.device
-        tvName.text = device!!.name
+        title = device!!.name
         tvAddr.text = device!!.addr
         initEvents()
         updateState(device!!.connectionState)
