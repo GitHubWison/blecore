@@ -263,7 +263,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
         if (mtu < 23) {//小于23时，不会回调onMtuChanged，所以直接返回
             onMtuChanged(requestId, 23);
         } else {
-            enqueue(new Request(Request.RequestType.CHANGE_MTU, requestId, null, null, null, BleUtils.numberToBytes(mtu, false)));
+            enqueue(new Request(Request.RequestType.CHANGE_MTU, requestId, null, null, null, BleUtils.numberToBytes(false, mtu, 4)));
         }        
     }
 
@@ -412,7 +412,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     
     private void executeChangeMtu(Request request) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            if (!bluetoothGatt.requestMtu((int) BleUtils.bytesToLong(request.value, false))) {
+            if (!bluetoothGatt.requestMtu((int) BleUtils.bytesToLong(false, request.value))) {
                 handleFaildCallback(request.requestId, request.type, FAIL_TYPE_REQUEST_FAILED, request.value, true);
             }
         } else {

@@ -67,29 +67,35 @@ public class BleUtils {
 
     /**
      * 将整数转字节数组
-     * @param value 整数，short、int、long
-     * @param bigAhead ture表示高位在前，false表示低位在前
-     * @return 返回一个8字节的数组，需要几位自取
+     *
+     * @param bigEndian ture表示高位在前，false表示低位在前
+     * @param value     整数，short、int、long
+     * @param len 结果取几个字节，如是高位在前，从数组后端向前计数；如是低位在前，从数组前端向后计数
      */
-    public static byte[] numberToBytes(long value, boolean bigAhead) {
+    public static byte[] numberToBytes(boolean bigEndian, long value, int len) {
         byte[] bytes = new byte[8];
         for (int i = 0; i < 8; i++) {
-            int j = bigAhead ? 7 - i : i;
+            int j = bigEndian ? 7 - i : i;
             bytes[i] = (byte) ((value >> (8 * j)) & 0xFF);
         }
-        return bytes;
+        return len > 8 ? bytes : Arrays.copyOfRange(bytes, bigEndian ? 8 - len : 0, bigEndian ? 8 : len);
     }
 
     /**
      * 将字节数组转long数值
-     * @param src 待转字节数组
-     * @param bigAhead ture表示高位在前，false表示低位在前
+     *
+     * @param bigEndian ture表示高位在前，false表示低位在前
+     * @param src       待转字节数组
      */
-    public static long bytesToLong(byte[] src, boolean bigAhead) {
+    public static long bytesToLong(boolean bigEndian, byte... src) {
+        int len = Math.min(8, src.length);
+        byte[] bs = new byte[8];
+        System.arraycopy(src, 0, bs, bigEndian ? 8 - len : 0, len);
         long value = 0;
-        for (int i = 0; i < 8 && i < src.length; i++) {
-            int j = bigAhead ? 7 - i : i;
-            value |= ((src[i] & 0xFF) << (8 * j));
+        // 循环读取每个字节通过移位运算完成long的8个字节拼装
+        for (int i = 0; i < 8; ++i) {
+            int shift = (bigEndian ? (7 - i) : i) << 3;
+            value |= ((long) 0xff << shift) & ((long) bs[i] << shift);
         }
         return value;
     }
