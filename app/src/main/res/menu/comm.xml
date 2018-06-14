@@ -17,4 +17,10 @@
         android:title="修改MTU"
         android:orderInCategory="102"
         app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/menuCopy"
+        android:title="复制日志"
+        android:orderInCategory="103"
+        app:showAsAction="never"/>
 </menu>

@@ -26,8 +26,13 @@ fun sendTextMail(mailInfo: MailInfo): Boolean {
         message.subject = mailInfo.subject
         // 设置邮件消息发送的时间
         message.sentDate = Date()
-        // 设置邮件消息的主要内容
-        message.setText(mailInfo.content)
+        // 创建邮件正文，为了避免邮件正文中文乱码问题，需要使用CharSet=UTF-8指明字符编码
+        val text = MimeBodyPart()
+        text.setContent(mailInfo.content, "text/html;charset=UTF-8")
+        // 创建容器描述数据关系
+        val mp = MimeMultipart()
+        mp.addBodyPart(text)
+        message.setContent(mp)
         val transport = session.transport
         // 连接邮件服务器  
         transport.connect(mailInfo.userName, mailInfo.password)

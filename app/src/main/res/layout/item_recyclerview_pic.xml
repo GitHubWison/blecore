@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="100dp"
+    android:layout_height="100dp"
+    android:padding="4dp">
+
+    <ImageView
+        android:id="@+id/iv"
+        android:scaleType="centerCrop"
+        android:src="@drawable/add"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+    
+    <ImageView
+        android:id="@+id/ivDel"
+        android:layout_alignParentEnd="true"
+        android:padding="8dp"
+        android:src="@drawable/del"
+        android:layout_width="30dp"
+        android:layout_height="30dp"/>
+</RelativeLayout>

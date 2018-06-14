@@ -8,4 +8,5 @@
     <color name="transparent">#0000</color>
     <color name="textColor">#333</color>
     <color name="subTextColor">#808080</color>
+    <color name="gray">#ccc</color>
 </resources>

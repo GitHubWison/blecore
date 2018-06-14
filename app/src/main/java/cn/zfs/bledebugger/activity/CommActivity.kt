@@ -1,5 +1,8 @@
 package cn.zfs.bledebugger.activity
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.ParcelUuid
@@ -171,6 +174,12 @@ class CommActivity : BaseActivity() {
                 intent.putExtra("writeCharacteristic", ParcelUuid(writeCharacteristic!!.uuid))
                 startActivity(intent)
             }
+            R.id.menuCopy -> {
+                val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                // 将文本内容放到系统剪贴板里
+                cm.primaryClip = ClipData.newPlainText(null, tvLogs.text)
+                ToastUtils.showShort("日志已复制到剪贴板")
+            }
         }
         invalidateOptionsMenu()
         return super.onOptionsItemSelected(item)
@@ -189,7 +198,7 @@ class CommActivity : BaseActivity() {
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onCharacteristicChanged(e: Events.CharacteristicChanged) {
         if (!pause) {
-            if (tvLogs.text.length > 1024 * 1024) {
+            if (tvLogs.text.length > 3 * 1024 * 1024) {
                 tvLogs.text = ""
             }
             tvLogs.append(SimpleDateFormat("mm:ss.SSS").format(Date()))
