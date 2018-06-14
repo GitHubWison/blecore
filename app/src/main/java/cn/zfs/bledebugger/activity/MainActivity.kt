@@ -36,7 +36,7 @@ class MainActivity : CheckPermissionsActivity() {
         setContentView(R.layout.activity_main)
         title = "蓝牙设备"
         initViews()
-        Ble.getInstance().configuration.setDiscoverServicesDelayMillis(2000)        
+        Ble.getInstance().configuration.setDiscoverServicesDelayMillis(500)        
         Ble.getInstance().setLogPrintLevelControl(LogController.ALL)//输出日志
         Ble.getInstance().addScanListener(scanListener)
         Ble.getInstance().configuration.isWaitWriteResult = true
