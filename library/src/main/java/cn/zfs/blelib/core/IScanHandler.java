@@ -1,5 +1,6 @@
 package cn.zfs.blelib.core;
 
+import android.bluetooth.BluetoothDevice;
 import android.support.annotation.NonNull;
 
 /**
@@ -14,5 +15,5 @@ public interface IScanHandler {
      * @param scanRecord 广播内容
      * @return 是否过滤
      */
-    boolean handle(@NonNull Device device, byte[] scanRecord);
+    Device handle(@NonNull BluetoothDevice device, byte[] scanRecord);
 }

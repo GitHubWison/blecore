@@ -165,7 +165,7 @@ class CommActivity : BaseActivity() {
                 Ble.getInstance().disconnectConnection(device)
             }
             R.id.menuConnect -> {//连接
-                Ble.getInstance().connect(this, device, true)
+                Ble.getInstance().connect(this, device, true, null)
             }
             R.id.menuRequestMtu -> {//请求修改mtu
                 val intent = Intent(this, RequestMtuActivity::class.java)
@@ -250,7 +250,7 @@ class CommActivity : BaseActivity() {
                 tvState.text = "连接成功，并成功发现服务"
                 clearCount()
                 if (notifyService != null && notifyCharacteristic != null) {
-                    Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("1", notifyService!!.uuid,
+                    Ble.getInstance().getConnection(device)?.toggleNotification("1", notifyService!!.uuid,
                             notifyCharacteristic!!.uuid, true)
                 }
             }

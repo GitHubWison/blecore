@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import cn.zfs.blelib.callback.ConnectionCallback;
+import cn.zfs.blelib.callback.ConnectionStateChangeListener;
 import cn.zfs.blelib.callback.InitCallback;
 import cn.zfs.blelib.callback.ScanListener;
 import cn.zfs.blelib.event.Events;
@@ -156,7 +156,7 @@ public class Ble {
         public void onReceive(Context context, Intent intent) {
             if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(intent.getAction())) {//蓝牙开关状态变化                 
                 if (bluetoothAdapter != null) {
-                    publisher.post(new Events.BluetoothStateChanged(bluetoothAdapter.getState()));
+                    publisher.post(Events.newBluetoothStateChanged(bluetoothAdapter.getState()));
                     if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {//蓝牙关闭了
                         handleScanCallback(false, null);
                         //主动断开，停止定时器和重连尝试
@@ -384,42 +384,30 @@ public class Ble {
             connection.onScanResult(device.getAddress());
         }
         //生成
-        final Device dev = createDevice();
-        dev.name = TextUtils.isEmpty(device.getName()) ? "Unknown Device" : device.getName();
-        dev.addr = device.getAddress();
-        dev.rssi = rssi;
-        dev.bondState = device.getBondState();
-        dev.originalDevice = device;
-        dev.scanRecord = scanRecord;
+        Device dev = null;
         if (configuration.getScanHandler() != null) {
             //只在指定的过滤器通知
-            if (configuration.getScanHandler().handle(dev, scanRecord)) {
-                handleScanCallback(false, dev);
+            dev = configuration.getScanHandler().handle(device, scanRecord);
+        }
+        if (dev != null || configuration.getScanHandler() == null) {
+            if (dev == null) {
+                dev = new Device();
             }
-        } else {
+            dev.name = TextUtils.isEmpty(dev.name) ? (TextUtils.isEmpty(device.getName()) ? "Unknown Device" : device.getName()) : dev.name;
+            dev.addr = device.getAddress();
+            dev.rssi = rssi;
+            dev.bondState = device.getBondState();
+            dev.originalDevice = device;
+            dev.scanRecord = scanRecord;
             handleScanCallback(false, dev);
         }
-        println(Ble.class, Log.DEBUG, "扫描到设备：" + dev.name + "  " + dev.addr);
+        println(Ble.class, Log.DEBUG, "扫描到设备：" + device.getName() + "  " + device.getAddress());
     }
-    
-    private Device createDevice() {
-        if (configuration.getDeviceClass() != null) {
-            try {
-                //通过反射创建Device
-                return configuration.getDeviceClass().getConstructor().newInstance();
-            } catch (Exception e) {
-                //如果反射创建不成功，使用默认创建
-                return new Device();
-            }
-        } else {
-            return new Device();
-        }
-    }
-        
+            
     /**
      * 建立连接
      */
-    public synchronized void connect(Context context, Device device, boolean autoReconnect) {
+    public synchronized void connect(Context context, Device device, boolean autoReconnect, ConnectionStateChangeListener listener) {
         if (!isInited) {
             return;
         }
@@ -429,26 +417,17 @@ public class Ble {
             if (connection != null) {
                 connection.releaseNoEvnet();
             }
-            ConnectionCallback callback = null;
-            if (configuration.getConnectionCallbackClass() != null) {
-                try {
-                    //通过反射创建回调
-                    callback = configuration.getConnectionCallbackClass().getConstructor(Device.class).newInstance(device);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
             IBondController bondController = configuration.getBondController();
             if (bondController != null && bondController.bond(device)) {
                 BluetoothDevice bd = bluetoothAdapter.getRemoteDevice(device.addr);
                 if (bd.getBondState() == BluetoothDevice.BOND_BONDED) {
-                    connection = Connection.newInstance(bluetoothAdapter, context, device, 0, callback);
+                    connection = Connection.newInstance(bluetoothAdapter, context, device, 0, listener);
                 } else {
                     createBond(device.addr);//配对
-                    connection = Connection.newInstance(bluetoothAdapter, context, device, 1500, callback);
+                    connection = Connection.newInstance(bluetoothAdapter, context, device, 1500, listener);
                 }                
             } else {
-                connection = Connection.newInstance(bluetoothAdapter, context, device, 0, callback);
+                connection = Connection.newInstance(bluetoothAdapter, context, device, 0, listener);
             }            
             if (connection != null) {
                 connection.setAutoReconnectEnable(autoReconnect);

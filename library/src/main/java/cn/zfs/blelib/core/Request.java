@@ -1,9 +1,12 @@
 package cn.zfs.blelib.core;
 
+import android.bluetooth.BluetoothGattDescriptor;
 import android.support.annotation.NonNull;
 
 import java.util.Queue;
 import java.util.UUID;
+
+import cn.zfs.blelib.util.BleUtils;
 
 /**
  * 描述: 用作请求队列
@@ -13,7 +16,7 @@ import java.util.UUID;
 public class Request {
     
     public enum RequestType {
-        CHARACTERISTIC_NOTIFICATION, CHARACTERISTIC_INDICATION, READ_CHARACTERISTIC, READ_DESCRIPTOR, READ_RSSI, WRITE_CHARACTERISTIC, WRITE_DESCRIPTOR, CHANGE_MTU
+        TOGGLE_NOTIFICATION, TOGGLE_INDICATION, READ_CHARACTERISTIC, READ_DESCRIPTOR, READ_RSSI, WRITE_CHARACTERISTIC, WRITE_DESCRIPTOR, CHANGE_MTU
     }
 
     public RequestType type;
@@ -30,21 +33,47 @@ public class Request {
     byte[] writeOverValue;
     //----------------------
 
-    public Request(@NonNull RequestType type, @NonNull String requestId, UUID service, UUID characteristic, UUID descriptor) {
-        this.type = type;
-        this.requestId = requestId;
-        this.service = service;
-        this.characteristic = characteristic;
-        this.descriptor = descriptor;
-        this.value = null;
-    }
-
-    public Request(@NonNull RequestType type, @NonNull String requestId, UUID service, UUID characteristic, UUID descriptor, byte[] value) {
+    private Request(@NonNull RequestType type, @NonNull String requestId, UUID service, UUID characteristic, UUID descriptor, byte[] value) {
         this.type = type;
         this.requestId = requestId;
         this.service = service;
         this.characteristic = characteristic;
         this.descriptor = descriptor;
         this.value = value;
+    }
+    
+    static Request newChangeMtuRequest(@NonNull String requestId, int mtu) {
+        if (mtu < 23) {
+            mtu = 23;
+        } else if (mtu > 517) {
+            mtu = 517;
+        }
+        return new Request(RequestType.CHANGE_MTU, requestId, null, null, null, BleUtils.numberToBytes(false, mtu, 4));
+    }
+    
+    static Request newReadCharacteristicRequest(@NonNull String requestId, UUID service, UUID characteristic) {
+        return new Request(RequestType.READ_CHARACTERISTIC, requestId, service, characteristic, null, null);
+    }
+    
+    static Request newToggleNotificationRequest(@NonNull String requestId, UUID service, UUID characteristic, boolean enable) {
+        return new Request(RequestType.TOGGLE_NOTIFICATION, requestId, service, characteristic, null, 
+                enable ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+    }
+
+    static Request newToggleIndicationRequest(@NonNull String requestId, UUID service, UUID characteristic, boolean enable) {
+        return new Request(RequestType.TOGGLE_INDICATION, requestId, service, characteristic, null,
+                enable ? BluetoothGattDescriptor.ENABLE_INDICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+    }
+    
+    static Request newReadDescriptorRequest(@NonNull String requestId, UUID service, UUID characteristic, UUID descriptor) {
+        return new Request(RequestType.READ_DESCRIPTOR, requestId, service, characteristic, descriptor, null);
+    }
+    
+    static Request newWriteCharacteristicRequest(@NonNull String requestId, UUID service, UUID characteristic, byte[] value) {
+        return new Request(RequestType.WRITE_CHARACTERISTIC, requestId, service, characteristic, null, value);
+    }
+    
+    static Request newReadRssiRequest(@NonNull String requestId) {
+        return new Request(RequestType.READ_RSSI, requestId, null, null, null, null);
     }
 }

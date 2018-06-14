@@ -34,6 +34,7 @@
         android:layout_height="30dp"/>
     
     <LinearLayout
+        android:id="@+id/layoutInfo"
         android:orientation="vertical"
         android:layout_marginEnd="10dp"
         android:layout_toEndOf="@id/ivType"

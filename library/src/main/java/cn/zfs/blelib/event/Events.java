@@ -29,7 +29,7 @@ public class Events {
          */
         public int state;
 
-        public BluetoothStateChanged(int state) {
+        private BluetoothStateChanged(int state) {
             this.state = state;
         }
     }
@@ -40,7 +40,7 @@ public class Events {
     public static class CharacteristicChanged extends DeviceEvent<Device> {
         public BluetoothGattCharacteristic characteristic;
 
-        public CharacteristicChanged(@NonNull Device device, BluetoothGattCharacteristic characteristic) {
+        private CharacteristicChanged(@NonNull Device device, BluetoothGattCharacteristic characteristic) {
             super(device);
             this.characteristic = characteristic;
         }
@@ -52,7 +52,7 @@ public class Events {
     public static class CharacteristicRead extends BothDeviceAndRequestIdEvent<Device> {
         public BluetoothGattCharacteristic characteristic;
 
-        public CharacteristicRead(@NonNull Device device, @NonNull String requestId, BluetoothGattCharacteristic characteristic) {
+        private CharacteristicRead(@NonNull Device device, @NonNull String requestId, BluetoothGattCharacteristic characteristic) {
             super(device, requestId);
             this.characteristic = characteristic;
         }
@@ -64,7 +64,7 @@ public class Events {
     public static class CharacteristicWrite extends BothDeviceAndRequestIdEvent<Device> {
         public byte[] value;
 
-        public CharacteristicWrite(@NonNull Device device, @NonNull String requestId, byte[] value) {
+        private CharacteristicWrite(@NonNull Device device, @NonNull String requestId, byte[] value) {
             super(device, requestId);
             this.value = value;
         }
@@ -79,7 +79,7 @@ public class Events {
         /** 失败详情 */
         public String error;
 
-        public ConnectionCreateFailed(Device device, String error) {
+        private ConnectionCreateFailed(Device device, String error) {
             this.device = device;
             this.error = error;
         }
@@ -101,7 +101,7 @@ public class Events {
          */
         public int state;
 
-        public ConnectionStateChanged(@NonNull Device device, int state) {
+        private ConnectionStateChanged(@NonNull Device device, int state) {
             super(device);
             this.state = state;
         }
@@ -119,7 +119,7 @@ public class Events {
          */
         public int type;
 
-        public ConnectTimeout(@NonNull Device device, int type) {
+        private ConnectTimeout(@NonNull Device device, int type) {
             super(device);
             this.type = type;
         }
@@ -128,33 +128,23 @@ public class Events {
     public static class DescriptorRead extends BothDeviceAndRequestIdEvent<Device> {
         public BluetoothGattDescriptor descriptor;
 
-        public DescriptorRead(@NonNull Device device, @NonNull String requestId, BluetoothGattDescriptor descriptor) {
+        private DescriptorRead(@NonNull Device device, @NonNull String requestId, BluetoothGattDescriptor descriptor) {
             super(device, requestId);
             this.descriptor = descriptor;
         }
     }
 
     /**
-     * indication注册成功
+     * indication开关状态变化
      */
-    public static class IndicationRegistered extends BothDeviceAndRequestIdEvent<Device> {
+    public static class IndicationChanged extends BothDeviceAndRequestIdEvent<Device> {
         public BluetoothGattDescriptor descriptor;
+        public boolean isEnabled;
 
-        public IndicationRegistered(@NonNull Device device, @NonNull String requestId, BluetoothGattDescriptor descriptor) {
+        private IndicationChanged(@NonNull Device device, @NonNull String requestId, BluetoothGattDescriptor descriptor, boolean isEnabled) {
             super(device, requestId);
             this.descriptor = descriptor;
-        }
-    }
-
-    /**
-     * indication取消注册成功
-     */
-    public static class IndicationUnregistered extends BothDeviceAndRequestIdEvent<Device> {
-        public BluetoothGattDescriptor descriptor;
-
-        public IndicationUnregistered(@NonNull Device device, @NonNull String requestId, BluetoothGattDescriptor descriptor) {
-            super(device, requestId);
-            this.descriptor = descriptor;
+            this.isEnabled = isEnabled;
         }
     }
 
@@ -165,43 +155,33 @@ public class Events {
         /** 新的MTU值 */
         public int mtu;
 
-        public MtuChanged(@NonNull Device device, @NonNull String requestId, int mtu) {
+        private MtuChanged(@NonNull Device device, @NonNull String requestId, int mtu) {
             super(device, requestId);
             this.mtu = mtu;
         }
     }
 
     /**
-     * notification注册成功
+     * notification开关状态变化
      */
-    public static class NotificationRegistered extends BothDeviceAndRequestIdEvent<Device> {
+    public static class NotificationChanged extends BothDeviceAndRequestIdEvent<Device> {
         public BluetoothGattDescriptor descriptor;
+        public boolean isEnabled;
 
-        public NotificationRegistered(@NonNull Device device, @NonNull String requestId, BluetoothGattDescriptor descriptor) {
+        private NotificationChanged(@NonNull Device device, @NonNull String requestId, BluetoothGattDescriptor descriptor, boolean isEnabled) {
             super(device, requestId);
             this.descriptor = descriptor;
-        }
-    }
-
-    /**
-     * notification取消注册成功
-     */
-    public static class NotificationUnregistered extends BothDeviceAndRequestIdEvent<Device> {
-        public BluetoothGattDescriptor descriptor;
-
-        public NotificationUnregistered(@NonNull Device device, @NonNull String requestId, BluetoothGattDescriptor descriptor) {
-            super(device, requestId);
-            this.descriptor = descriptor;
+            this.isEnabled = isEnabled;
         }
     }
 
     /**
      * onReadRemoteRssi，读取到信息强度
      */
-    public static class ReadRemoteRssi extends BothDeviceAndRequestIdEvent<Device> {
+    public static class RemoteRssiRead extends BothDeviceAndRequestIdEvent<Device> {
         public int rssi;
 
-        public ReadRemoteRssi(@NonNull Device device, @NonNull String requestId, int rssi) {
+        private RemoteRssiRead(@NonNull Device device, @NonNull String requestId, int rssi) {
             super(device, requestId);
             this.rssi = rssi;
         }
@@ -224,12 +204,64 @@ public class Events {
          */
         public int failType;
 
-        public RequestFailed(@NonNull String requestId, @NonNull Request.RequestType requestType, int failType, byte[] src) {
+        private RequestFailed(@NonNull String requestId, @NonNull Request.RequestType requestType, int failType, byte[] src) {
             super(requestId);
             this.requestId = requestId;
             this.requestType = requestType;
             this.failType = failType;
             this.src = src;
         }
+    }
+    
+    public static BluetoothStateChanged newBluetoothStateChanged(int state) {
+        return new BluetoothStateChanged(state);
+    }
+
+    public static CharacteristicChanged newCharacteristicChanged(@NonNull Device device, BluetoothGattCharacteristic characteristic) {
+        return new CharacteristicChanged(device, characteristic);
+    }
+
+    public static CharacteristicRead newCharacteristicRead(@NonNull Device device, @NonNull String requestId, BluetoothGattCharacteristic characteristic) {
+        return new CharacteristicRead(device, requestId, characteristic);
+    }
+
+    public static CharacteristicWrite newCharacteristicWrite(@NonNull Device device, @NonNull String requestId, byte[] value) {
+        return new CharacteristicWrite(device, requestId, value);
+    }
+
+    public static ConnectionCreateFailed newConnectionCreateFailed(Device device, String error) {
+        return new ConnectionCreateFailed(device, error);
+    }
+
+    public static ConnectionStateChanged newConnectionStateChanged(@NonNull Device device, int state) {
+        return new ConnectionStateChanged(device, state);
+    }
+
+    public static ConnectTimeout newConnectTimeout(@NonNull Device device, int type) {
+        return new ConnectTimeout(device, type);
+    }
+
+    public static DescriptorRead newDescriptorRead(@NonNull Device device, @NonNull String requestId, BluetoothGattDescriptor descriptor) {
+        return new DescriptorRead(device, requestId, descriptor);
+    }
+
+    public static IndicationChanged newIndicationChanged(@NonNull Device device, @NonNull String requestId, BluetoothGattDescriptor descriptor, boolean isEnabled) {
+        return new IndicationChanged(device, requestId, descriptor, isEnabled);
+    }
+
+    public static MtuChanged newMtuChanged(@NonNull Device device, @NonNull String requestId, int mtu) {
+        return new MtuChanged(device, requestId, mtu);
+    }
+
+    public static NotificationChanged newNotificationChanged(@NonNull Device device, @NonNull String requestId, BluetoothGattDescriptor descriptor, boolean isEnabled) {
+        return new NotificationChanged(device, requestId, descriptor, isEnabled);
+    }
+
+    public static RemoteRssiRead newRemoteRssiRead(@NonNull Device device, @NonNull String requestId, int rssi) {
+        return new RemoteRssiRead(device, requestId, rssi);
+    }
+
+    public static RequestFailed newRequestFailed(@NonNull String requestId, @NonNull Request.RequestType requestType, int failType, byte[] src) {
+        return new RequestFailed(requestId, requestType, failType, src);
     }
 }

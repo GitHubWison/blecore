@@ -47,17 +47,6 @@ class MainActivity : CheckPermissionsActivity() {
         refreshLayout.setColorSchemeColors(ContextCompat.getColor(this, R.color.colorAccent))
         listAdapter = ListAdapter(this, devList)
         lv.adapter = listAdapter
-        lv.setOnItemClickListener { _, _, position, _ ->
-            //解析广播
-            if (broadcastContentDialog == null) {
-                broadcastContentDialog = BroadcastContentDialog(this)
-            }
-            val scanRecord = devList[position].scanRecord
-            if (scanRecord != null) {
-                broadcastContentDialog!!.setData(scanRecord)
-                broadcastContentDialog!!.show()
-            }
-        }
         refreshLayout.setOnRefreshListener {
             if (Ble.getInstance().isInitialized) {
                 doStartScan()
@@ -86,7 +75,7 @@ class MainActivity : CheckPermissionsActivity() {
         }
     }
     
-    private class ListAdapter(context: Context, data: List<Device>) : BaseListAdapter<Device>(context, data) {
+    private inner class ListAdapter(context: Context, data: List<Device>) : BaseListAdapter<Device>(context, data) {
         override fun getHolder(position: Int): BaseHolder<Device> {
             return object : BaseHolder<Device>() {
                 var tvName: TextView? = null
@@ -107,6 +96,18 @@ class MainActivity : CheckPermissionsActivity() {
                         val i = Intent(context, GattServiesCharacteristicsActivity::class.java)
                         i.putExtra("device", data[pos])
                         context.startActivity(i)
+                    }
+                    view.findViewById<View>(R.id.layoutInfo).setOnClickListener {
+                        val pos = tvName?.tag.toString().toInt()
+                        //解析广播
+                        if (broadcastContentDialog == null) {
+                            broadcastContentDialog = BroadcastContentDialog(this@MainActivity)
+                        }
+                        val scanRecord = devList[pos].scanRecord
+                        if (scanRecord != null) {
+                            broadcastContentDialog!!.setData(scanRecord)
+                            broadcastContentDialog!!.show()
+                        }
                     }
                     return view
                 }

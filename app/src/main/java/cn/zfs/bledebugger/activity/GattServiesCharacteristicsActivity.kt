@@ -40,7 +40,7 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
         }
         title = device!!.name
 		Ble.getInstance().registerSubscriber(this)
-        Ble.getInstance().connect(this, device, true)        
+        Ble.getInstance().connect(this, device, true, null)        
         initViews()
     }
 
@@ -67,11 +67,11 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
                     BleServiceListAdapter.START_NOTI -> {
                         notifyService = ParcelUuid(node.service!!.uuid)
                         notifyCharacteristic = ParcelUuid(node.characteristic!!.uuid)
-                        Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("${node}_1", node.service!!.uuid,
+                        Ble.getInstance().getConnection(device)?.toggleNotification("$node", node.service!!.uuid,
                                 node.characteristic!!.uuid, true)
                     }
                     BleServiceListAdapter.STOP_NOTI -> {
-                        Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("${node}_0", node.service!!.uuid,
+                        Ble.getInstance().getConnection(device)?.toggleNotification("$node", node.service!!.uuid,
                                 node.characteristic!!.uuid, false)
                     }
                 }
@@ -129,7 +129,7 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onRequestFialed(e: Events.RequestFailed) {
         when (e.requestType) {
-            Request.RequestType.CHARACTERISTIC_NOTIFICATION -> {
+            Request.RequestType.TOGGLE_NOTIFICATION -> {
                 if (e.requestId.endsWith("_1")) {
                     notifyService = null
                     notifyCharacteristic = null
@@ -148,28 +148,12 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onNotificationRegistered(e: Events.NotificationRegistered) {
-        itemList.firstOrNull { e.requestId == "${it}_1" }?.notification = true
-        adapter?.notifyDataSetChanged()
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onNotificationUnregistered(e: Events.NotificationUnregistered) {
-        itemList.firstOrNull { e.requestId == "${it}_0" }?.notification = false
-        adapter?.notifyDataSetChanged()
-        notifyService = null
-        notifyCharacteristic = null
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onIndicationRegistered(e: Events.IndicationRegistered) {
-        itemList.firstOrNull { e.requestId == "${it}_1" }?.notification = true
-        adapter?.notifyDataSetChanged()
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onIndicationUnregistered(e: Events.IndicationUnregistered) {
-        itemList.firstOrNull { e.requestId == "${it}_0" }?.notification = false
+    fun onNotificationChanged(e: Events.NotificationChanged) {
+        itemList.firstOrNull { e.requestId == "$it" }?.notification = e.isEnabled
+        if (!e.isEnabled) {
+            notifyService = null
+            notifyCharacteristic = null
+        }
         adapter?.notifyDataSetChanged()
     }
 
@@ -197,7 +181,7 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
                 Ble.getInstance().disconnectConnection(device)
             }
             R.id.menuConnect -> {//连接
-                Ble.getInstance().connect(this, device, true)
+                Ble.getInstance().connect(this, device, true, null)
             }
             R.id.menuHex -> adapter?.setShowInHex(true)
             R.id.menuUtf8 -> adapter?.setShowInHex(false)

@@ -6,22 +6,17 @@ import cn.zfs.blelib.core.Connection;
 import cn.zfs.blelib.core.Device;
 
 /**
- * 描述: 连接状态变化回调
- * 时间: 2018/4/24 08:31
+ * 描述: 蓝牙连接状态回调
+ * 时间: 2018/6/15 01:00
  * 作者: zengfansheng
  */
-public abstract class ConnectionCallback {
-    protected Device device;
-
-    public ConnectionCallback(@NonNull Device device) {
-        this.device = device;
-    }
-
+public interface ConnectionStateChangeListener {
+    
     /**
      * 连接状态变化
-     * @param state 连接状态<br> {@link Connection#STATE_DISCONNECTED}<br> {@link Connection#STATE_CONNECTING}<br>
+     * @param device 设备。device.connectionState: 连接状态<br> {@link Connection#STATE_DISCONNECTED}<br> {@link Connection#STATE_CONNECTING}<br>
      *              {@link Connection#STATE_RECONNECTING}<br> {@link Connection#STATE_CONNECTED}<br>
      *              {@link Connection#STATE_SERVICE_DISCORVERING}<br> {@link Connection#STATE_SERVICE_DISCORVERED}
      */
-    public abstract void onConnectionStateChange(@Connection.STATE int state);
+    void onConnectionStateChanged(@NonNull Device device);
 }

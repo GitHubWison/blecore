@@ -2,8 +2,6 @@ package cn.zfs.blelib.core;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 
-import cn.zfs.blelib.callback.ConnectionCallback;
-
 /**
  * 描述: 蓝牙配置
  * 时间: 2018/4/17 17:02
@@ -16,8 +14,6 @@ public class Configuration {
     private IScanHandler scanHandler;
     private long discoverServicesDelayMillis = DEFAULT_DISCOVER_SERVICES_DELAY_MILLIS;
     private int connectTimeoutMillis = DEFAULT_CONN_TIMEOUT_MILLIS;
-    private Class<? extends ConnectionCallback> connectionCallbackClass;
-    private Class<? extends Device> deviceClass;
     private IBondController bondController;
     private int tryReconnectTimes = TRY_RECONNECT_TIMES_INFINITE;
     private int writeDelayMillis;
@@ -26,18 +22,6 @@ public class Configuration {
     private int packageSize = 20;//发送数据时的分包大小
     private int writeType;
     private boolean waitWriteResult;
-
-    public Class<? extends Device> getDeviceClass() {
-        return deviceClass;
-    }
-
-    /**
-     * 设置设备字节码，扫描回调返回的Device实例根据此字节码实例化
-     */
-    public Configuration setDeviceClass(Class<? extends Device> deviceClass) {
-        this.deviceClass = deviceClass;
-        return this;
-    }
 
     /**
      * 设置扫描过滤器
@@ -51,21 +35,6 @@ public class Configuration {
 
     public IScanHandler getScanHandler() {
         return scanHandler;
-    }
-
-    /**
-     * 连接状态回调
-     */
-    public Class<? extends ConnectionCallback> getConnectionCallbackClass() {
-        return connectionCallbackClass;
-    }
-
-    /**
-     * 设置连接状态变化回调
-     */
-    public Configuration setConnectionCallbackClass(Class<? extends ConnectionCallback> connectionCallbackClass) {
-        this.connectionCallbackClass = connectionCallbackClass;
-        return this;
     }
 
     /**

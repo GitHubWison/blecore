@@ -2,17 +2,23 @@
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="20dp"
-    android:minHeight="20dp">
+    android:layout_height="wrap_content">
 
     <LinearLayout
+        android:id="@+id/layoutContent"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content">
+
+        <View
+            android:background="#ccc"
+            android:layout_width="1dp"
+            android:layout_height="match_parent"/>
+        
         <TextView
             android:id="@+id/tvLen"
             android:paddingStart="2dp"
             android:paddingEnd="2dp"
-            android:gravity="center_vertical"
+            android:gravity="center"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -24,14 +30,14 @@
         <View
             android:background="#ccc"
             android:layout_width="1dp"
-            android:layout_height="20dp"/>
+            android:layout_height="match_parent"/>
 
         <TextView
             android:id="@+id/tvType"
             android:layout_width="0dp"
             android:paddingStart="2dp"
             android:paddingEnd="2dp"
-            android:gravity="center_vertical"
+            android:gravity="center"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:paddingBottom="2dp"
@@ -42,7 +48,7 @@
         <View
             android:background="#ccc"
             android:layout_width="1dp"
-            android:layout_height="20dp"/>
+            android:layout_height="match_parent"/>
 
         <TextView
             android:id="@+id/tvValue"
@@ -51,23 +57,18 @@
             android:gravity="center_vertical"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="4.5"
+            android:layout_weight="4.8"
             android:paddingBottom="2dp"
             android:paddingTop="2dp"
             android:textColor="@color/black"
             android:textSize="14dp"/>
+
+        <View
+            android:background="#ccc"
+            android:layout_width="1dp"
+            android:layout_height="match_parent"/>
     </LinearLayout>
 
-    <View
-        android:background="#ccc"
-        android:layout_width="1dp"
-        android:layout_height="20dp"/>
-    <View
-        android:layout_alignParentEnd="true"
-        android:background="#ccc"
-        android:layout_width="1dp"
-        android:layout_height="20dp"/>
-    
     <View
         android:background="#ccc"
         android:layout_alignParentBottom="true"
