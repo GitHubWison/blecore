@@ -57,7 +57,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     }
 
     /**
-     * 不经过队列的蓝牙回调
+     * 不经过队列的蓝牙回调，自行区分请求
      */
     public void setBluetoothGattCallback(BluetoothGattCallback callback) {
         bluetoothGattCallback = callback;
@@ -550,6 +550,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     }
 
     private boolean enableNotificationOrIndication(boolean enable, boolean notification, BluetoothGattCharacteristic characteristic) {
+        //setCharacteristicNotification是设置本机
         if (!bluetoothAdapter.isEnabled() || bluetoothGatt == null || !bluetoothGatt.setCharacteristicNotification(characteristic, enable)) {
             return false;
         }
@@ -562,9 +563,10 @@ public abstract class BaseConnection extends BluetoothGattCallback {
         } else {
             descriptor.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
         }
+        //部分蓝牙在Android6.0及以下需要设置写入类型为有响应的，否则会enable回调是成功，但是仍然无法收到notification数据
         int writeType = characteristic.getWriteType();
         characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-        boolean result =  bluetoothGatt.writeDescriptor(descriptor);
+        boolean result =  bluetoothGatt.writeDescriptor(descriptor);//把设置写入蓝牙设备
         characteristic.setWriteType(writeType);
         return result;
     }
