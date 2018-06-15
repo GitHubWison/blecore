@@ -85,11 +85,11 @@ public class Connection extends BaseConnection {
      * 连接
      * @param device 蓝牙设备
      */
-	synchronized static Connection newInstance(BluetoothAdapter bluetoothAdapter, Context context, Device device,
-                                               long connectDelay, ConnectionStateChangeListener connectionCallback) {
-		if (bluetoothAdapter == null || device == null || device.addr == null || !device.addr.matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
-			Ble.println(Connection.class, Log.ERROR, "BluetoothAdapter not initialized or unspecified address.");
-			Ble.getInstance().postEvent(Events.newConnectionCreateFailed(device, "BluetoothAdapter not initialized or unspecified address."));
+	synchronized static Connection newInstance(@NonNull BluetoothAdapter bluetoothAdapter, @NonNull Context context, @NonNull Device device,
+                                               long connectDelay, ConnectionStateChangeListener stateChangeListener) {
+		if (device.addr == null || !device.addr.matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
+			Ble.println(Connection.class, Log.ERROR, "unspecified address.");
+			Ble.getInstance().postEvent(Events.newConnectionCreateFailed(device, "unspecified address."));
 			return null;
 		}
 		//初始化并建立连接
@@ -97,7 +97,7 @@ public class Connection extends BaseConnection {
 		conn.bluetoothAdapter = bluetoothAdapter;
 		conn.device = device;
 		conn.context = context.getApplicationContext();
-		conn.stateChangeListener = connectionCallback;
+		conn.stateChangeListener = stateChangeListener;
 		//连接蓝牙设备        
         conn.device.connectionState = STATE_CONNECTING;
         conn.connStartTime = System.currentTimeMillis();

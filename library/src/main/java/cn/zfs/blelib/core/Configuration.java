@@ -16,12 +16,13 @@ public class Configuration {
     private int connectTimeoutMillis = DEFAULT_CONN_TIMEOUT_MILLIS;
     private IBondController bondController;
     private int tryReconnectTimes = TRY_RECONNECT_TIMES_INFINITE;
-    private int writeDelayMillis;
+    private int packageWriteDelayMillis;
+    private int requestWriteDelayMillis = -1;
     private int scanPeriodMillis = 10000;
     private boolean useBluetoothLeScanner = true;
     private int packageSize = 20;//发送数据时的分包大小
     private int writeType;
-    private boolean waitWriteResult;
+    private boolean waitWriteResult = true;
 
     /**
      * 设置扫描过滤器
@@ -78,16 +79,27 @@ public class Configuration {
         return this;
     }
 
-    public int getWriteDelayMillis() {
-        return writeDelayMillis;
+    public int getPackageWriteDelayMillis() {
+        return packageWriteDelayMillis;
     }
 
     /**
-     * 设置发送延时，默认不延时
+     * 设置包发送延时，默认不延时
      */
-    public Configuration setWriteDelayMillis(int writeDelayMillis) {
-        this.writeDelayMillis = writeDelayMillis;
+    public Configuration setPackageWriteDelayMillis(int packageWriteDelayMillis) {
+        this.packageWriteDelayMillis = packageWriteDelayMillis;
         return this;
+    }
+
+    public int getRequestWriteDelayMillis() {
+        return requestWriteDelayMillis;
+    }
+
+    /**
+     * 设置写请求延时，如写请求需要分包，每包发送时的延时是包延时，而非此延时。默认不延时
+     */
+    public void setRequestWriteDelayMillis(int requestWriteDelayMillis) {
+        this.requestWriteDelayMillis = requestWriteDelayMillis;
     }
 
     public int getScanPeriodMillis() {

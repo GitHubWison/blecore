@@ -78,6 +78,15 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         return device;
     }
 
+    public static Device valueOf(@NonNull BluetoothDevice bluetoothDevice) {
+        Device device = new Device();
+        device.name = bluetoothDevice.getName();
+        device.addr = bluetoothDevice.getAddress();
+        device.bondState = bluetoothDevice.getBondState();
+        device.originalDevice = bluetoothDevice;
+        return device;
+    }
+    
     @Override
     public boolean equals(Object obj) {
         return obj != null && obj instanceof Device && addr.equals(((Device) obj).addr);

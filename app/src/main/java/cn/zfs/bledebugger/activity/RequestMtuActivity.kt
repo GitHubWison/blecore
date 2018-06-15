@@ -49,7 +49,7 @@ class RequestMtuActivity : BaseActivity() {
             return
         }
         title = "修改MTU"
-        device = Ble.getInstance().getConnection(device)?.device
+        device = Ble.getInstance().getConnection(device!!)?.device
         setContentView(R.layout.activity_request_mtu)
         btnRequest.setOnClickListener { 
             val numStr = etMtu.text.toString()
@@ -57,7 +57,7 @@ class RequestMtuActivity : BaseActivity() {
                 numStr.isEmpty() -> ToastUtils.showShort("请设置数值")
                 numStr.toInt() > 512 -> ToastUtils.showShort("数值超过范围")
                 numStr.toInt() < 20 -> ToastUtils.showShort("数值不合法")
-                else -> Ble.getInstance().getConnection(device)?.changeMtu("REQUEST_MTU", numStr.toInt())
+                else -> Ble.getInstance().getConnection(device!!)?.changeMtu("REQUEST_MTU", numStr.toInt())
             }
         }
         btnGenerateByteArr.setOnClickListener {
@@ -79,14 +79,14 @@ class RequestMtuActivity : BaseActivity() {
             if (loop) {
                 thread {
                     while (run && loop) {
-                        Ble.getInstance().getConnection(device)?.writeCharacteristic("write", writeService!!.uuid,
+                        Ble.getInstance().getConnection(device!!)?.writeCharacteristic("write", writeService!!.uuid,
                                 writeCharacteristic!!.uuid, data)
                         Thread.sleep(delay)
                     }
-                    Ble.getInstance().getConnection(device)?.clearRequestQueue()                
+                    Ble.getInstance().getConnection(device!!)?.clearRequestQueue()                
                 }                
             } else {
-                Ble.getInstance().getConnection(device)?.writeCharacteristic("write", writeService!!.uuid,
+                Ble.getInstance().getConnection(device!!)?.writeCharacteristic("write", writeService!!.uuid,
                         writeCharacteristic!!.uuid, data)
             }
         }

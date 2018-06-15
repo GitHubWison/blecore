@@ -58,7 +58,7 @@ class CommActivity : BaseActivity() {
             finish()
             return
         }
-        device = Ble.getInstance().getConnection(device)?.device
+        device = Ble.getInstance().getConnection(device!!)?.device
         title = device!!.name
         tvAddr.text = device!!.addr
         initEvents()
@@ -79,7 +79,7 @@ class CommActivity : BaseActivity() {
         btnSend.setOnClickListener {
             val s = etValue.text.trim().toString()
             try {
-                val arr = s.trim({ it <= ' ' }).replace(" +".toRegex(), " ").split(" ".toRegex()).dropLastWhile({ it.isEmpty() }).toTypedArray()
+                val arr = s.trim { it <= ' ' }.replace(" +".toRegex(), " ").split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                 val bytes = ByteArray(arr.size)
                 arr.forEachIndexed { i, str ->
                     if (str.length > 2) {
@@ -90,18 +90,18 @@ class CommActivity : BaseActivity() {
                 if (loop) {
                     thread {
                         while (run && loop) {
-                            Ble.getInstance().getConnection(device)?.writeCharacteristic("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
+                            Ble.getInstance().getConnection(device!!)?.writeCharacteristic("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
                             Thread.sleep(delay)
                             if (System.currentTimeMillis() - lastUpdateTime > 500) {
                                 lastUpdateTime = System.currentTimeMillis()
                                 updateCount()
                             }
                         }
-                        Ble.getInstance().getConnection(device)?.clearRequestQueue()
+                        Ble.getInstance().getConnection(device!!)?.clearRequestQueue()
                         updateCount()
                     }
                 } else {
-                    Ble.getInstance().getConnection(device)?.writeCharacteristic("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
+                    Ble.getInstance().getConnection(device!!)?.writeCharacteristic("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
                 }                                
             } catch (e: Exception) {
                 ToastUtils.showShort("输入格式错误")
@@ -162,10 +162,10 @@ class CommActivity : BaseActivity() {
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
             R.id.menuDisconnect -> {//断开
-                Ble.getInstance().disconnectConnection(device)
+                Ble.getInstance().disconnectConnection(device!!)
             }
             R.id.menuConnect -> {//连接
-                Ble.getInstance().connect(this, device, true, null)
+                Ble.getInstance().connect(this, device!!, true, null)
             }
             R.id.menuRequestMtu -> {//请求修改mtu
                 val intent = Intent(this, RequestMtuActivity::class.java)
@@ -250,7 +250,7 @@ class CommActivity : BaseActivity() {
                 tvState.text = "连接成功，并成功发现服务"
                 clearCount()
                 if (notifyService != null && notifyCharacteristic != null) {
-                    Ble.getInstance().getConnection(device)?.toggleNotification("1", notifyService!!.uuid,
+                    Ble.getInstance().getConnection(device!!)?.toggleNotification("1", notifyService!!.uuid,
                             notifyCharacteristic!!.uuid, true)
                 }
             }

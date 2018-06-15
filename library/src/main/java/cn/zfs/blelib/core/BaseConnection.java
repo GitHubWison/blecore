@@ -476,14 +476,19 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     private void executeWriteCharacteristic(BluetoothGattCharacteristic gattCharacteristic, Request request) {
         try {
             request.waitWriteResult = Ble.getInstance().getConfiguration().isWaitWriteResult();
-            request.writeDelay = Ble.getInstance().getConfiguration().getWriteDelayMillis();
+            request.writeDelay = Ble.getInstance().getConfiguration().getPackageWriteDelayMillis();
             request.writeOverValue = new byte[0];
-            int packSize = Ble.getInstance().getConfiguration().getPackageSize();                        
+            int packSize = Ble.getInstance().getConfiguration().getPackageSize();
+            int packWriteDelay = Ble.getInstance().getConfiguration().getPackageWriteDelayMillis();
+            Thread.sleep(packWriteDelay > 0 ? packWriteDelay : request.writeDelay);
             if (request.value.length > packSize) {
                 List<byte[]> list = BleUtils.splitPackage(request.value, packSize);  
                 if (!request.waitWriteResult) {//不等待则遍历发送
-                    for (byte[] bytes : list) {
-                        Thread.sleep(request.writeDelay);
+                    for (int i = 0; i < list.size(); i++) {
+                        byte[] bytes = list.get(i);
+                        if (i > 0) {
+                            Thread.sleep(request.writeDelay);
+                        }
                         if (!doWrite(gattCharacteristic, bytes)) {//写失败
                             performWriteFailed(request);
                             return;
@@ -492,14 +497,12 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                 } else {//等待则只直接发送第一包，剩下的添加到队列等待回调
                     request.remainQueue = new ConcurrentLinkedQueue<>();
                     request.remainQueue.addAll(list);
-                    Thread.sleep(request.writeDelay);
                     if (!doWrite(gattCharacteristic, request.remainQueue.remove())) {//写失败
                         performWriteFailed(request);
                         return;
                     }
                 }
-            } else {
-                Thread.sleep(request.writeDelay);
+            } else {                
                 if (!doWrite(gattCharacteristic, request.value)) {
                     performWriteFailed(request);
                     return;

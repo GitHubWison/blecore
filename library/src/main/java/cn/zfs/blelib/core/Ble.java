@@ -17,6 +17,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.Log;
@@ -91,7 +92,7 @@ public class Ble {
     /**
      * 替换默认配置
      */
-    public void setConfiguration(Configuration configuration) {
+    public void setConfiguration(@NonNull Configuration configuration) {
         this.configuration = configuration;
     }
     
@@ -100,7 +101,7 @@ public class Ble {
      * @param context 上下文
      * @param callback 初始化结果回调
      */
-    public void initialize(Context context, InitCallback callback) {
+    public void initialize(@NonNull Context context, InitCallback callback) {
         context = context.getApplicationContext();
         //检查手机是否支持BLE
         if (!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -141,7 +142,7 @@ public class Ble {
     /**
      * 关闭所有连接，释放资源
      */
-    public void release(Context context) {
+    public void release(@NonNull Context context) {
         if (isInited) {
             stopScan();
             scanListeners.clear();
@@ -176,7 +177,7 @@ public class Ble {
     };
     
     //是否缺少定位权限
-    private boolean noLocationPermission(Context context) {
+    private boolean noLocationPermission(@NonNull Context context) {
         return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context,
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED;
@@ -193,7 +194,7 @@ public class Ble {
         return executorService;
     }
     
-    public void postEvent(final Object event) {
+    public void postEvent(@NonNull final Object event) {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
@@ -206,7 +207,7 @@ public class Ble {
      * 注册订阅者，开始监听蓝牙状态及数据
      * @param subscriber 订阅者
      */
-    public void registerSubscriber(Object subscriber) {
+    public void registerSubscriber(@NonNull Object subscriber) {
         if (!publisher.isRegistered(subscriber)) {
             publisher.register(subscriber);
         }
@@ -216,7 +217,7 @@ public class Ble {
      * 取消注册订阅者，停止监听蓝牙状态及数据
      * @param subscriber 订阅者
      */
-    public void unregisterSubscriber(Object subscriber) {
+    public void unregisterSubscriber(@NonNull Object subscriber) {
         publisher.unregister(subscriber);
     }
 
@@ -255,9 +256,9 @@ public class Ble {
      * 搜索蓝牙设备
      * @param context 用来检查app是否拥有相应权限
      */
-    public void startScan(Context context) {        
+    public void startScan(@NonNull Context context) {        
         if (noLocationPermission(context)) {
-            println(Ble.class, Log.ERROR, "缺少定位权限，无法扫描到蓝牙设备");
+            println(Ble.class, Log.ERROR, "缺少定位权限，可能无法扫描到蓝牙设备");
         }
         if (!isInited || bluetoothAdapter == null || !bluetoothAdapter.isEnabled() || scanning) {
             return;
@@ -379,7 +380,7 @@ public class Ble {
      * @param rssi 信号强度
      * @param scanRecord 广播内容
      */
-    public void parseScanResult(BluetoothDevice device, int rssi, byte[] scanRecord) {
+    public void parseScanResult(@NonNull BluetoothDevice device, int rssi, byte[] scanRecord) {
         for (Connection connection : connectionMap.values()) {
             connection.onScanResult(device.getAddress());
         }
@@ -407,32 +408,30 @@ public class Ble {
     /**
      * 建立连接
      */
-    public synchronized void connect(Context context, Device device, boolean autoReconnect, ConnectionStateChangeListener listener) {
+    public synchronized void connect(@NonNull Context context, @NonNull Device device, boolean autoReconnect, ConnectionStateChangeListener listener) {
         if (!isInited) {
             return;
         }
-        if (device != null) {
-            Connection connection = connectionMap.get(device.addr);
-            //此前这个设备建立过连接，销毁之前的连接重新创建
-            if (connection != null) {
-                connection.releaseNoEvnet();
-            }
-            IBondController bondController = configuration.getBondController();
-            if (bondController != null && bondController.bond(device)) {
-                BluetoothDevice bd = bluetoothAdapter.getRemoteDevice(device.addr);
-                if (bd.getBondState() == BluetoothDevice.BOND_BONDED) {
-                    connection = Connection.newInstance(bluetoothAdapter, context, device, 0, listener);
-                } else {
-                    createBond(device.addr);//配对
-                    connection = Connection.newInstance(bluetoothAdapter, context, device, 1500, listener);
-                }                
-            } else {
+        Connection connection = connectionMap.get(device.addr);
+        //此前这个设备建立过连接，销毁之前的连接重新创建
+        if (connection != null) {
+            connection.releaseNoEvnet();
+        }
+        IBondController bondController = configuration.getBondController();
+        if (bondController != null && bondController.bond(device)) {
+            BluetoothDevice bd = bluetoothAdapter.getRemoteDevice(device.addr);
+            if (bd.getBondState() == BluetoothDevice.BOND_BONDED) {
                 connection = Connection.newInstance(bluetoothAdapter, context, device, 0, listener);
-            }            
-            if (connection != null) {
-                connection.setAutoReconnectEnable(autoReconnect);
-                connectionMap.put(device.addr, connection);
+            } else {
+                createBond(device.addr);//配对
+                connection = Connection.newInstance(bluetoothAdapter, context, device, 1500, listener);
             }
+        } else {
+            connection = Connection.newInstance(bluetoothAdapter, context, device, 0, listener);
+        }
+        if (connection != null) {
+            connection.setAutoReconnectEnable(autoReconnect);
+            connectionMap.put(device.addr, connection);
         }
     }
 
@@ -440,20 +439,14 @@ public class Ble {
      * 获取连接
      */
     public Connection getConnection(Device device) {
-        if (device != null) {
-            return connectionMap.get(device.addr);
-        }
-        return null;
+        return device == null ? null : connectionMap.get(device.addr);
     }
 
     /**
      * 获取连接
      */
     public Connection getConnection(String addr) {
-        if (addr != null) {
-            return connectionMap.get(addr);
-        }
-        return null;
+        return addr == null ? null : connectionMap.get(addr);
     }
 
     /**
@@ -464,20 +457,14 @@ public class Ble {
      */
     public int getConnectionState(Device device) {
         Connection connection = getConnection(device);
-        if (connection != null) {
-            return connection.getConnState();
-        }
-        return Connection.STATE_DISCONNECTED;
+        return connection == null ? Connection.STATE_DISCONNECTED : connection.getConnState();
     }
 
     /**
      * 根据设备断开其连接
      */
     public void disconnectConnection(Device device) {
-        if (!isInited) {
-            return;
-        }
-        if (device != null) {
+        if (isInited && device != null) {
             Connection connection = connectionMap.get(device.addr);
             if (connection != null) {
                 connection.disconnect();
@@ -489,9 +476,6 @@ public class Ble {
      * 断开所有连接
      */
     public void disconnectAllConnection() {
-        if (!isInited) {
-            return;
-        }
         for (Connection connection : connectionMap.values()) {
             connection.disconnect();
         }
@@ -501,9 +485,6 @@ public class Ble {
      * 释放所有创建的连接
      */
     public synchronized void releaseAllConnections() {
-        if (!isInited) {
-            return;
-        }
         for (Connection connection : connectionMap.values()) {
             connection.release();
         }
@@ -514,10 +495,7 @@ public class Ble {
      * 根据设备释放连接
      */
     public synchronized void releaseConnection(Device device) {
-        if (!isInited) {
-            return;
-        }
-        if (device != null) {
+        if (isInited && device != null) {
             Connection connection = connectionMap.remove(device.addr);
             if (connection != null) {
                 connection.release();
@@ -529,9 +507,6 @@ public class Ble {
      * 重连所有创建的连接
      */
     public void reconnectAll() {
-        if (!isInited) {
-            return;
-        }
         for (Connection connection : connectionMap.values()) {
             if (connection.getConnState() != Connection.STATE_SERVICE_DISCORVERED) {
                 connection.reconnect();
@@ -543,10 +518,7 @@ public class Ble {
      * 根据设备重连
      */
     public void reconnect(Device device) {
-        if (!isInited) {
-            return;
-        }
-        if (device != null) {
+        if (isInited && device != null) {
             Connection connection = connectionMap.get(device.addr);
             if (connection != null && connection.getConnState() != Connection.STATE_SERVICE_DISCORVERED) {
                 connection.reconnect();
@@ -579,10 +551,7 @@ public class Ble {
      * 刷新设备，清除缓存
      */
     public void refresh(Device device) {
-        if (!isInited) {
-            return;
-        }
-        if (device != null) {
+        if (isInited && device != null) {
             Connection connection = connectionMap.get(device.addr);
             if (connection != null) {
                 connection.refresh();
@@ -623,9 +592,6 @@ public class Ble {
      * 根据设置的过滤器清除已配对的设备
      */
     public void clearBondDevices(RemoveBondFilter filter) {
-        if (!isInited) {
-            return;
-        }
         Set<BluetoothDevice> devices = bluetoothAdapter.getBondedDevices();
         for (BluetoothDevice device : devices) {
             if (filter == null || filter.accept(device)) {
@@ -642,9 +608,6 @@ public class Ble {
      * 取消配对
      */
     public void removeBond(String addr) {
-        if (!isInited) {
-            return;
-        }
         try {
             BluetoothDevice device = bluetoothAdapter.getRemoteDevice(addr);
             if (device.getBondState() != BluetoothDevice.BOND_NONE) {

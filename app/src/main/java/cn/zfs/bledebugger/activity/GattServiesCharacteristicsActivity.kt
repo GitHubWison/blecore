@@ -40,7 +40,7 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
         }
         title = device!!.name
 		Ble.getInstance().registerSubscriber(this)
-        Ble.getInstance().connect(this, device, true, null)        
+        Ble.getInstance().connect(this, device!!, true, null)        
         initViews()
     }
 
@@ -51,7 +51,7 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
             override fun onItemClick(type: Int, node: Item) {
                 when (type) {
                     BleServiceListAdapter.READ -> {
-                        Ble.getInstance().getConnection(device)?.readCharacteristic(node.toString(), node.service!!.uuid, node.characteristic!!.uuid)
+                        Ble.getInstance().getConnection(device!!)?.readCharacteristic(node.toString(), node.service!!.uuid, node.characteristic!!.uuid)
                     }
                     BleServiceListAdapter.SEND -> {
                         val i = Intent(this@GattServiesCharacteristicsActivity, CommActivity::class.java)
@@ -67,11 +67,11 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
                     BleServiceListAdapter.START_NOTI -> {
                         notifyService = ParcelUuid(node.service!!.uuid)
                         notifyCharacteristic = ParcelUuid(node.characteristic!!.uuid)
-                        Ble.getInstance().getConnection(device)?.toggleNotification("$node", node.service!!.uuid,
+                        Ble.getInstance().getConnection(device!!)?.toggleNotification("$node", node.service!!.uuid,
                                 node.characteristic!!.uuid, true)
                     }
                     BleServiceListAdapter.STOP_NOTI -> {
-                        Ble.getInstance().getConnection(device)?.toggleNotification("$node", node.service!!.uuid,
+                        Ble.getInstance().getConnection(device!!)?.toggleNotification("$node", node.service!!.uuid,
                                 node.characteristic!!.uuid, false)
                     }
                 }
@@ -103,7 +103,7 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
             Connection.STATE_SERVICE_DISCORVERED -> {
                 ToastUtils.showShort("连接成功，并成功发现服务")
                 itemList.clear()
-                val connection = Ble.getInstance().getConnection(device)
+                val connection = Ble.getInstance().getConnection(device!!)
                 if (connection != null) {
                     var id = 0
                     connection.gattServices.forEach { service ->
@@ -178,10 +178,10 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
             R.id.menuDisconnect -> {//断开
-                Ble.getInstance().disconnectConnection(device)
+                Ble.getInstance().disconnectConnection(device!!)
             }
             R.id.menuConnect -> {//连接
-                Ble.getInstance().connect(this, device, true, null)
+                Ble.getInstance().connect(this, device!!, true, null)
             }
             R.id.menuHex -> adapter?.setShowInHex(true)
             R.id.menuUtf8 -> adapter?.setShowInHex(false)
@@ -192,7 +192,7 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
     
     override fun onDestroy() {
         Ble.getInstance().unregisterSubscriber(this)//取消监听
-        Ble.getInstance().releaseConnection(device)
+        Ble.getInstance().releaseConnection(device!!)
         super.onDestroy()
     }
 }
