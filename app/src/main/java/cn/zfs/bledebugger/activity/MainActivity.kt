@@ -16,6 +16,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import cn.zfs.bledebugger.Consts
 import cn.zfs.bledebugger.R
+import cn.zfs.bledebugger.R.id.*
 import cn.zfs.blelib.callback.ScanListener
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Device

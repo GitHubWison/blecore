@@ -161,8 +161,7 @@ class CommActivity : BaseActivity() {
         }
         ivRec.setOnClickListener { 
             AlertDialog.Builder(this)
-                    .setSingleChoiceItems(recList.toTypedArray(), -1) { dialog, which ->
-                        dialog.dismiss()
+                    .setItems(recList.toTypedArray()) { _, which ->
                         etValue.setText(recList[which])
                         etValue.setSelection(recList[which].length)
                     }

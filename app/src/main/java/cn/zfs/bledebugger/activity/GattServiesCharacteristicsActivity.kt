@@ -9,6 +9,7 @@ import cn.zfs.bledebugger.Consts
 import cn.zfs.bledebugger.R
 import cn.zfs.bledebugger.adapter.BleServiceListAdapter
 import cn.zfs.bledebugger.entity.Item
+import cn.zfs.bledebugger.view.LoadDialog
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Connection
 import cn.zfs.blelib.core.Device
@@ -30,6 +31,7 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
     private var adapter: BleServiceListAdapter? = null
     private var notifyService: ParcelUuid? = null
     private var notifyCharacteristic: ParcelUuid? = null
+    private var loadDialog: LoadDialog? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +48,8 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
     }
 
     private fun initViews() {
+        loadDialog = LoadDialog(this)
+        loadDialog!!.setCanceledOnTouchOutside(false)
         adapter = BleServiceListAdapter(this, lv, itemList)
         lv.adapter = adapter
         adapter?.itemClickCallback = object : BleServiceListAdapter.OnItemClickCallback {
@@ -85,23 +89,29 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
     fun onConnectionStateChange(e: Events.ConnectionStateChanged) {
         when (e.state) {
             Connection.STATE_CONNECTED -> {
-                ToastUtils.showShort("连接成功，等待发现服务")
+                loadDialog!!.show()
+                loadDialog!!.setText("连接成功，等待发现服务")
             }
             Connection.STATE_CONNECTING -> {
-                ToastUtils.showShort("连接中...")
+                loadDialog!!.show()
+                loadDialog!!.setText("连接中...")
             }
             Connection.STATE_DISCONNECTED -> {
+                loadDialog!!.dismiss()
                 ToastUtils.showShort("连接断开")
                 itemList.clear()
                 adapter?.notifyDataSetChanged()
             }
             Connection.STATE_RECONNECTING -> {
-                ToastUtils.showShort("正在重连...")
+                loadDialog!!.show()
+                loadDialog!!.setText("正在重连...")
             }
             Connection.STATE_SERVICE_DISCORVERING -> {
-                ToastUtils.showShort("连接成功，正在发现服务...")
+                loadDialog!!.show()
+                loadDialog!!.setText("连接成功，正在发现服务...")
             }
             Connection.STATE_SERVICE_DISCORVERED -> {
+                loadDialog!!.dismiss()
                 ToastUtils.showShort("连接成功，并成功发现服务")
                 itemList.clear()
                 val connection = Ble.getInstance().getConnection(device!!)

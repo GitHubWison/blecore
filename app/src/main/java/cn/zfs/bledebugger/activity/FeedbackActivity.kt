@@ -45,6 +45,7 @@ class FeedbackActivity : BaseActivity() {
         recyclerView.itemAnimator = DefaultItemAnimator()
         recyclerView.adapter = PicAdapter()
         loadDialog = LoadDialog(this)
+        loadDialog!!.setText("正在提交...")
         loadDialog!!.setCancelable(false)
     }
 
