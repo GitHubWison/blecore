@@ -13,6 +13,8 @@ import cn.zfs.bledebugger.util.UuidLib
 import cn.zfs.blelib.util.BleUtils
 import cn.zfs.common.utils.UiUtils
 import cn.zfs.treeadapter.TreeAdapter
+import java.util.*
+import kotlin.collections.HashMap
 
 
 /**
@@ -21,11 +23,12 @@ import cn.zfs.treeadapter.TreeAdapter
  * 作者: zengfansheng
  */
 class BleServiceListAdapter(context: Context, lv: ListView, nodes: MutableList<Item>) : TreeAdapter<Item>(lv, nodes) {
-    val serviceName = "Unknown Service"
-    val characteristicName = "Unknown Characteristic"
-    var context: Context? = null
+    private val serviceName = "Unknown Service"
+    private val characteristicName = "Unknown Characteristic"
+    private var context: Context? = null
     private var showInHex = false
     var itemClickCallback: OnItemClickCallback? = null
+    private val holderMap = HashMap<String, ViewHolder>()
     
     init {
         this.context = context
@@ -37,6 +40,32 @@ class BleServiceListAdapter(context: Context, lv: ListView, nodes: MutableList<I
     fun setShowInHex(hex: Boolean) {
         showInHex = hex
         notifyDataSetChanged()
+    }
+    
+    fun updateValue(service: UUID, characteristic: UUID, value: ByteArray) {
+        val holder = holderMap[service.toString() + characteristic.toString()]
+        if (holder != null) {
+            if (holder.layoutValue!!.visibility != View.VISIBLE) {
+                val params = holder.rootView!!.layoutParams
+                params.height = UiUtils.dip2px(95f)
+                holder.layoutValue!!.visibility = View.VISIBLE
+                holder.rootView!!.layoutParams = params
+            }
+            val valueStr = if (showInHex) BleUtils.bytesToHexString(value) else String(value)
+            holder.tvValue!!.text = valueStr
+        }
+    }
+    
+    private inner class ViewHolder {
+        var rootView: View? = null
+        var tvValue: TextView? = null
+        var layoutValue: View? = null
+        
+        fun setViews(rootView: View, layoutValue: View, tvValue: TextView) {
+            this.rootView = rootView
+            this.layoutValue = layoutValue
+            this.tvValue = tvValue
+        }
     }
     
     override fun getViewTypeCount(): Int {
@@ -87,6 +116,7 @@ class BleServiceListAdapter(context: Context, lv: ListView, nodes: MutableList<I
                 private var btnStopNoti: ImageView? = null
 
                 override fun setData(node: Item, position: Int) {
+                    holderMap[node.service!!.uuid.toString() + node.characteristic!!.uuid.toString()]?.setViews(rootView!!, layoutValue!!, tvValue!!)
                     val name = UuidLib.getCharacteristicName(node.characteristic!!.uuid)
                     tvName?.text = if (TextUtils.isEmpty(name)) characteristicName else name
                     tvUuid?.text = node.characteristic!!.uuid.toString()
@@ -137,6 +167,8 @@ class BleServiceListAdapter(context: Context, lv: ListView, nodes: MutableList<I
                     btnSend?.setOnClickListener(clickListener)
                     btnStartNoti?.setOnClickListener(clickListener)
                     btnStopNoti?.setOnClickListener(clickListener)
+                    val item = getItem(position)
+                    holderMap[item.service!!.uuid.toString() + item.characteristic!!.uuid.toString()] = ViewHolder()
                     return view
                 }
             }

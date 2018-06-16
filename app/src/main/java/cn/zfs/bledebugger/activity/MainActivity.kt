@@ -14,6 +14,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import cn.zfs.bledebugger.Consts
 import cn.zfs.bledebugger.R
 import cn.zfs.blelib.callback.ScanListener
 import cn.zfs.blelib.core.Ble
@@ -94,7 +95,7 @@ class MainActivity : CheckPermissionsActivity() {
                     view.findViewById<View>(R.id.btnConnect).setOnClickListener { 
                         val pos = tvName?.tag.toString().toInt()
                         val i = Intent(context, GattServiesCharacteristicsActivity::class.java)
-                        i.putExtra("device", data[pos])
+                        i.putExtra(Consts.EXTRA_DEVICE, data[pos])
                         context.startActivity(i)
                     }
                     view.findViewById<View>(R.id.layoutInfo).setOnClickListener {

@@ -1,5 +1,6 @@
 package cn.zfs.bledebugger.activity
 
+import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -11,6 +12,7 @@ import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.ScrollView
+import cn.zfs.bledebugger.Consts
 import cn.zfs.bledebugger.R
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Connection
@@ -18,12 +20,14 @@ import cn.zfs.blelib.core.Device
 import cn.zfs.blelib.core.Request
 import cn.zfs.blelib.event.Events
 import cn.zfs.blelib.util.BleUtils
+import cn.zfs.common.utils.PreferencesUtils
 import cn.zfs.common.utils.ToastUtils
 import kotlinx.android.synthetic.main.activity_comm.*
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.concurrent.thread
 
 /**
@@ -44,16 +48,17 @@ class CommActivity : BaseActivity() {
     private var lastUpdateTime = 0L
     private var successCount = 0
     private var failCount = 0
+    private val recList = ArrayList<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_comm)
         Ble.getInstance().registerSubscriber(this)
-        device = intent.getParcelableExtra("device")
-        writeService = intent.getParcelableExtra("writeService")
-        writeCharacteristic = intent.getParcelableExtra("writeCharacteristic")
-        notifyService = intent.getParcelableExtra("notifyService")
-        notifyCharacteristic = intent.getParcelableExtra("notifyCharacteristic")
+        device = intent.getParcelableExtra(Consts.EXTRA_DEVICE)
+        writeService = intent.getParcelableExtra(Consts.EXTRA_WRITE_SERVICE)
+        writeCharacteristic = intent.getParcelableExtra(Consts.EXTRA_WRITE_CHARACTERISTIC)
+        notifyService = intent.getParcelableExtra(Consts.EXTRA_NOTIFY_SERVICE)
+        notifyCharacteristic = intent.getParcelableExtra(Consts.EXTRA_NOTIFY_CHARACTERISTIC)
         if (device == null || writeService == null || writeCharacteristic == null) {
             finish()
             return
@@ -63,6 +68,27 @@ class CommActivity : BaseActivity() {
         tvAddr.text = device!!.addr
         initEvents()
         updateState(device!!.connectionState)
+        //加载发送记录
+        loadRecs()
+    }
+
+    private fun loadRecs() {
+        val recs = PreferencesUtils.getString(Consts.SP_KEY_SEND_REC)
+        val split = recs?.split(",")
+        split?.forEach { recList.add(it) }        
+    }
+    
+    private fun saveRecs() {
+        while (recList.size > 10) {//最多保存10条
+            recList.removeAt(10)
+        }
+        var rec = ""
+        recList.forEachIndexed { index, s ->
+            rec += if (index != 0) ",$s" else s
+        }
+        if (!rec.isEmpty()) {
+            PreferencesUtils.putString(Consts.SP_KEY_SEND_REC, rec)
+        }
     }
 
     private fun initEvents() {
@@ -86,7 +112,9 @@ class CommActivity : BaseActivity() {
                         throw Exception()
                     }
                     bytes[i] = Integer.valueOf(str, 16).toByte()
-                }
+                }     
+                recList.add(0, BleUtils.bytesToHexString(bytes))
+                saveRecs()
                 if (loop) {
                     thread {
                         while (run && loop) {
@@ -131,6 +159,15 @@ class CommActivity : BaseActivity() {
         btnClearCount.setOnClickListener {
             clearCount()
         }
+        ivRec.setOnClickListener { 
+            AlertDialog.Builder(this)
+                    .setSingleChoiceItems(recList.toTypedArray(), -1) { dialog, which ->
+                        dialog.dismiss()
+                        etValue.setText(recList[which])
+                        etValue.setSelection(recList[which].length)
+                    }
+                    .show()
+        }
     }
 
     private fun updateCount() {
@@ -169,9 +206,9 @@ class CommActivity : BaseActivity() {
             }
             R.id.menuRequestMtu -> {//请求修改mtu
                 val intent = Intent(this, RequestMtuActivity::class.java)
-                intent.putExtra("device", device)
-                intent.putExtra("writeService", ParcelUuid(writeService!!.uuid))
-                intent.putExtra("writeCharacteristic", ParcelUuid(writeCharacteristic!!.uuid))
+                intent.putExtra(Consts.EXTRA_DEVICE, device)
+                intent.putExtra(Consts.EXTRA_WRITE_SERVICE, ParcelUuid(writeService!!.uuid))
+                intent.putExtra(Consts.EXTRA_WRITE_CHARACTERISTIC, ParcelUuid(writeCharacteristic!!.uuid))
                 startActivity(intent)
             }
             R.id.menuCopy -> {

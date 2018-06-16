@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.os.ParcelUuid
 import android.view.Menu
 import android.view.MenuItem
+import cn.zfs.bledebugger.Consts
 import cn.zfs.bledebugger.R
 import cn.zfs.bledebugger.adapter.BleServiceListAdapter
 import cn.zfs.bledebugger.entity.Item
@@ -33,7 +34,7 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gatt_services_characteristics)
-        device = intent.getParcelableExtra("device")
+        device = intent.getParcelableExtra(Consts.EXTRA_DEVICE)
         if (device == null) {
             finish()
             return
@@ -55,12 +56,12 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
                     }
                     BleServiceListAdapter.SEND -> {
                         val i = Intent(this@GattServiesCharacteristicsActivity, CommActivity::class.java)
-                        i.putExtra("device", device)
-                        i.putExtra("writeService", ParcelUuid(node.service!!.uuid))
-                        i.putExtra("writeCharacteristic", ParcelUuid(node.characteristic!!.uuid))
+                        i.putExtra(Consts.EXTRA_DEVICE, device)
+                        i.putExtra(Consts.EXTRA_WRITE_SERVICE, ParcelUuid(node.service!!.uuid))
+                        i.putExtra(Consts.EXTRA_WRITE_CHARACTERISTIC, ParcelUuid(node.characteristic!!.uuid))
                         if (notifyService != null && notifyCharacteristic != null) {
-                            i.putExtra("notifyService", notifyService)
-                            i.putExtra("notifyCharacteristic", notifyCharacteristic)
+                            i.putExtra(Consts.EXTRA_NOTIFY_SERVICE, notifyService)
+                            i.putExtra(Consts.EXTRA_NOTIFY_CHARACTERISTIC, notifyCharacteristic)
                         }
                         startActivity(i)
                     }
@@ -155,6 +156,11 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
             notifyCharacteristic = null
         }
         adapter?.notifyDataSetChanged()
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onCharacteristicChanged(e: Events.CharacteristicChanged) {
+        adapter?.updateValue(e.characteristic.service.uuid, e.characteristic.uuid, e.characteristic.value)
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

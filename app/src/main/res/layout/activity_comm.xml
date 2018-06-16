@@ -127,11 +127,17 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="40dp"/>
+        <ImageView
+            android:id="@+id/ivRec"
+            android:background="@drawable/drop"
+            android:layout_width="30dp"
+            android:layout_height="30dp"/>
         <cn.zfs.common.view.RoundButton
             android:id="@+id/btnSend"
             android:text="发送"
             style="@style/RoundButtonStyle"
             android:layout_width="wrap_content"
+            android:layout_marginStart="4dp"
             app:rbCornerRadius="2dp"
             app:rbNormalTextColor="@color/colorPrimary"
             app:rbNormalStrokeColor="@color/colorPrimary"

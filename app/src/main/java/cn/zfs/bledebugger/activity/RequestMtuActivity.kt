@@ -5,6 +5,7 @@ import android.os.ParcelUuid
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import cn.zfs.bledebugger.Consts
 import cn.zfs.bledebugger.R
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Device
@@ -41,9 +42,9 @@ class RequestMtuActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Ble.getInstance().registerSubscriber(this)
-        device = intent.getParcelableExtra("device")
-        writeService = intent.getParcelableExtra("writeService")
-        writeCharacteristic = intent.getParcelableExtra("writeCharacteristic")
+        device = intent.getParcelableExtra(Consts.EXTRA_DEVICE)
+        writeService = intent.getParcelableExtra(Consts.EXTRA_WRITE_SERVICE)
+        writeCharacteristic = intent.getParcelableExtra(Consts.EXTRA_WRITE_CHARACTERISTIC)
         if (device == null || writeService == null || writeCharacteristic == null) {
             finish()
             return
