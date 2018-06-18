@@ -163,7 +163,7 @@ public class Configuration {
     }
 
     /**
-     * 是否等待写入结果，不等待则直接处理下一个请求，否则等待onCharacteristicWrite回调后再处理下一请求，默认不等待。<br>
+     * 是否等待写入结果，不等待则直接处理下一个请求，否则等待onCharacteristicWrite回调后再处理下一请求，默认等待。<br>
      * 不等待的话onCharacteristicWrite回调不会处理，而是在writeCharacteristic发布onCharacteristicWrite信息
      */
     public Configuration setWaitWriteResult(boolean waitWriteResult) {
@@ -175,6 +175,9 @@ public class Configuration {
         return bondController;
     }
 
+    /**
+     * 连接进行配对的控制
+     */
     public Configuration setBondController(IBondController bondController) {
         this.bondController = bondController;
         return this;
