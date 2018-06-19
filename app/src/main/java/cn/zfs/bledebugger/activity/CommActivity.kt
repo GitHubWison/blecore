@@ -42,7 +42,6 @@ class CommActivity : BaseActivity() {
     private var notifyService: ParcelUuid? = null
     private var notifyCharacteristic: ParcelUuid? = null
     private var pause = false
-    private var loop = false
     private var delay = 0L
     private var run = true
     private var lastUpdateTime = 0L
@@ -119,9 +118,9 @@ class CommActivity : BaseActivity() {
                 }     
                 recList.add(0, BleUtils.bytesToHexString(bytes))
                 saveRecs()
-                if (loop) {
+                if (chk.isChecked) {
                     thread {
-                        while (run && loop) {
+                        while (run && chk.isChecked) {
                             Ble.getInstance().getConnection(device!!)?.writeCharacteristic("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
                             Thread.sleep(delay)
                             if (System.currentTimeMillis() - lastUpdateTime > 500) {
@@ -139,29 +138,8 @@ class CommActivity : BaseActivity() {
                 ToastUtils.showShort("输入格式错误")
             }
         }
-        //循环发送控制
-        chk.setOnCheckedChangeListener { _, isChecked ->
-            loop = isChecked
-        }
         //发送延时
-        etDelay.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-
-            }
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-
-            }
-
-            override fun afterTextChanged(s: Editable?) {
-                var d = 0L
-                val delayStr = etDelay.text.toString()
-                if (!delayStr.isEmpty()) {
-                    d = delayStr.toLong()
-                }
-                delay = d
-            }
-        })
+        etDelay.addTextChangedListener(textChangedListener)
         //清空发送结果记录
         btnClearCount.setOnClickListener {
             clearCount()
@@ -178,19 +156,27 @@ class CommActivity : BaseActivity() {
             }
         }
         //日志输出控制
-        etFilte.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                
+        etFilte.addTextChangedListener(textChangedListener)
+    }
+    
+    private val textChangedListener = object : TextWatcher {
+        override fun afterTextChanged(s: Editable?) {
+            //延时的
+            if (etDelay == s) {
+                var d = 0L
+                val delayStr = etDelay.text.toString()
+                if (!delayStr.isEmpty()) {
+                    d = delayStr.toLong()
+                }
+                delay = d
+            } else if (etFilte == s) {
+                keyword = etFilte.text.toString()
             }
-
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
-        //控制日志输出或不输出
-        chkPrint.setOnCheckedChangeListener { _, isChecked -> 
-            
         }
+
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
     }
 
     private fun updateCount() {
@@ -278,7 +264,7 @@ class CommActivity : BaseActivity() {
     fun onRequestFialed(e: Events.RequestFailed) {
         if (e.requestType == Request.RequestType.WRITE_CHARACTERISTIC) {
             failCount++
-            if (!loop) {
+            if (!chk.isChecked) {
                 updateCount()
             }
         }
@@ -287,7 +273,7 @@ class CommActivity : BaseActivity() {
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     fun onCharacteristicWrite(e: Events.CharacteristicWrite) {
         successCount++
-        if (!loop) {            
+        if (!chk.isChecked) {            
             updateCount()
         }
     }
