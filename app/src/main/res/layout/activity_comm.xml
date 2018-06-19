@@ -12,7 +12,7 @@
         android:gravity="center_vertical"
         android:layout_height="wrap_content">
         <TextView
-            android:textSize="14dp"
+            android:textSize="12dp"
             android:text="地址： "
             android:textColor="#000"
             android:layout_width="wrap_content"
@@ -22,14 +22,11 @@
             android:textSize="12dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
-    </LinearLayout>
         
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
         <TextView
             android:id="@+id/state"
-            android:textSize="14dp"
+            android:layout_marginStart="20dp"
+            android:textSize="12dp"
             android:textColor="#000"
             android:text="状态： "
             android:layout_width="wrap_content"
@@ -37,12 +34,12 @@
 
         <TextView
             android:id="@+id/tvState"
-            android:textSize="14dp"
+            android:textSize="12dp"
             android:text="未连接"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
     </LinearLayout>
-    
+            
     <View
         android:id="@+id/divider"
         android:layout_width="match_parent"
@@ -52,53 +49,77 @@
     
     <LinearLayout
         android:layout_marginTop="8dp"
+        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
-        <TextView
-            android:text="收到数据↓："
-            android:textColor="@android:color/black"
-            android:textSize="16dp"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"/>
-        <cn.zfs.common.view.RoundButton
-            android:id="@+id/btnClear"
-            android:text="清空"
-            style="@style/RoundButtonStyle"
-            app:rbCornerRadius="2dp"
-            app:rbNormalTextColor="@color/colorPrimary"
-            app:rbNormalStrokeColor="@color/colorPrimary"
-            app:rbNormalFillColor="@color/transparent"
-            app:rbPressedTextColor="@color/white"
-            app:rbPressedFillColor="@color/colorPrimary"
-            android:layout_height="30dp"
-            android:layout_width="wrap_content"/>
-        <cn.zfs.common.view.RoundButton
-            android:id="@+id/btnStart"
-            android:text="开始"
-            style="@style/RoundButtonStyle"
-            android:layout_marginStart="3dp"
-            android:layout_width="wrap_content"
-            app:rbCornerRadius="2dp"
-            app:rbNormalTextColor="@color/colorPrimary"
-            app:rbNormalStrokeColor="@color/colorPrimary"
-            app:rbNormalFillColor="@color/transparent"
-            app:rbPressedTextColor="@color/white"
-            app:rbPressedFillColor="@color/colorPrimary"
-            android:layout_height="30dp"/>
-        <cn.zfs.common.view.RoundButton
-            android:id="@+id/btnPause"
-            android:text="暂停"
-            style="@style/RoundButtonStyle"
-            android:layout_marginStart="3dp"
-            android:layout_width="wrap_content"
-            app:rbCornerRadius="2dp"
-            app:rbNormalTextColor="@color/colorPrimary"
-            app:rbNormalStrokeColor="@color/colorPrimary"
-            app:rbNormalFillColor="@color/transparent"
-            app:rbPressedTextColor="@color/white"
-            app:rbPressedFillColor="@color/colorPrimary"
-            android:layout_height="30dp"/>
+        
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <cn.zfs.common.view.ClearEditText
+                android:id="@+id/etFilte"
+                android:textSize="14dp"
+                android:hint="过滤关键字"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="40dp"/>
+            <CheckBox
+                android:id="@+id/chkPrint"
+                android:checked="true"
+                android:text="输出"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+        
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:text="收到数据↓："
+                android:textColor="@android:color/black"
+                android:textSize="16dp"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"/>
+            <cn.zfs.common.view.RoundButton
+                android:id="@+id/btnClear"
+                android:text="清空"
+                style="@style/RoundButtonStyle"
+                app:rbCornerRadius="2dp"
+                app:rbNormalTextColor="@color/colorPrimary"
+                app:rbNormalStrokeColor="@color/colorPrimary"
+                app:rbNormalFillColor="@color/transparent"
+                app:rbPressedTextColor="@color/white"
+                app:rbPressedFillColor="@color/colorPrimary"
+                android:layout_height="30dp"
+                android:layout_width="wrap_content"/>
+            <cn.zfs.common.view.RoundButton
+                android:id="@+id/btnStart"
+                android:text="开始"
+                style="@style/RoundButtonStyle"
+                android:layout_marginStart="3dp"
+                android:layout_width="wrap_content"
+                app:rbCornerRadius="2dp"
+                app:rbNormalTextColor="@color/colorPrimary"
+                app:rbNormalStrokeColor="@color/colorPrimary"
+                app:rbNormalFillColor="@color/transparent"
+                app:rbPressedTextColor="@color/white"
+                app:rbPressedFillColor="@color/colorPrimary"
+                android:layout_height="30dp"/>
+            <cn.zfs.common.view.RoundButton
+                android:id="@+id/btnPause"
+                android:text="暂停"
+                style="@style/RoundButtonStyle"
+                android:layout_marginStart="3dp"
+                android:layout_width="wrap_content"
+                app:rbCornerRadius="2dp"
+                app:rbNormalTextColor="@color/colorPrimary"
+                app:rbNormalStrokeColor="@color/colorPrimary"
+                app:rbNormalFillColor="@color/transparent"
+                app:rbPressedTextColor="@color/white"
+                app:rbPressedFillColor="@color/colorPrimary"
+                android:layout_height="30dp"/>
+        </LinearLayout>
     </LinearLayout>
     
     <ScrollView

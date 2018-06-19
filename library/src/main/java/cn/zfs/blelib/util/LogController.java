@@ -1,5 +1,6 @@
 package cn.zfs.blelib.util;
 
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 /**
@@ -44,5 +45,9 @@ public class LogController {
                 break;
         }
         return (printLevelControl & NONE) != NONE && (printLevelControl & level) == level;
+    }
+    
+    public interface Filter {
+        boolean accept(@NonNull String log);
     }
 }

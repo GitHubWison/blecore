@@ -49,6 +49,7 @@ class CommActivity : BaseActivity() {
     private var successCount = 0
     private var failCount = 0
     private val recList = ArrayList<String>()
+    private var keyword = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,12 +97,15 @@ class CommActivity : BaseActivity() {
         btnClear.setOnClickListener {
             tvLogs.text = ""
         }
+        //暂停日志输出
         btnPause.setOnClickListener { 
             pause = true
         }
+        //继续日志输出
         btnStart.setOnClickListener { 
             pause = false
         }
+        //发送指令
         btnSend.setOnClickListener {
             val s = etValue.text.trim().toString()
             try {
@@ -131,13 +135,15 @@ class CommActivity : BaseActivity() {
                 } else {
                     Ble.getInstance().getConnection(device!!)?.writeCharacteristic("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
                 }                                
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 ToastUtils.showShort("输入格式错误")
             }
         }
+        //循环发送控制
         chk.setOnCheckedChangeListener { _, isChecked ->
             loop = isChecked
         }
+        //发送延时
         etDelay.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
 
@@ -156,9 +162,11 @@ class CommActivity : BaseActivity() {
                 delay = d
             }
         })
+        //清空发送结果记录
         btnClearCount.setOnClickListener {
             clearCount()
         }
+        //发送指令记录
         ivRec.setOnClickListener { 
             if (!recList.isEmpty()) {
                 AlertDialog.Builder(this)
@@ -168,6 +176,20 @@ class CommActivity : BaseActivity() {
                         }
                         .show()
             }
+        }
+        //日志输出控制
+        etFilte.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+        //控制日志输出或不输出
+        chkPrint.setOnCheckedChangeListener { _, isChecked -> 
+            
         }
     }
 
@@ -239,12 +261,15 @@ class CommActivity : BaseActivity() {
             if (tvLogs.text.length > 3 * 1024 * 1024) {
                 tvLogs.text = ""
             }
-            tvLogs.append(SimpleDateFormat("mm:ss.SSS").format(Date()))
-            tvLogs.append("> ")
-            tvLogs.append(BleUtils.bytesToHexString(e.characteristic.value))
-            tvLogs.append("\n")
-            scrollView.post {
-                scrollView.fullScroll(ScrollView.FOCUS_DOWN)
+            val hexString = BleUtils.bytesToHexString(e.characteristic.value)
+            if (keyword.isEmpty() || (chkPrint.isChecked && hexString.contains(keyword)) || (!chkPrint.isChecked && !hexString.contains(keyword))) {
+                tvLogs.append(SimpleDateFormat("mm:ss.SSS").format(Date()))
+                tvLogs.append("> ")
+                tvLogs.append(hexString)
+                tvLogs.append("\n")
+                scrollView.post {
+                    scrollView.fullScroll(ScrollView.FOCUS_DOWN)
+                }
             }
         }
     }

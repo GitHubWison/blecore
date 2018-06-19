@@ -57,6 +57,7 @@ public class Ble {
     private Handler mainThreadHandler;
     private ExecutorService executorService;
     private EventBus publisher;
+    private LogController.Filter logFilter;
 
     private Ble() {
         configuration = new Configuration();
@@ -77,12 +78,19 @@ public class Ble {
     }
 
     /**
-     * 设置日志输出级别控制
+     * 设置日志输出级别控制，与{@link #setLogPrintFilter(LogController.Filter)}同时作用
      * @param logPrintLevel <br>{@link LogController#NONE}, {@link LogController#VERBOSE}, 
      * {@link LogController#DEBUG}, {@link LogController#INFO}, {@link LogController#WARN}, {@link LogController#ERROR}
      */
     public void setLogPrintLevelControl(int logPrintLevel) {
         LogController.printLevelControl = logPrintLevel;
+    }
+
+    /**
+     * 设置日志输出过滤器，与{@link #setLogPrintLevelControl(int)}同时作用
+     */
+    public void setLogPrintFilter(LogController.Filter filter) {
+        logFilter = filter;
     }
     
     public Configuration getConfiguration() {
@@ -618,8 +626,9 @@ public class Ble {
         }
     }
 
-    public static void println(Class cls, int priority, String msg) {
-        if (LogController.accept(priority)) {
+    public static void println(Class cls, int priority, @NonNull String msg) {
+        LogController.Filter logFilter = Ble.getInstance().logFilter;
+        if (LogController.accept(priority) && (logFilter == null || logFilter.accept(msg))) {
             Log.println(priority, "blelib:" + cls.getSimpleName(), "blelib--" + msg);
         }
     }
