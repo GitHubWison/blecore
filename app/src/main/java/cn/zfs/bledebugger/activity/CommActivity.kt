@@ -160,12 +160,14 @@ class CommActivity : BaseActivity() {
             clearCount()
         }
         ivRec.setOnClickListener { 
-            AlertDialog.Builder(this)
-                    .setItems(recList.toTypedArray()) { _, which ->
-                        etValue.setText(recList[which])
-                        etValue.setSelection(recList[which].length)
-                    }
-                    .show()
+            if (!recList.isEmpty()) {
+                AlertDialog.Builder(this)
+                        .setItems(recList.toTypedArray()) { _, which ->
+                            etValue.setText(recList[which])
+                            etValue.setSelection(recList[which].length)
+                        }
+                        .show()
+            }
         }
     }
 

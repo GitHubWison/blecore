@@ -111,8 +111,8 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
                 loadDialog!!.setText("连接成功，正在发现服务...")
             }
             Connection.STATE_SERVICE_DISCORVERED -> {
-                loadDialog!!.dismiss()
-                ToastUtils.showShort("连接成功，并成功发现服务")
+                loadDialog!!.show()
+                loadDialog!!.setText("连接成功，并成功发现服务")
                 itemList.clear()
                 val connection = Ble.getInstance().getConnection(device!!)
                 if (connection != null) {

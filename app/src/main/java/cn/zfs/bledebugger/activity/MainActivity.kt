@@ -16,7 +16,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import cn.zfs.bledebugger.Consts
 import cn.zfs.bledebugger.R
-import cn.zfs.bledebugger.R.id.refreshLayout
 import cn.zfs.blelib.callback.ScanListener
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Device
@@ -79,6 +78,14 @@ class MainActivity : CheckPermissionsActivity() {
     
     private inner class ListAdapter(context: Context, data: List<Device>) : BaseListAdapter<Device>(context, data) {
         private val updateTimeMap = HashMap<String, Long>()
+        
+        override fun areAllItemsEnabled(): Boolean {
+            return false
+        }
+
+        override fun isEnabled(position: Int): Boolean {
+            return false
+        }
         
         override fun getHolder(position: Int): BaseHolder<Device> {
             return object : BaseHolder<Device>() {
