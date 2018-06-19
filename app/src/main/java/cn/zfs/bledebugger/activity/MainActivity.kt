@@ -16,7 +16,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import cn.zfs.bledebugger.Consts
 import cn.zfs.bledebugger.R
-import cn.zfs.bledebugger.R.id.*
+import cn.zfs.bledebugger.R.id.refreshLayout
 import cn.zfs.blelib.callback.ScanListener
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Device
@@ -78,6 +78,8 @@ class MainActivity : CheckPermissionsActivity() {
     }
     
     private inner class ListAdapter(context: Context, data: List<Device>) : BaseListAdapter<Device>(context, data) {
+        private val updateTimeMap = HashMap<String, Long>()
+        
         override fun getHolder(position: Int): BaseHolder<Device> {
             return object : BaseHolder<Device>() {
                 var tvName: TextView? = null
@@ -140,10 +142,14 @@ class MainActivity : CheckPermissionsActivity() {
 
         fun add(device: Device) {
             val dev = data.firstOrNull { it.addr == device.addr }
+            updateTimeMap[device.addr] = System.currentTimeMillis()
             if (dev == null) {
                 data.add(device)
             } else {
-                dev.rssi = device.rssi
+                val time = updateTimeMap[device.addr]
+                if (time == null || System.currentTimeMillis() - time > 1000) {
+                    dev.rssi = device.rssi
+                }
             }
             notifyDataSetChanged()
         }
