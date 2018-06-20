@@ -7,6 +7,7 @@ import android.text.TextWatcher
 import android.view.View
 import cn.zfs.bledebugger.Consts
 import cn.zfs.bledebugger.R
+import cn.zfs.bledebugger.R.id.*
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Device
 import cn.zfs.blelib.core.Request
@@ -117,7 +118,7 @@ class RequestMtuActivity : BaseActivity() {
     fun onMtuChanged(e: Events.MtuChanged) {
         if (e.requestId == "REQUEST_MTU") {
             mtu = e.mtu
-            tvMtu.text = "当前MTU： $mtu"
+            tvMtu.text = "当前： $mtu"
             btnGenerateByteArr.visibility = View.VISIBLE
             btnSendData.visibility = View.VISIBLE
         }

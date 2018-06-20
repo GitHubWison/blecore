@@ -43,7 +43,7 @@ import cn.zfs.blelib.event.Events;
  * 时间: 2018/4/11 15:29
  * 作者: zengfansheng
  */
-public class Ble {        
+public class Ble {
     private BluetoothAdapter bluetoothAdapter;
     private Map<String, Connection> connectionMap;
     private boolean isInited;
