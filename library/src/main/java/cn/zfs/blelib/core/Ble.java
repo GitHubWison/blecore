@@ -270,7 +270,7 @@ public class Ble {
      */
     public void startScan(@NonNull Context context) {        
         if (noLocationPermission(context)) {
-            println(Ble.class, Log.ERROR, "缺少定位权限，可能无法扫描到蓝牙设备");
+            println(Ble.class, Log.ERROR, "Lack of location permissions, may not scan the bluetooth device.");
         }
         if (!isInited || bluetoothAdapter == null || !bluetoothAdapter.isEnabled() || scanning) {
             return;
@@ -396,6 +396,7 @@ public class Ble {
         for (Connection connection : connectionMap.values()) {
             connection.onScanResult(device.getAddress());
         }
+        String deviceName = TextUtils.isEmpty(device.getName()) ? "Unknown Device" : device.getName();
         //生成
         Device dev = null;
         if (configuration.getScanHandler() != null) {
@@ -406,7 +407,7 @@ public class Ble {
             if (dev == null) {
                 dev = new Device();
             }
-            dev.name = TextUtils.isEmpty(dev.name) ? (TextUtils.isEmpty(device.getName()) ? "Unknown Device" : device.getName()) : dev.name;
+            dev.name = TextUtils.isEmpty(dev.name) ? deviceName : dev.name;
             dev.addr = device.getAddress();
             dev.rssi = rssi;
             dev.bondState = device.getBondState();
@@ -414,7 +415,7 @@ public class Ble {
             dev.scanRecord = scanRecord;
             handleScanCallback(false, dev);
         }
-        println(Ble.class, Log.DEBUG, "扫描到设备：" + device.getName() + "  " + device.getAddress());
+        println(Ble.class, Log.DEBUG, "found device：" + deviceName + "  " + device.getAddress());
     }
             
     /**
@@ -465,7 +466,7 @@ public class Ble {
      * 获取连接状态
      * @return {@link Connection#STATE_DISCONNECTED}<br> {@link Connection#STATE_CONNECTING}<br>
      *              {@link Connection#STATE_RECONNECTING}<br> {@link Connection#STATE_CONNECTED}<br>
-     *              {@link Connection#STATE_SERVICE_DISCORVERING}<br> {@link Connection#STATE_SERVICE_DISCORVERED}
+     *              {@link Connection#STATE_SERVICE_DISCOVERING}<br> {@link Connection#STATE_SERVICE_DISCOVERED}
      */
     public int getConnectionState(Device device) {
         Connection connection = getConnection(device);
@@ -520,7 +521,7 @@ public class Ble {
      */
     public void reconnectAll() {
         for (Connection connection : connectionMap.values()) {
-            if (connection.getConnState() != Connection.STATE_SERVICE_DISCORVERED) {
+            if (connection.getConnState() != Connection.STATE_SERVICE_DISCOVERED) {
                 connection.reconnect();
             }
         }
@@ -532,7 +533,7 @@ public class Ble {
     public void reconnect(Device device) {
         if (isInited && device != null) {
             Connection connection = connectionMap.get(device.addr);
-            if (connection != null && connection.getConnState() != Connection.STATE_SERVICE_DISCORVERED) {
+            if (connection != null && connection.getConnState() != Connection.STATE_SERVICE_DISCOVERED) {
                 connection.reconnect();
             }
         }

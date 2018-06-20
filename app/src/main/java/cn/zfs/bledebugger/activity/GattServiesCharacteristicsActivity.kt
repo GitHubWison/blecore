@@ -90,29 +90,29 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
         when (e.state) {
             Connection.STATE_CONNECTED -> {
                 loadDialog!!.show()
-                loadDialog!!.setText("连接成功，等待发现服务")
+                loadDialog!!.setText(R.string.connected_not_discover)
             }
             Connection.STATE_CONNECTING -> {
                 loadDialog!!.show()
-                loadDialog!!.setText("连接中...")
+                loadDialog!!.setText(R.string.connecting)
             }
             Connection.STATE_DISCONNECTED -> {
                 loadDialog!!.dismiss()
-                ToastUtils.showShort("连接断开")
+                ToastUtils.showShort(R.string.disconnected)
                 itemList.clear()
                 adapter?.notifyDataSetChanged()
             }
             Connection.STATE_RECONNECTING -> {
                 loadDialog!!.show()
-                loadDialog!!.setText("正在重连...")
+                loadDialog!!.setText(R.string.reconnecting)
             }
-            Connection.STATE_SERVICE_DISCORVERING -> {
+            Connection.STATE_SERVICE_DISCOVERING -> {
                 loadDialog!!.show()
-                loadDialog!!.setText("连接成功，正在发现服务...")
+                loadDialog!!.setText(R.string.connected_discovering)
             }
-            Connection.STATE_SERVICE_DISCORVERED -> {
+            Connection.STATE_SERVICE_DISCOVERED -> {
                 loadDialog!!.dismiss()
-                ToastUtils.showShort("连接成功，并成功发现服务")
+                ToastUtils.showShort(R.string.connected_discorvered)
                 itemList.clear()
                 val connection = Ble.getInstance().getConnection(device!!)
                 if (connection != null) {
@@ -134,7 +134,7 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onConnectionCreateFailed(e: Events.ConnectionCreateFailed) {
-        ToastUtils.showShort("无法建立连接： ${e.error}")
+        ToastUtils.showShort(getString(R.string.connection_create_failed, e.error))
     }
     
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -145,10 +145,10 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
                     notifyService = null
                     notifyCharacteristic = null
                 }
-                ToastUtils.showShort(if (e.requestId.endsWith("_1")) "Notification开启失败" else "Notification关闭失败")
+                ToastUtils.showShort(if (e.requestId.endsWith("_1")) R.string.notification_enable_failed else R.string.notification_disable_failed)
             }
-            Request.RequestType.READ_CHARACTERISTIC -> ToastUtils.showShort("characteristic读取失败")
-            Request.RequestType.READ_DESCRIPTOR -> ToastUtils.showShort("descriptor读取失败")
+            Request.RequestType.READ_CHARACTERISTIC -> ToastUtils.showShort(R.string.characteristic_read_failed)
+            Request.RequestType.READ_DESCRIPTOR -> ToastUtils.showShort(R.string.descriptor_read_failed)
         } 
     }
 
@@ -200,7 +200,7 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
                 Ble.getInstance().connect(this, device!!, true, null)
             }
             R.id.menuHex -> adapter?.setShowInHex(true)
-            R.id.menuUtf8 -> adapter?.setShowInHex(false)
+            R.id.menuAscii -> adapter?.setShowInHex(false)
         }
         invalidateOptionsMenu()
         return super.onOptionsItemSelected(item)

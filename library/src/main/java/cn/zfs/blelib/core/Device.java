@@ -114,7 +114,7 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
     }
 
     public boolean isConnected() {
-        return connectionState == Connection.STATE_SERVICE_DISCORVERED;
+        return connectionState == Connection.STATE_SERVICE_DISCOVERED;
     }
 
     public boolean isDisconnected() {
@@ -122,7 +122,7 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
     }
 
     public boolean isConnecting() {
-        return connectionState != Connection.STATE_DISCONNECTED && connectionState != Connection.STATE_SERVICE_DISCORVERED &&
+        return connectionState != Connection.STATE_DISCONNECTED && connectionState != Connection.STATE_SERVICE_DISCOVERED &&
                 connectionState != Connection.STATE_RELEASED;
     }
 

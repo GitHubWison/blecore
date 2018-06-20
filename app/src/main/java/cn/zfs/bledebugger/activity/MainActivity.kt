@@ -17,8 +17,6 @@ import android.widget.TextView
 import cn.zfs.bledebugger.Consts
 import cn.zfs.bledebugger.MyApp
 import cn.zfs.bledebugger.R
-import cn.zfs.bledebugger.R.id.layoutEmpty
-import cn.zfs.bledebugger.R.id.refreshLayout
 import cn.zfs.bledebugger.entity.LogSaver
 import cn.zfs.blelib.callback.ScanListener
 import cn.zfs.blelib.core.Ble
@@ -46,7 +44,7 @@ class MainActivity : CheckPermissionsActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        title = "蓝牙设备"
+        setTitle(R.string.ble_devices)
         initViews()
         Ble.getInstance().configuration.setDiscoverServicesDelayMillis(500)
         Ble.getInstance().configuration.scanPeriodMillis = 30000
@@ -144,7 +142,7 @@ class MainActivity : CheckPermissionsActivity() {
                     tvName?.text = data.name
                     tvAddr?.text = data.addr
                     tvRssi?.text = "${data.rssi} dBm"
-                    tvBondState?.text = if (data.bondState == BluetoothDevice.BOND_BONDED) "已配对" else "未配对"
+                    tvBondState?.text = if (data.bondState == BluetoothDevice.BOND_BONDED) getString(R.string.bonded) else getString(R.string.not_bonded)
                     val bluetoothClass = data.originalDevice.bluetoothClass
                     if (bluetoothClass != null) {
                         when (bluetoothClass.majorDeviceClass) {
@@ -190,8 +188,8 @@ class MainActivity : CheckPermissionsActivity() {
         when {
             item?.itemId == R.id.menuAbout -> {
                 val verName = packageManager.getPackageInfo(packageName, 0).versionName
-                AlertDialog.Builder(this).setTitle("关于")
-                        .setMessage(Html.fromHtml("<b>作者:</b>  Zeng Fansheng<br/><b>版本:</b>  $verName"))
+                AlertDialog.Builder(this).setTitle("About")
+                        .setMessage(Html.fromHtml("<b>Developer:</b>  Zeng Fansheng<br/><b>Ver:</b>  $verName"))
                         .setNegativeButton("OK", null).show()
             }
             item?.itemId == R.id.menuFeedback -> startActivity(Intent(this, FeedbackActivity::class.java))
@@ -212,7 +210,7 @@ class MainActivity : CheckPermissionsActivity() {
                             }
                             .show()
                 } else {
-                    ToastUtils.showShort("没有记录")
+                    ToastUtils.showShort(R.string.no_record)
                 }
             }
         }

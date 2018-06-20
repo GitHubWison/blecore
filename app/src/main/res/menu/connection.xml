@@ -3,23 +3,23 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/menuConnect"
-        android:title="连接"
+        android:title="@string/connect"
         android:orderInCategory="100"
         app:showAsAction="ifRoom|withText"/>
     <item
         android:id="@+id/menuDisconnect"
-        android:title="断开"
+        android:title="@string/disconnect"
         android:orderInCategory="101"
         app:showAsAction="ifRoom|withText"/>
     
     <item
         android:id="@+id/menuHex"
-        android:title="以hex显示"
+        android:title="@string/show_with_hex"
         android:orderInCategory="102"
         app:showAsAction="never"/>
     <item
-        android:id="@+id/menuUtf8"
-        android:title="以utf8显示"
+        android:id="@+id/menuAscii"
+        android:title="@string/show_with_ascii"
         android:orderInCategory="103"
         app:showAsAction="never"/>
 </menu>

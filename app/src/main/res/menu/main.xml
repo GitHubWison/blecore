@@ -4,19 +4,19 @@
 
     <item
         android:id="@+id/menuFeedback"
-        android:title="建议和反馈"
+        android:title="@string/suggestions_and_feedback"
         android:orderInCategory="100"
         app:showAsAction="never"/>
 
     <item
         android:id="@+id/menuLogs"
-        android:title="查看日志"
+        android:title="@string/view_log"
         android:orderInCategory="101"
         app:showAsAction="never"/>
     
     <item
         android:id="@+id/menuAbout"
-        android:title="关于"
+        android:title="@string/about"
         android:orderInCategory="102"
         app:showAsAction="never"/>
 </menu>

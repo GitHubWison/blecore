@@ -20,14 +20,14 @@
             <cn.zfs.common.view.ClearEditText
                 android:id="@+id/etFilte"
                 android:textSize="14dp"
-                android:hint="过滤关键字"
+                android:hint="@string/filter_keywords"
                 android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="40dp"/>
             <CheckBox
                 android:id="@+id/chkPrint"
                 android:checked="true"
-                android:text="输出"
+                android:text="@string/print"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
         </LinearLayout>
@@ -36,7 +36,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
             <TextView
-                android:text="收到数据↓："
+                android:text="@string/receive_data"
                 android:textColor="@android:color/black"
                 android:textSize="16dp"
                 android:layout_width="0dp"
@@ -44,7 +44,7 @@
                 android:layout_height="wrap_content"/>
             <cn.zfs.common.view.RoundButton
                 android:id="@+id/btnClear"
-                android:text="清空"
+                android:text="@string/clear"
                 style="@style/RoundButtonStyle"
                 app:rbCornerRadius="2dp"
                 app:rbNormalTextColor="@color/colorPrimary"
@@ -55,21 +55,8 @@
                 android:layout_height="30dp"
                 android:layout_width="wrap_content"/>
             <cn.zfs.common.view.RoundButton
-                android:id="@+id/btnStart"
-                android:text="开始"
-                style="@style/RoundButtonStyle"
-                android:layout_marginStart="3dp"
-                android:layout_width="wrap_content"
-                app:rbCornerRadius="2dp"
-                app:rbNormalTextColor="@color/colorPrimary"
-                app:rbNormalStrokeColor="@color/colorPrimary"
-                app:rbNormalFillColor="@color/transparent"
-                app:rbPressedTextColor="@color/white"
-                app:rbPressedFillColor="@color/colorPrimary"
-                android:layout_height="30dp"/>
-            <cn.zfs.common.view.RoundButton
                 android:id="@+id/btnPause"
-                android:text="暂停"
+                android:text="@string/pause"
                 style="@style/RoundButtonStyle"
                 android:layout_marginStart="3dp"
                 android:layout_width="wrap_content"
@@ -104,7 +91,7 @@
         <cn.zfs.common.view.ClearEditText
             android:id="@+id/etValue"
             android:digits="1234567890abcdefABCDEF "
-            android:hint="输入示例：a5 5a 12 34 56 78"
+            android:hint="@string/input_demo"
             android:textSize="14dp"
             android:layout_width="0dp"
             android:layout_weight="1"
@@ -117,7 +104,7 @@
             android:layout_height="30dp"/>
         <cn.zfs.common.view.RoundButton
             android:id="@+id/btnSend"
-            android:text="发送"
+            android:text="@string/send"
             style="@style/RoundButtonStyle"
             android:layout_width="wrap_content"
             android:layout_marginStart="4dp"
@@ -135,13 +122,13 @@
         <CheckBox
             android:id="@+id/chk"
             android:textSize="14dp"
-            android:text="循环"
+            android:text="@string/loop"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
         <EditText
             android:id="@+id/etDelay"
             android:inputType="number"
-            android:hint="延时ms"
+            android:hint="@string/delay"
             android:layout_marginStart="6dp"
             android:textSize="14dp"
             android:layout_width="wrap_content"
@@ -150,7 +137,7 @@
         <cn.zfs.common.view.RoundButton
             android:layout_marginStart="8dp"
             android:id="@+id/btnClearCount"
-            android:text="清零"
+            android:text="@string/clear_zero"
             style="@style/RoundButtonStyle"
             android:layout_width="wrap_content"
             app:rbCornerRadius="2dp"

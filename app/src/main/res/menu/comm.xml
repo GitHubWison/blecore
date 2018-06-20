@@ -3,24 +3,24 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/menuConnect"
-        android:title="连接"
+        android:title="@string/connect"
         android:orderInCategory="100"
         app:showAsAction="ifRoom|withText"/>
     <item
         android:id="@+id/menuDisconnect"
-        android:title="断开"
+        android:title="@string/disconnect"
         android:orderInCategory="101"
         app:showAsAction="ifRoom|withText"/>
     
     <item
         android:id="@+id/menuRequestMtu"
-        android:title="修改MTU"
+        android:title="@string/request_mtu"
         android:orderInCategory="102"
         app:showAsAction="never"/>
 
     <item
         android:id="@+id/menuCopy"
-        android:title="复制日志"
+        android:title="@string/copy_logs"
         android:orderInCategory="103"
         app:showAsAction="never"/>
 </menu>

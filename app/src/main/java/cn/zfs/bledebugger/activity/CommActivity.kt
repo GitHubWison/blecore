@@ -50,7 +50,7 @@ class CommActivity : BaseActivity() {
     private var successCount = 0
     private var failCount = 0
     private val recList = ArrayList<String>()
-    private var keyword = ""
+    private var keywords = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,6 +68,7 @@ class CommActivity : BaseActivity() {
         device = Ble.getInstance().getConnection(device!!)?.device
         title = device!!.name
         initEvents()
+        clearCount()
         updateState(device!!.connectionState)
         //加载发送记录
         loadRecs()
@@ -107,11 +108,12 @@ class CommActivity : BaseActivity() {
         }
         //暂停日志输出
         btnPause.setOnClickListener { 
-            pause = true
-        }
-        //继续日志输出
-        btnStart.setOnClickListener { 
-            pause = false
+            pause = !pause
+            if (pause) {
+                btnPause.setText(R.string.resume)
+            } else {
+                btnPause.setText(R.string.pause)
+            }
         }
         //发送指令
         btnSend.setOnClickListener {
@@ -148,7 +150,7 @@ class CommActivity : BaseActivity() {
                     Ble.getInstance().getConnection(device!!)?.writeCharacteristic("3", writeService!!.uuid, writeCharacteristic!!.uuid, bytes)
                 }                                
             } catch (e: Throwable) {
-                ToastUtils.showShort("输入格式错误")
+                ToastUtils.showShort(R.string.error_format)
             }
         }
         //发送延时
@@ -184,7 +186,7 @@ class CommActivity : BaseActivity() {
         //日志输出控制
         etFilte.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
-                keyword = etFilte.text.toString()
+                keywords = etFilte.text.toString()
             }
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -195,16 +197,16 @@ class CommActivity : BaseActivity() {
     
     private fun updateCount() {
         runOnUiThread {
-            tvSuccessCount.text = "成功:$successCount"
-            tvFailCount.text = "失败$failCount"
+            tvSuccessCount.text = getString(R.string.success_pattern, successCount)
+            tvFailCount.text = getString(R.string.failed_pattern, failCount)
         }
     }
 
     private fun clearCount() {
         successCount = 0
         failCount = 0
-        tvSuccessCount.text = "成功:$successCount"
-        tvFailCount.text = "失败$failCount"
+        tvSuccessCount.text = getString(R.string.success_pattern, successCount)
+        tvFailCount.text = getString(R.string.failed_pattern, failCount)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -238,7 +240,7 @@ class CommActivity : BaseActivity() {
                 val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 // 将文本内容放到系统剪贴板里
                 cm.primaryClip = ClipData.newPlainText(null, tvLogs.text)
-                ToastUtils.showShort("日志已复制到剪贴板")
+                ToastUtils.showShort(R.string.log_has_copy)
             }
         }
         invalidateOptionsMenu()
@@ -257,8 +259,8 @@ class CommActivity : BaseActivity() {
                 tvLogs.text = ""
             }
             val hexString = BleUtils.bytesToHexString(e.characteristic.value)
-            if (keyword.isEmpty() || (chkPrint.isChecked && hexString.contains(keyword.toUpperCase())) || 
-                    (!chkPrint.isChecked && !hexString.contains(keyword.toUpperCase()))) {
+            if (keywords.isEmpty() || (chkPrint.isChecked && hexString.contains(keywords.toUpperCase())) || 
+                    (!chkPrint.isChecked && !hexString.contains(keywords.toUpperCase()))) {
                 val text = "${SimpleDateFormat("mm:ss.SSS").format(System.currentTimeMillis())}> $hexString\n"
                 val builder = SpannableStringBuilder(text)
                 builder.setSpan(ForegroundColorSpan(0xFF0BBF43.toInt()), 0, text.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)//设置颜色
@@ -291,29 +293,29 @@ class CommActivity : BaseActivity() {
     private fun updateState(state: Int) {
         val text = when (state) {
             Connection.STATE_CONNECTED -> {
-                "连接成功，等待发现服务"
+                getString(R.string.connected_not_discover)
             }
             Connection.STATE_CONNECTING -> {
-                "连接中..."
+                getString(R.string.connecting)
             }
             Connection.STATE_DISCONNECTED -> {
-                "连接断开"
+                getString(R.string.disconnected)
             }
             Connection.STATE_RECONNECTING -> {
-                "正在重连..."
+                getString(R.string.reconnecting)
             }
-            Connection.STATE_SERVICE_DISCORVERING -> {
-                "连接成功，正在发现服务..."
+            Connection.STATE_SERVICE_DISCOVERING -> {
+                getString(R.string.connected_discovering)
             }
-            Connection.STATE_SERVICE_DISCORVERED -> {
+            Connection.STATE_SERVICE_DISCOVERED -> {
                 clearCount()
                 if (notifyService != null && notifyCharacteristic != null) {
                     Ble.getInstance().getConnection(device!!)?.toggleNotification("1", notifyService!!.uuid,
                             notifyCharacteristic!!.uuid, true)
                 }
-                "连接成功，并成功发现服务\n"
+                getString(R.string.connected_discorvered)
             }
-            else -> "连接已释放\n"
+            else -> getString(R.string.connection_released)
         }
         val log = "${SimpleDateFormat("mm:ss.SSS").format(System.currentTimeMillis())}> $text\n"
         val builder = SpannableStringBuilder(log)

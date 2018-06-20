@@ -16,7 +16,7 @@ public interface ConnectionStateChangeListener {
      * 连接状态变化
      * @param device 设备。device.connectionState: 连接状态<br> {@link Connection#STATE_DISCONNECTED}<br> {@link Connection#STATE_CONNECTING}<br>
      *              {@link Connection#STATE_RECONNECTING}<br> {@link Connection#STATE_CONNECTED}<br>
-     *              {@link Connection#STATE_SERVICE_DISCORVERING}<br> {@link Connection#STATE_SERVICE_DISCORVERED}
+     *              {@link Connection#STATE_SERVICE_DISCOVERING}<br> {@link Connection#STATE_SERVICE_DISCOVERED}
      */
     void onConnectionStateChanged(@NonNull Device device);
 }

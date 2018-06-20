@@ -7,7 +7,6 @@ import android.text.TextWatcher
 import android.view.View
 import cn.zfs.bledebugger.Consts
 import cn.zfs.bledebugger.R
-import cn.zfs.bledebugger.R.id.*
 import cn.zfs.blelib.core.Ble
 import cn.zfs.blelib.core.Device
 import cn.zfs.blelib.core.Request
@@ -50,14 +49,14 @@ class RequestMtuActivity : BaseActivity() {
             finish()
             return
         }
-        title = "设置最大传输单元"
+        setTitle(R.string.set_mtu)
         device = Ble.getInstance().getConnection(device!!)?.device
         setContentView(R.layout.activity_request_mtu)
         btnRequest.setOnClickListener { 
             val numStr = etMtu.text.toString()
             when {
-                numStr.isEmpty() -> ToastUtils.showShort("请设置数值")
-                numStr.toInt() > 512 || numStr.toInt() < 23 -> ToastUtils.showShort("数值必须在23到517之间")
+                numStr.isEmpty() -> ToastUtils.showShort(R.string.input_value)
+                numStr.toInt() > 512 || numStr.toInt() < 23 -> ToastUtils.showShort(R.string.must_between_23_517)
                 else -> Ble.getInstance().getConnection(device!!)?.changeMtu("REQUEST_MTU", numStr.toInt())
             }
         }
@@ -118,7 +117,7 @@ class RequestMtuActivity : BaseActivity() {
     fun onMtuChanged(e: Events.MtuChanged) {
         if (e.requestId == "REQUEST_MTU") {
             mtu = e.mtu
-            tvMtu.text = "当前： $mtu"
+            tvMtu.text = getString(R.string.current_mtu, mtu)
             btnGenerateByteArr.visibility = View.VISIBLE
             btnSendData.visibility = View.VISIBLE
         }
@@ -127,7 +126,7 @@ class RequestMtuActivity : BaseActivity() {
     @Subscribe(threadMode = ThreadMode.POSTING)
     fun onCharacteristicWrite(e: Events.CharacteristicWrite) {
         if (e.requestId == "write" && !loop) {
-            ToastUtils.showShort("写入成功")
+            ToastUtils.showShort(R.string.write_success)
         }
     }
 
@@ -135,9 +134,9 @@ class RequestMtuActivity : BaseActivity() {
     fun onRequestFialed(e: Events.RequestFailed) {
         if (!loop) {
             if (e.requestId == "REQUEST_MTU" && e.requestType == Request.RequestType.CHANGE_MTU) {
-                ToastUtils.showShort("MTU修改失败")
+                ToastUtils.showShort(R.string.mtu_request_failed)
             } else if (e.requestId == "write" && e.requestType == Request.RequestType.WRITE_CHARACTERISTIC) {
-                ToastUtils.showShort("写入失败")
+                ToastUtils.showShort(R.string.write_failed)
             }
         }
     }

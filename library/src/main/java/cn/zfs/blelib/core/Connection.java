@@ -36,8 +36,8 @@ public class Connection extends BaseConnection {
     public static final int STATE_CONNECTING = 1;
     public static final int STATE_RECONNECTING = 2;
     public static final int STATE_CONNECTED = 3;
-    public static final int STATE_SERVICE_DISCORVERING = 4;
-    public static final int STATE_SERVICE_DISCORVERED = 5;
+    public static final int STATE_SERVICE_DISCOVERING = 4;
+    public static final int STATE_SERVICE_DISCOVERED = 5;
     public static final int STATE_RELEASED = 6;
     //----------连接超时类型---------
     /**搜索不到设备*/
@@ -47,7 +47,7 @@ public class Connection extends BaseConnection {
     /**能连接上，无法发现服务*/
     public static final int TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES = 2;
 
-    @IntDef({STATE_DISCONNECTED, STATE_CONNECTING, STATE_RECONNECTING, STATE_CONNECTED, STATE_SERVICE_DISCORVERING, STATE_SERVICE_DISCORVERED})
+    @IntDef({STATE_DISCONNECTED, STATE_CONNECTING, STATE_RECONNECTING, STATE_CONNECTED, STATE_SERVICE_DISCOVERING, STATE_SERVICE_DISCOVERED})
     @Retention(RetentionPolicy.SOURCE)
     public @interface STATE {}
     
@@ -103,7 +103,7 @@ public class Connection extends BaseConnection {
         conn.connStartTime = System.currentTimeMillis();
         conn.sendConnectionCallback();
         conn.handler.sendEmptyMessageDelayed(MSG_CONNECT, connectDelay);//连接
-        conn.handler.sendEmptyMessageDelayed(MSG_TIMER, connectDelay + 500);//启动定时器，用于断线重连
+        conn.handler.sendEmptyMessageDelayed(MSG_TIMER, connectDelay);//启动定时器，用于断线重连
 		return conn;
 	}
 
@@ -217,24 +217,24 @@ public class Connection extends BaseConnection {
             return;
         }
         if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
-            Ble.println(Connection.class, Log.DEBUG, "连接状态：STATE_CONNECTED, " +
+            Ble.println(Connection.class, Log.DEBUG, "connected: " +
                     gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress());            
             device.connectionState = STATE_CONNECTED;
             sendConnectionCallback();            
             // 进行服务发现，延时
             handler.sendEmptyMessageDelayed(MSG_DISCOVER_SERVICES, Ble.getInstance().getConfiguration().getDiscoverServicesDelayMillis());
         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-            Ble.println(Connection.class, Log.DEBUG, "连接状态：STATE_DISCONNECTED, " +
+            Ble.println(Connection.class, Log.DEBUG, "disconnected: " +
                     gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress() + ", autoReconnEnable: " + autoReconnEnable);
             notifyDisconnected();
             //如果连接上马上又断开，直接把连接开始时间往前推到可以重连的范围
             if (System.currentTimeMillis() - connStartTime < 1000) {
-                connStartTime = System.currentTimeMillis() - Ble.getInstance().getConfiguration().getConnectTimeoutMillis();
+                connStartTime = System.currentTimeMillis() - Ble.getInstance().getConfiguration().getConnectTimeoutMillis() - 1;
                 notifyTimeout = false;
             }
         } else if (status == 133) {
             doClearTaskAndRefresh(true);
-            Ble.println(Connection.class, Log.ERROR, "onConnectionStateChange error, status: " + status + ", " +
+            Ble.println(Connection.class, Log.ERROR, "gatt error, status: " + status + ", " +
                     gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress());
         }
     }
@@ -247,19 +247,19 @@ public class Connection extends BaseConnection {
         }
         List<BluetoothGattService> services = gatt.getServices();
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            Ble.println(Connection.class, Log.DEBUG, "onServicesDiscovered. " + gatt.getDevice().getName() + ", " +
-                    gatt.getDevice().getAddress() + ", 服务列表长度: " + gatt.getServices().size());
+            Ble.println(Connection.class, Log.DEBUG, "services discovered. " + gatt.getDevice().getName() + ", " +
+                    gatt.getDevice().getAddress() + ", size: " + gatt.getServices().size());
             if (services.isEmpty()) {
                 doClearTaskAndRefresh(true);
             } else {
                 refreshTimes = 0;
                 tryReconnectTimes = 0;
-                device.connectionState = STATE_SERVICE_DISCORVERED;
+                device.connectionState = STATE_SERVICE_DISCOVERED;
                 sendConnectionCallback();
             }
         } else {
             doClearTaskAndRefresh(true);
-            Ble.println(Connection.class, Log.ERROR, "onServicesDiscovered error, status: " + status + ", " +
+            Ble.println(Connection.class, Log.ERROR, "gatt error, status: " + status + ", " +
                     gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress());
         }
     }
@@ -267,7 +267,7 @@ public class Connection extends BaseConnection {
     private void doDiscoverServices() {
         if (bluetoothGatt != null) {
             bluetoothGatt.discoverServices();
-            device.connectionState = STATE_SERVICE_DISCORVERING;
+            device.connectionState = STATE_SERVICE_DISCOVERING;
             sendConnectionCallback();
         } else {
             notifyDisconnected();
@@ -279,11 +279,11 @@ public class Connection extends BaseConnection {
             return;
         }
         //连接超时。
-        if (device.connectionState != STATE_SERVICE_DISCORVERED && System.currentTimeMillis() - connStartTime > 
+        if (device.connectionState != STATE_SERVICE_DISCOVERED && System.currentTimeMillis() - connStartTime > 
                 Ble.getInstance().getConfiguration().getConnectTimeoutMillis()) {
             if (device.connectionState != STATE_DISCONNECTED) {
                 connStartTime = System.currentTimeMillis();
-                Ble.println(Connection.class, Log.ERROR, "连接超时, " + device.name + ", " + device.addr);
+                Ble.println(Connection.class, Log.ERROR, "connect timeout, " + device.name + ", " + device.addr);
                 int type;
                 if (device.connectionState == STATE_RECONNECTING) {
                     type = TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE;
@@ -347,7 +347,7 @@ public class Connection extends BaseConnection {
         if (release) {//销毁
             device.connectionState = STATE_RELEASED;
             bluetoothGatt = null;
-            Ble.println(Connection.class, Log.DEBUG, "连接销毁释放");
+            Ble.println(Connection.class, Log.DEBUG, "Connection has been released");
         } else if (reconnect) {
             device.connectionState = STATE_RECONNECTING;
             tryReconnect();
@@ -448,58 +448,54 @@ public class Connection extends BaseConnection {
     @Override
     public void onCharacteristicRead(@NonNull String requestId, BluetoothGattCharacteristic characteristic) {
         Ble.getInstance().postEvent(Events.newCharacteristicRead(device, requestId, characteristic));
-        Ble.println(Connection.class, Log.DEBUG, "读到Characteristic！请求ID：" + requestId +
-                ", value: " + BleUtils.bytesToHexString(characteristic.getValue()) + ", mac: " + device.addr);
+        Ble.println(Connection.class, Log.DEBUG, "read characteristic--mac: " + device.addr + ", value: " + BleUtils.bytesToHexString(characteristic.getValue()));
     }
 
     @Override
     public void onCharacteristicChanged(BluetoothGattCharacteristic characteristic) {
         Ble.getInstance().postEvent(Events.newCharacteristicChanged(device, characteristic));
-        Ble.println(Connection.class, Log.DEBUG, "Notification数据！value: " + BleUtils.bytesToHexString(characteristic.getValue()) + ", mac: " + device.addr);
+        Ble.println(Connection.class, Log.DEBUG, "characteristic change--mac: " + device.addr + ", value: " + BleUtils.bytesToHexString(characteristic.getValue()));
     }
 
     @Override
     public void onReadRemoteRssi(@NonNull String requestId, int rssi) {
         Ble.getInstance().postEvent(Events.newRemoteRssiRead(device, requestId, rssi));
-        Ble.println(Connection.class, Log.DEBUG, "读到Rssi！rssi: "+ rssi + ", mac: " + device.addr);
+        Ble.println(Connection.class, Log.DEBUG, "read rssi--mac: " + device.addr + ", rssi: " + rssi);
     }
 
     @Override
     public void onMtuChanged(@NonNull String requestId, int mtu) {
         Ble.getInstance().postEvent(Events.newMtuChanged(device, requestId, mtu));
-        Ble.println(Connection.class, Log.DEBUG, "Mtu数值变化！mtu: "+ mtu + ", mac: " + device.addr);
+        Ble.println(Connection.class, Log.DEBUG, "mtu change--mac: " + device.addr + ", mtu: " + mtu);
     }
 
     @Override
     public void onRequestFialed(@NonNull String requestId, @NonNull Request.RequestType requestType, int failType, byte[] value) {
         Ble.getInstance().postEvent(Events.newRequestFailed(requestId, requestType, failType, value));
-        Ble.println(Connection.class, Log.ERROR, "请求失败！请求ID：" + requestId +
-                ", failType: " + failType + ", mac: " + device.addr);
+        Ble.println(Connection.class, Log.ERROR, "request failed--mac: " + device.addr + ", request id：" + requestId + ", failType: " + failType);
     }
 
     @Override
     public void onDescriptorRead(@NonNull String requestId, BluetoothGattDescriptor descriptor) {
         Ble.getInstance().postEvent(Events.newDescriptorRead(device, requestId, descriptor));
-        Ble.println(Connection.class, Log.DEBUG, "读到Descriptor！请求ID：" + requestId +
-                ", value: " + BleUtils.bytesToHexString(descriptor.getValue()) + ", mac: " + device.addr);
+        Ble.println(Connection.class, Log.DEBUG, "read descriptor--mac：" + device.addr + ", value: " + BleUtils.bytesToHexString(descriptor.getValue()));
     }
 
     @Override
     public void onNotificationChanged(@NonNull String requestId, BluetoothGattDescriptor descriptor, boolean isEnabled) {
         Ble.getInstance().postEvent(Events.newNotificationChanged(device, requestId, descriptor, isEnabled));
-        Ble.println(Connection.class, Log.DEBUG, (isEnabled ? "Notification开启！" : "Notification关闭！") + "请求ID：" + requestId + ", mac: " + device.addr);
+        Ble.println(Connection.class, Log.DEBUG, (isEnabled ? "notification enabled" : "notification disabled") + "--mac: " + device.addr);
     }
 
     @Override
     public void onIndicationChanged(@NonNull String requestId, BluetoothGattDescriptor descriptor, boolean isEnabled) {
         Ble.getInstance().postEvent(Events.newIndicationChanged(device, requestId, descriptor, isEnabled));
-        Ble.println(Connection.class, Log.DEBUG, (isEnabled ? "Indication开启！" : "Indication关闭！") + "请求ID：" + requestId + ", mac: " + device.addr);
+        Ble.println(Connection.class, Log.DEBUG, (isEnabled ? "indication enabled" : "indication disabled") + "--mac: " + device.addr);
     }
 
     @Override
     public void onCharacteristicWrite(@NonNull String requestId, byte[] value) {
         Ble.getInstance().postEvent(Events.newCharacteristicWrite(device, requestId, value));       
-        Ble.println(Connection.class, Log.DEBUG, "写入成功！value: "+ BleUtils.bytesToHexString(value) +
-                ", 请求ID：" + requestId + ", mac: " + device.addr);
+        Ble.println(Connection.class, Log.DEBUG, "write success--mac: " + device.addr + "value: "+ BleUtils.bytesToHexString(value));
     }
 }

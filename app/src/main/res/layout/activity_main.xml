@@ -31,7 +31,7 @@
             android:layout_marginBottom="20dp"/>
         <TextView
             android:textSize="20dp"
-            android:text="没有发现蓝牙设备"
+            android:text="@string/no_device_found"
             android:textColor="#bfbfbf"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>

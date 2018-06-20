@@ -17,7 +17,7 @@
             android:layout_marginBottom="10dp"
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
-            android:text="问题和建议"
+            android:text="@string/suggestions_and_feedback"
             android:textColor="@color/gray"
             android:textSize="14dp"/>
 
@@ -27,7 +27,7 @@
             android:layout_height="120dp"
             android:background="@color/white"
             android:gravity="top"
-            android:hint="请输入问题描述或建议"
+            android:hint="@string/input_feedback"
             android:paddingStart="16dp"
             android:paddingEnd="6dp"
             android:paddingTop="8dp"
@@ -44,7 +44,7 @@
             android:paddingBottom="10dp"
             android:paddingStart="16dp"
             android:paddingTop="10dp"
-            android:text="问题截图 (选填)"
+            android:text="@string/screenshot_optional"
             android:textColor="@color/textColor"
             android:textSize="16dp"/>
 
@@ -63,13 +63,13 @@
             android:layout_marginBottom="10dp"
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
-            android:text="联系邮箱 (选填)"
+            android:text="@string/email_optional"
             android:textColor="@color/gray"
             android:textSize="14dp"/>
 
         <cn.zfs.common.view.ClearEditText
             android:id="@+id/etMail"
-            android:hint="请输入邮箱地址"
+            android:hint="@string/input_email"
             android:inputType="textEmailAddress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

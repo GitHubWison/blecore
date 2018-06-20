@@ -34,7 +34,7 @@ class FeedbackActivity : BaseActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        title = "建议和反馈"
+        setTitle(R.string.suggestions_and_feedback)
         setContentView(R.layout.activity_feedback)
         initMainInfo()
         initViews()
@@ -45,7 +45,7 @@ class FeedbackActivity : BaseActivity() {
         recyclerView.itemAnimator = DefaultItemAnimator()
         recyclerView.adapter = PicAdapter()
         loadDialog = LoadDialog(this)
-        loadDialog!!.setText("正在提交...")
+        loadDialog!!.setText(R.string.submitting)
         loadDialog!!.setCancelable(false)
     }
 
@@ -76,17 +76,17 @@ class FeedbackActivity : BaseActivity() {
                         pics.add(compress(it, 100 * 1024))
                     }
                     if (if (paths.isEmpty()) sendTextMail(mailInfo) else sendFileMail(mailInfo, pics)) {
-                        ToastUtils.showShort("提交成功")
+                        ToastUtils.showShort(R.string.submitted_successfully)
                         finish()
                     } else {
                         runOnUiThread { 
                             loadDialog!!.dismiss()                        
                         }
-                        ToastUtils.showShort("提交失败")
+                        ToastUtils.showShort(R.string.submitted_failed)
                     }
                 }
             } else {
-                ToastUtils.showShort("请输入问题或建议")
+                ToastUtils.showShort(R.string.input_feedback)
             }
         }
         return super.onOptionsItemSelected(item)
@@ -107,7 +107,7 @@ class FeedbackActivity : BaseActivity() {
             holder.iv.setOnClickListener { 
                 if ((holder.ivDel.tag as Int) == paths.size) {
                     if (paths.size >= 5) {
-                        ToastUtils.showShort("最多只能5张")
+                        ToastUtils.showShort(R.string.at_most_five)
                     } else {
                         val openAlbumIntent = Intent(Intent.ACTION_PICK)
                         openAlbumIntent.type = "image/*"

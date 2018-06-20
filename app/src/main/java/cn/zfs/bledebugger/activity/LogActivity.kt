@@ -28,10 +28,10 @@ class LogActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val path = intent.getStringExtra(Consts.EXTRA_LOG_PATH)
-        title = "${FileUtils.getFileNameWithoutSuffix(path)}日志"
+        title = FileUtils.getFileNameWithoutSuffix(path)
         setContentView(R.layout.activity_log)
         val loadDialog = LoadDialog(this)
-        loadDialog.setText("加载中...")
+        loadDialog.setText(R.string.loading)
         loadDialog.show()
         thread { 
             val sb = StringBuilder()
@@ -52,9 +52,9 @@ class LogActivity : BaseActivity() {
         }
         fileSelector.setRoot(Environment.getExternalStorageDirectory())
         fileSelector.setFilenameFilter { _, name -> !name.startsWith(".") }
-        fileSelector.setTitle("选择导出目录")
+        fileSelector.setTitle(getString(R.string.select_export_directory))
         fileSelector.setOnFileSelectListener { 
-            loadDialog.setText("保存中...")
+            loadDialog.setText(R.string.exporting)
             loadDialog.show()
             thread {
                 val src = File(path)
@@ -62,7 +62,7 @@ class LogActivity : BaseActivity() {
                 FileUtils.copy(src, target)
                 runOnUiThread { 
                     loadDialog.dismiss()
-                    ToastUtils.showShort("导出成功")
+                    ToastUtils.showShort(R.string.export_success)
                 }
             }
         }

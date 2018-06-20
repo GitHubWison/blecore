@@ -95,8 +95,8 @@ public class Events {
          * <br>{@link Connection#STATE_CONNECTING}
          * <br>{@link Connection#STATE_RECONNECTING}
          * <br>{@link Connection#STATE_CONNECTED}
-         * <br>{@link Connection#STATE_SERVICE_DISCORVERING}
-         * <br>{@link Connection#STATE_SERVICE_DISCORVERED}
+         * <br>{@link Connection#STATE_SERVICE_DISCOVERING}
+         * <br>{@link Connection#STATE_SERVICE_DISCOVERED}
          * <br>{@link Connection#STATE_RELEASED}
          */
         public int state;
