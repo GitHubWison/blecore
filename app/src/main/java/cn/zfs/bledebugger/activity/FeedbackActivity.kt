@@ -34,7 +34,7 @@ class FeedbackActivity : BaseActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setTitle(R.string.suggestions_and_feedback)
+        setTitle(R.string.feedback)
         setContentView(R.layout.activity_feedback)
         initMainInfo()
         initViews()

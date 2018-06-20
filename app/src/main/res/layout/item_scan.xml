@@ -17,7 +17,7 @@
 
     <cn.zfs.common.view.RoundButton
         android:id="@+id/btnConnect"
-        android:text="连接"
+        android:text="@string/connect"
         android:textSize="13dp"
         style="@style/RoundButtonStyle"
         android:focusable="false"

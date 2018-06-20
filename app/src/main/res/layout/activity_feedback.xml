@@ -76,8 +76,8 @@
             android:background="@color/white"
             android:paddingStart="16dp"
             android:paddingEnd="6dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
             android:textColor="@color/textColor"
             android:textColorHint="@color/subTextColor"
             android:textSize="16dp"/>

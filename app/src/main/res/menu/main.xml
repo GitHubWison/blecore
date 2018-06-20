@@ -4,7 +4,7 @@
 
     <item
         android:id="@+id/menuFeedback"
-        android:title="@string/suggestions_and_feedback"
+        android:title="@string/feedback"
         android:orderInCategory="100"
         app:showAsAction="never"/>
 

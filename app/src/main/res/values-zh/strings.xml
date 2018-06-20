@@ -38,6 +38,7 @@
     <string name="submit">提交</string>
     <string name="export">导出</string>
     <string name="suggestions_and_feedback">建议和反馈</string>
+    <string name="feedback">建议和反馈</string>
     <string name="view_log">查看日志</string>
     <string name="about">关于</string>
     <string name="submitting">正在提交...</string>
