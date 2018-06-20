@@ -37,7 +37,6 @@ import cn.zfs.blelib.callback.ConnectionStateChangeListener;
 import cn.zfs.blelib.callback.InitCallback;
 import cn.zfs.blelib.callback.ScanListener;
 import cn.zfs.blelib.event.Events;
-import cn.zfs.blelib.util.LogController;
 
 /**
  * 描述: 蓝牙操作
@@ -57,7 +56,7 @@ public class Ble {
     private Handler mainThreadHandler;
     private ExecutorService executorService;
     private EventBus publisher;
-    private LogController.Filter logFilter;
+    private BleLogger logger;
 
     private Ble() {
         configuration = new Configuration();
@@ -66,7 +65,7 @@ public class Ble {
         scanListeners = new ArrayList<>();
         executorService = Executors.newCachedThreadPool();
         publisher = EventBus.builder().build();
-        LogController.printLevelControl = LogController.NONE;
+        logger = new BleLogger();
     }
 
     private static class Holder {
@@ -78,19 +77,24 @@ public class Ble {
     }
 
     /**
-     * 设置日志输出级别控制，与{@link #setLogPrintFilter(LogController.Filter)}同时作用
-     * @param logPrintLevel <br>{@link LogController#NONE}, {@link LogController#VERBOSE}, 
-     * {@link LogController#DEBUG}, {@link LogController#INFO}, {@link LogController#WARN}, {@link LogController#ERROR}
+     * 设置日志输出级别控制，与{@link #setLogPrintFilter(BleLogger.Filter)}同时作用
+     * @param logPrintLevel <br>{@link BleLogger#NONE}, {@link BleLogger#VERBOSE}, 
+     * {@link BleLogger#DEBUG}, {@link BleLogger#INFO}, {@link BleLogger#WARN}, {@link BleLogger#ERROR}
      */
-    public void setLogPrintLevelControl(int logPrintLevel) {
-        LogController.printLevelControl = logPrintLevel;
+    public void setLogPrintLevel(int logPrintLevel) {
+        logger.setPrintLevel(logPrintLevel);
     }
 
     /**
-     * 设置日志输出过滤器，与{@link #setLogPrintLevelControl(int)}同时作用
+     * 设置日志输出过滤器，与{@link #setLogPrintLevel(int)}同时作用
      */
-    public void setLogPrintFilter(LogController.Filter filter) {
-        logFilter = filter;
+    public void setLogPrintFilter(BleLogger.Filter filter) {
+        logger.setFilter(filter);
+    }
+
+    public static void println(Class cls, int priority, @NonNull String msg) {
+        Ble.getInstance().postEvent(Events.newLogChanged(msg));
+        Ble.getInstance().logger.println("blelib:" + cls.getSimpleName(), priority, "blelib--" + msg);
     }
     
     public Configuration getConfiguration() {
@@ -623,13 +627,6 @@ public class Ble {
             }
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-
-    public static void println(Class cls, int priority, @NonNull String msg) {
-        LogController.Filter logFilter = Ble.getInstance().logFilter;
-        if (LogController.accept(priority) && (logFilter == null || logFilter.accept(msg))) {
-            Log.println(priority, "blelib:" + cls.getSimpleName(), "blelib--" + msg);
         }
     }
 }

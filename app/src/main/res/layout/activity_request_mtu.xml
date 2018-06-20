@@ -15,7 +15,7 @@
             android:id="@+id/etMtu"
             android:layout_width="wrap_content"
             android:layout_height="40dp"
-            android:hint="MTU数值"
+            android:hint="MTU数值(23 - 517)"
             android:inputType="number"
             android:textSize="14dp"/>
 

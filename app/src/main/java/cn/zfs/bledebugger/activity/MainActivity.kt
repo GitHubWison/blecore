@@ -15,14 +15,24 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import cn.zfs.bledebugger.Consts
+import cn.zfs.bledebugger.MyApp
 import cn.zfs.bledebugger.R
+import cn.zfs.bledebugger.R.id.layoutEmpty
+import cn.zfs.bledebugger.R.id.refreshLayout
+import cn.zfs.bledebugger.entity.LogSaver
 import cn.zfs.blelib.callback.ScanListener
 import cn.zfs.blelib.core.Ble
+import cn.zfs.blelib.core.BleLogger
 import cn.zfs.blelib.core.Device
-import cn.zfs.blelib.util.LogController
+import cn.zfs.blelib.event.Events
 import cn.zfs.common.base.BaseHolder
 import cn.zfs.common.base.BaseListAdapter
+import cn.zfs.common.utils.FileUtils
+import cn.zfs.common.utils.ToastUtils
 import kotlinx.android.synthetic.main.activity_main.*
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
+import java.io.File
 import kotlin.system.exitProcess
 
 
@@ -31,17 +41,20 @@ class MainActivity : CheckPermissionsActivity() {
     private var listAdapter: ListAdapter? = null
     private val devList = ArrayList<Device>()
     private var broadcastContentDialog: BroadcastContentDialog? = null
+    private val logSaver = LogSaver(MyApp.getLogDirPath())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         title = "蓝牙设备"
         initViews()
-        Ble.getInstance().configuration.setDiscoverServicesDelayMillis(500)        
-        Ble.getInstance().setLogPrintLevelControl(LogController.ALL)//输出日志
+        Ble.getInstance().configuration.setDiscoverServicesDelayMillis(500)
+        Ble.getInstance().configuration.scanPeriodMillis = 30000
+        Ble.getInstance().setLogPrintLevel(BleLogger.ALL)//输出日志
         Ble.getInstance().addScanListener(scanListener)
         Ble.getInstance().configuration.isWaitWriteResult = true
         Ble.getInstance().configuration.isUseBluetoothLeScanner = false
+        Ble.getInstance().registerSubscriber(this)
     }
 
     private fun initViews() {
@@ -50,6 +63,7 @@ class MainActivity : CheckPermissionsActivity() {
         lv.adapter = listAdapter
         refreshLayout.setOnRefreshListener {
             if (Ble.getInstance().isInitialized) {
+                Ble.getInstance().stopScan()
                 doStartScan()
             }
         }
@@ -77,6 +91,7 @@ class MainActivity : CheckPermissionsActivity() {
     }
     
     private inner class ListAdapter(context: Context, data: List<Device>) : BaseListAdapter<Device>(context, data) {
+        private val rssiViews = HashMap<String, TextView>()
         private val updateTimeMap = HashMap<String, Long>()
         
         override fun areAllItemsEnabled(): Boolean {
@@ -124,6 +139,7 @@ class MainActivity : CheckPermissionsActivity() {
                 }
 
                 override fun setData(data: Device, position: Int) {
+                    rssiViews[data.addr] = tvRssi!!
                     tvName?.tag = position
                     tvName?.text = data.name
                     tvAddr?.text = data.addr
@@ -148,17 +164,20 @@ class MainActivity : CheckPermissionsActivity() {
         }
 
         fun add(device: Device) {
-            val dev = data.firstOrNull { it.addr == device.addr }
-            updateTimeMap[device.addr] = System.currentTimeMillis()
+            val dev = data.firstOrNull { it.addr == device.addr }            
             if (dev == null) {
+                updateTimeMap[device.addr] = System.currentTimeMillis()
                 data.add(device)
+                notifyDataSetChanged()
             } else {
                 val time = updateTimeMap[device.addr]
                 if (time == null || System.currentTimeMillis() - time > 1000) {
+                    updateTimeMap[device.addr] = System.currentTimeMillis()
                     dev.rssi = device.rssi
+                    val tvRssi = rssiViews[device.addr]
+                    tvRssi?.text = "${device.rssi} dBm"
                 }
-            }
-            notifyDataSetChanged()
+            }            
         }
     }
 
@@ -168,13 +187,34 @@ class MainActivity : CheckPermissionsActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        if (item?.itemId == R.id.menuAbout) {
-            val verName = packageManager.getPackageInfo(packageName, 0).versionName
-            AlertDialog.Builder(this).setTitle("关于")
-                    .setMessage(Html.fromHtml("<b>作者:</b>  Zeng Fansheng<br/><b>版本:</b>  $verName"))
-                    .setNegativeButton("OK", null).show()
-        } else if (item?.itemId == R.id.menuFeedback) {
-            startActivity(Intent(this, FeedbackActivity::class.java))
+        when {
+            item?.itemId == R.id.menuAbout -> {
+                val verName = packageManager.getPackageInfo(packageName, 0).versionName
+                AlertDialog.Builder(this).setTitle("关于")
+                        .setMessage(Html.fromHtml("<b>作者:</b>  Zeng Fansheng<br/><b>版本:</b>  $verName"))
+                        .setNegativeButton("OK", null).show()
+            }
+            item?.itemId == R.id.menuFeedback -> startActivity(Intent(this, FeedbackActivity::class.java))
+            item?.itemId == R.id.menuLogs -> {
+                val file = File(MyApp.getLogDirPath())
+                val files = file.listFiles()
+                if (files != null && !files.isEmpty()) {
+                    logSaver.flush()
+                    val dates = arrayOf("")
+                    files.forEachIndexed { index, f ->
+                        dates[index] = FileUtils.getFileNameWithoutSuffix(f.absolutePath)
+                    }
+                    AlertDialog.Builder(this)
+                            .setItems(dates) { _, which ->
+                                val intent = Intent(this, LogActivity::class.java)
+                                intent.putExtra(Consts.EXTRA_LOG_PATH, files[which].absolutePath)
+                                startActivity(intent)
+                            }
+                            .show()
+                } else {
+                    ToastUtils.showShort("没有记录")
+                }
+            }
         }
         return super.onOptionsItemSelected(item)
     }
@@ -208,7 +248,13 @@ class MainActivity : CheckPermissionsActivity() {
         }
     }
 
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    fun onLogChanged(e: Events.LogChanged) {
+        logSaver.write(e.log)
+    }
+    
     override fun onDestroy() {
+        logSaver.close()
         Ble.getInstance().release(this)
         super.onDestroy()
         exitProcess(0)

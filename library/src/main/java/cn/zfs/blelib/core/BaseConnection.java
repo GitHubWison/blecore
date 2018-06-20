@@ -138,18 +138,13 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                 }
             });
         }
-        if (currentRequest != null && currentRequest.waitWriteResult && currentRequest.type == Request.RequestType.WRITE_CHARACTERISTIC && currentRequest.writeOverValue != null) {
+        if (currentRequest != null && currentRequest.waitWriteResult && currentRequest.type == Request.RequestType.WRITE_CHARACTERISTIC) {
             currentRequest.startTime = System.currentTimeMillis();//写数据时有可能大数据请求，更新开始时间，以免被认为超时
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                byte[] value = characteristic.getValue();
-                byte[] wrote = Arrays.copyOf(currentRequest.writeOverValue, currentRequest.writeOverValue.length + value.length);
-                System.arraycopy(value, 0, wrote, currentRequest.writeOverValue.length, value.length);
-                currentRequest.writeOverValue = wrote;
-                if (Arrays.equals(wrote, currentRequest.value)) {
+                if (currentRequest.remainQueue == null || currentRequest.remainQueue.isEmpty()) {
                     onCharacteristicWrite(currentRequest.requestId, currentRequest.value);
-                    currentRequest.writeOverValue = null;
                     processNextRequest();
-                } else if (currentRequest.remainQueue != null && !currentRequest.remainQueue.isEmpty()) {
+                } else {
                     try {
                         Thread.sleep(currentRequest.writeDelay);
                     } catch (InterruptedException e) {
@@ -158,7 +153,6 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                     doWrite(characteristic, currentRequest.remainQueue.remove());
                 }
             } else {
-                currentRequest.writeOverValue = null;//不让再次进入
                 handleFaildCallback(currentRequest.requestId, currentRequest.type, FAIL_TYPE_GATT_STATUS_FAILED, currentRequest.value, true);
             }
         }
@@ -477,7 +471,6 @@ public abstract class BaseConnection extends BluetoothGattCallback {
         try {
             request.waitWriteResult = Ble.getInstance().getConfiguration().isWaitWriteResult();
             request.writeDelay = Ble.getInstance().getConfiguration().getPackageWriteDelayMillis();
-            request.writeOverValue = new byte[0];
             int packSize = Ble.getInstance().getConfiguration().getPackageSize();
             int packWriteDelay = Ble.getInstance().getConfiguration().getPackageWriteDelayMillis();
             Thread.sleep(packWriteDelay > 0 ? packWriteDelay : request.writeDelay);
@@ -518,7 +511,6 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     }
 
     private void performWriteFailed(Request request) {
-        request.writeOverValue = null;
         request.remainQueue = null;
         handleFaildCallback(request.requestId, Request.RequestType.WRITE_CHARACTERISTIC, FAIL_TYPE_REQUEST_FAILED, request.value, true);        
     }

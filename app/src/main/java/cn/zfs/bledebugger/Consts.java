@@ -13,4 +13,5 @@ public interface Consts {
     String EXTRA_WRITE_CHARACTERISTIC = "writeCharacteristic";
     String EXTRA_NOTIFY_SERVICE = "notifyService";
     String EXTRA_NOTIFY_CHARACTERISTIC = "notifyCharacteristic";
+    String EXTRA_LOG_PATH = "logPath";
 }

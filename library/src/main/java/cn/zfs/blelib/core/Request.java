@@ -30,7 +30,6 @@ public class Request {
     long startTime;//用来记超时，避免卡住队列
     //-----分包发送时用到-----
     Queue<byte[]> remainQueue;
-    byte[] writeOverValue;
     //----------------------
 
     private Request(@NonNull RequestType type, @NonNull String requestId, UUID service, UUID characteristic, UUID descriptor, byte[] value) {

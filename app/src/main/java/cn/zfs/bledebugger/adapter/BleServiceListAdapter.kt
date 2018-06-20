@@ -26,7 +26,7 @@ class BleServiceListAdapter(context: Context, lv: ListView, nodes: MutableList<I
     private val serviceName = "Unknown Service"
     private val characteristicName = "Unknown Characteristic"
     private var context: Context? = null
-    private var showInHex = false
+    private var showInHex = true
     var itemClickCallback: OnItemClickCallback? = null
     private val holderMap = HashMap<String, ViewHolder>()
     

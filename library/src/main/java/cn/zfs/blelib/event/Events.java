@@ -212,6 +212,17 @@ public class Events {
             this.src = src;
         }
     }
+
+    /**
+     * 日志事件
+     */
+    public static class LogChanged {
+        public String log;
+
+        private LogChanged(String log) {
+            this.log = log;
+        }
+    }
     
     public static BluetoothStateChanged newBluetoothStateChanged(int state) {
         return new BluetoothStateChanged(state);
@@ -263,5 +274,9 @@ public class Events {
 
     public static RequestFailed newRequestFailed(@NonNull String requestId, @NonNull Request.RequestType requestType, int failType, byte[] src) {
         return new RequestFailed(requestId, requestType, failType, src);
+    }
+    
+    public static LogChanged newLogChanged(String log) {
+        return new LogChanged(log);
     }
 }

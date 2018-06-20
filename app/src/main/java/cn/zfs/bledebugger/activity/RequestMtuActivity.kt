@@ -49,15 +49,14 @@ class RequestMtuActivity : BaseActivity() {
             finish()
             return
         }
-        title = "修改MTU"
+        title = "设置最大传输单元"
         device = Ble.getInstance().getConnection(device!!)?.device
         setContentView(R.layout.activity_request_mtu)
         btnRequest.setOnClickListener { 
             val numStr = etMtu.text.toString()
             when {
                 numStr.isEmpty() -> ToastUtils.showShort("请设置数值")
-                numStr.toInt() > 512 -> ToastUtils.showShort("数值超过范围")
-                numStr.toInt() < 20 -> ToastUtils.showShort("数值不合法")
+                numStr.toInt() > 512 || numStr.toInt() < 23 -> ToastUtils.showShort("数值必须在23到517之间")
                 else -> Ble.getInstance().getConnection(device!!)?.changeMtu("REQUEST_MTU", numStr.toInt())
             }
         }

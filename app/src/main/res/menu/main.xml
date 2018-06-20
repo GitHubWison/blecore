@@ -7,10 +7,16 @@
         android:title="建议和反馈"
         android:orderInCategory="100"
         app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/menuLogs"
+        android:title="查看日志"
+        android:orderInCategory="101"
+        app:showAsAction="never"/>
     
     <item
         android:id="@+id/menuAbout"
         android:title="关于"
-        android:orderInCategory="101"
+        android:orderInCategory="102"
         app:showAsAction="never"/>
 </menu>

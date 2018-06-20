@@ -30,6 +30,7 @@
         <activity android:name=".activity.GattServiesCharacteristicsActivity"  android:screenOrientation="portrait"/>
         <activity android:name=".activity.RequestMtuActivity"  android:screenOrientation="portrait"/>
         <activity android:name=".activity.FeedbackActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".activity.LogActivity" android:screenOrientation="portrait"/>
     </application>
 
 </manifest>

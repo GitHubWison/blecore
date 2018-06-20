@@ -448,25 +448,26 @@ public class Connection extends BaseConnection {
     @Override
     public void onCharacteristicRead(@NonNull String requestId, BluetoothGattCharacteristic characteristic) {
         Ble.getInstance().postEvent(Events.newCharacteristicRead(device, requestId, characteristic));
-        Ble.println(Connection.class, Log.DEBUG, "onCharacteristicRead！请求ID：" + requestId +
+        Ble.println(Connection.class, Log.DEBUG, "读到Characteristic！请求ID：" + requestId +
                 ", value: " + BleUtils.bytesToHexString(characteristic.getValue()) + ", mac: " + device.addr);
     }
 
     @Override
     public void onCharacteristicChanged(BluetoothGattCharacteristic characteristic) {
         Ble.getInstance().postEvent(Events.newCharacteristicChanged(device, characteristic));
+        Ble.println(Connection.class, Log.DEBUG, "Notification数据！value: " + BleUtils.bytesToHexString(characteristic.getValue()) + ", mac: " + device.addr);
     }
 
     @Override
     public void onReadRemoteRssi(@NonNull String requestId, int rssi) {
         Ble.getInstance().postEvent(Events.newRemoteRssiRead(device, requestId, rssi));
-        Ble.println(Connection.class, Log.DEBUG, "读到信号强度！rssi: "+ rssi + ", mac: " + device.addr);
+        Ble.println(Connection.class, Log.DEBUG, "读到Rssi！rssi: "+ rssi + ", mac: " + device.addr);
     }
 
     @Override
     public void onMtuChanged(@NonNull String requestId, int mtu) {
         Ble.getInstance().postEvent(Events.newMtuChanged(device, requestId, mtu));
-        Ble.println(Connection.class, Log.DEBUG, "Mtu修改成功！mtu: "+ mtu + ", mac: " + device.addr);
+        Ble.println(Connection.class, Log.DEBUG, "Mtu数值变化！mtu: "+ mtu + ", mac: " + device.addr);
     }
 
     @Override
@@ -479,20 +480,20 @@ public class Connection extends BaseConnection {
     @Override
     public void onDescriptorRead(@NonNull String requestId, BluetoothGattDescriptor descriptor) {
         Ble.getInstance().postEvent(Events.newDescriptorRead(device, requestId, descriptor));
-        Ble.println(Connection.class, Log.DEBUG, "onDescriptorRead！请求ID：" + requestId +
+        Ble.println(Connection.class, Log.DEBUG, "读到Descriptor！请求ID：" + requestId +
                 ", value: " + BleUtils.bytesToHexString(descriptor.getValue()) + ", mac: " + device.addr);
     }
 
     @Override
     public void onNotificationChanged(@NonNull String requestId, BluetoothGattDescriptor descriptor, boolean isEnabled) {
         Ble.getInstance().postEvent(Events.newNotificationChanged(device, requestId, descriptor, isEnabled));
-        Ble.println(Connection.class, Log.DEBUG, (isEnabled ? "Notification enabled！" : "Notification disabled！") + "请求ID：" + requestId + ", mac: " + device.addr);
+        Ble.println(Connection.class, Log.DEBUG, (isEnabled ? "Notification开启！" : "Notification关闭！") + "请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override
     public void onIndicationChanged(@NonNull String requestId, BluetoothGattDescriptor descriptor, boolean isEnabled) {
         Ble.getInstance().postEvent(Events.newIndicationChanged(device, requestId, descriptor, isEnabled));
-        Ble.println(Connection.class, Log.DEBUG, (isEnabled ? "Indication enabled！" : "Indication disabled！") + "请求ID：" + requestId + ", mac: " + device.addr);
+        Ble.println(Connection.class, Log.DEBUG, (isEnabled ? "Indication开启！" : "Indication关闭！") + "请求ID：" + requestId + ", mac: " + device.addr);
     }
 
     @Override

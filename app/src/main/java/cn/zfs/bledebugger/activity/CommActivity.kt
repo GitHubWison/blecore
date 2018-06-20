@@ -7,8 +7,12 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.ParcelUuid
+import android.support.v4.content.ContextCompat
 import android.text.Editable
+import android.text.Spannable
+import android.text.SpannableStringBuilder
 import android.text.TextWatcher
+import android.text.style.ForegroundColorSpan
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.ScrollView
@@ -26,8 +30,6 @@ import kotlinx.android.synthetic.main.activity_comm.*
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import java.text.SimpleDateFormat
-import java.util.*
-import kotlin.collections.ArrayList
 import kotlin.concurrent.thread
 
 /**
@@ -65,13 +67,20 @@ class CommActivity : BaseActivity() {
         }
         device = Ble.getInstance().getConnection(device!!)?.device
         title = device!!.name
-        tvAddr.text = device!!.addr
         initEvents()
         updateState(device!!.connectionState)
         //加载发送记录
         loadRecs()
+        updateRecIcon()
     }
 
+    //更新记录选择图标颜色
+    private fun updateRecIcon() {
+        if (!recList.isEmpty()) {
+            ivRec.setColorFilter(ContextCompat.getColor(this, R.color.colorPrimary))
+        }
+    }
+    
     private fun loadRecs() {
         val recs = PreferencesUtils.getString(Consts.SP_KEY_SEND_REC)
         val split = recs?.split(",")
@@ -118,6 +127,7 @@ class CommActivity : BaseActivity() {
                 }     
                 recList.add(0, BleUtils.bytesToHexString(bytes))
                 saveRecs()
+                updateRecIcon()
                 if (chk.isChecked) {
                     thread {
                         while (run && chk.isChecked) {
@@ -139,7 +149,20 @@ class CommActivity : BaseActivity() {
             }
         }
         //发送延时
-        etDelay.addTextChangedListener(textChangedListener)
+        etDelay.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                var d = 0L
+                val delayStr = etDelay.text.toString()
+                if (!delayStr.isEmpty()) {
+                    d = delayStr.toLong()
+                }
+                delay = d
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
         //清空发送结果记录
         btnClearCount.setOnClickListener {
             clearCount()
@@ -156,29 +179,17 @@ class CommActivity : BaseActivity() {
             }
         }
         //日志输出控制
-        etFilte.addTextChangedListener(textChangedListener)
-    }
-    
-    private val textChangedListener = object : TextWatcher {
-        override fun afterTextChanged(s: Editable?) {
-            //延时的
-            if (etDelay == s) {
-                var d = 0L
-                val delayStr = etDelay.text.toString()
-                if (!delayStr.isEmpty()) {
-                    d = delayStr.toLong()
-                }
-                delay = d
-            } else if (etFilte == s) {
+        etFilte.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
                 keyword = etFilte.text.toString()
             }
-        }
 
-        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
-        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
     }
-
+    
     private fun updateCount() {
         runOnUiThread {
             tvSuccessCount.text = "成功:$successCount"
@@ -237,22 +248,18 @@ class CommActivity : BaseActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onConnectionCreateFailed(e: Events.ConnectionCreateFailed) {
-        tvState.text = "无法建立连接： ${e.error}"
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
     fun onCharacteristicChanged(e: Events.CharacteristicChanged) {
         if (!pause) {
             if (tvLogs.text.length > 3 * 1024 * 1024) {
                 tvLogs.text = ""
             }
             val hexString = BleUtils.bytesToHexString(e.characteristic.value)
-            if (keyword.isEmpty() || (chkPrint.isChecked && hexString.contains(keyword)) || (!chkPrint.isChecked && !hexString.contains(keyword))) {
-                tvLogs.append(SimpleDateFormat("mm:ss.SSS").format(Date()))
-                tvLogs.append("> ")
-                tvLogs.append(hexString)
-                tvLogs.append("\n")
+            if (keyword.isEmpty() || (chkPrint.isChecked && hexString.contains(keyword.toUpperCase())) || 
+                    (!chkPrint.isChecked && !hexString.contains(keyword.toUpperCase()))) {
+                val text = "${SimpleDateFormat("mm:ss.SSS").format(System.currentTimeMillis())}> $hexString\n"
+                val builder = SpannableStringBuilder(text)
+                builder.setSpan(ForegroundColorSpan(0xFF0BBF43.toInt()), 0, text.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)//设置颜色
+                tvLogs.append(builder)
                 scrollView.post {
                     scrollView.fullScroll(ScrollView.FOCUS_DOWN)
                 }
@@ -279,30 +286,38 @@ class CommActivity : BaseActivity() {
     }
     
     private fun updateState(state: Int) {
-        when (state) {
+        val text = when (state) {
             Connection.STATE_CONNECTED -> {
-                tvState.text = "连接成功，等待发现服务"
+                "连接成功，等待发现服务"
             }
             Connection.STATE_CONNECTING -> {
-                tvState.text = "连接中..."
+                "连接中..."
             }
             Connection.STATE_DISCONNECTED -> {
-                tvState.text = "连接断开"
+                "连接断开"
             }
             Connection.STATE_RECONNECTING -> {
-                tvState.text = "正在重连..."
+                "正在重连..."
             }
             Connection.STATE_SERVICE_DISCORVERING -> {
-                tvState.text = "连接成功，正在发现服务..."
+                "连接成功，正在发现服务..."
             }
             Connection.STATE_SERVICE_DISCORVERED -> {
-                tvState.text = "连接成功，并成功发现服务"
                 clearCount()
                 if (notifyService != null && notifyCharacteristic != null) {
                     Ble.getInstance().getConnection(device!!)?.toggleNotification("1", notifyService!!.uuid,
                             notifyCharacteristic!!.uuid, true)
                 }
+                "连接成功，并成功发现服务\n"
             }
+            else -> "连接已释放\n"
+        }
+        val log = "${SimpleDateFormat("mm:ss.SSS").format(System.currentTimeMillis())}> $text\n"
+        val builder = SpannableStringBuilder(log)
+        builder.setSpan(ForegroundColorSpan(0xFF2D78E7.toInt()), 0, log.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)//设置颜色
+        tvLogs.append(builder)
+        scrollView.post {
+            scrollView.fullScroll(ScrollView.FOCUS_DOWN)
         }
         invalidateOptionsMenu()
     }

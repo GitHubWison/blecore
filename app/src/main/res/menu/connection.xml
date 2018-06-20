@@ -20,6 +20,6 @@
     <item
         android:id="@+id/menuUtf8"
         android:title="以utf8显示"
-        android:orderInCategory="102"
+        android:orderInCategory="103"
         app:showAsAction="never"/>
 </menu>
