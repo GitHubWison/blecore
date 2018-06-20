@@ -124,9 +124,12 @@ class CommActivity : BaseActivity() {
                         throw Exception()
                     }
                     bytes[i] = Integer.valueOf(str, 16).toByte()
-                }     
-                recList.add(0, BleUtils.bytesToHexString(bytes))
-                saveRecs()
+                }
+                val hexString = BleUtils.bytesToHexString(bytes)
+                if (!recList.contains(hexString)) {
+                    recList.add(0, hexString)
+                    saveRecs()
+                }                
                 updateRecIcon()
                 if (chk.isChecked) {
                     thread {
