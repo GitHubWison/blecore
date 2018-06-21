@@ -20,6 +20,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import cn.zfs.blelib.callback.ConnectionStateChangeListener;
 import cn.zfs.blelib.event.Events;
@@ -92,7 +93,8 @@ public class Connection extends BaseConnection {
 	synchronized static Connection newInstance(@NonNull BluetoothAdapter bluetoothAdapter, @NonNull Context context, @NonNull Device device,
                                                long connectDelay, ConnectionStateChangeListener stateChangeListener) {
 		if (device.addr == null || !device.addr.matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
-			Ble.println(Connection.class, Log.ERROR, "connect failed: unspecified mac address.");
+            Ble.println(Connection.class, Log.ERROR, String.format(Locale.US, "CONNECT FAILED[type: unspecified mac address, name: %s, mac: %s]",
+                    device.name, device.addr));
 			notifyConnectFailed(device, CONNECT_FAIL_TYPE_UNSPECIFIED_MAC_ADDRESS, stateChangeListener);
 			return null;
 		}
@@ -218,28 +220,28 @@ public class Connection extends BaseConnection {
     
     private void doOnConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
         if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
-            Ble.println(Connection.class, Log.DEBUG, "connected: " +
-                    gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress());            
+            Ble.println(Connection.class, Log.DEBUG, String.format(Locale.US, "CONNECTED[name: %s, mac: %s]",
+                    gatt.getDevice().getName(), gatt.getDevice().getAddress()));           
             device.connectionState = STATE_CONNECTED;
             sendConnectionCallback();            
             // 进行服务发现，延时
             handler.sendEmptyMessageDelayed(MSG_DISCOVER_SERVICES, Ble.getInstance().getConfiguration().getDiscoverServicesDelayMillis());
         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-            Ble.println(Connection.class, Log.DEBUG, "disconnected: " +
-                    gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress() + ", autoReconnEnable: " + autoReconnEnable);
+            Ble.println(Connection.class, Log.DEBUG, String.format(Locale.US, "DISCONNECTED[name: %s, mac: %s, autoReconnEnable: %s]",
+                    gatt.getDevice().getName(), gatt.getDevice().getAddress(), String.valueOf(autoReconnEnable)));
             notifyDisconnected();
         } else if (status == 133) {
             doClearTaskAndRefresh(true);
-            Ble.println(Connection.class, Log.ERROR, "gatt error, status: " + status + ", " +
-                    gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress());
+            Ble.println(Connection.class, Log.ERROR, String.format(Locale.US, "GATT ERROR[name: %s, mac: %s, status: %d]",
+                    gatt.getDevice().getName(), gatt.getDevice().getAddress(), status));
         }
     }
     
     private void doOnServicesDiscovered(BluetoothGatt gatt, int status) {        
         List<BluetoothGattService> services = gatt.getServices();
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            Ble.println(Connection.class, Log.DEBUG, "services discovered. " + gatt.getDevice().getName() + ", " +
-                    gatt.getDevice().getAddress() + ", size: " + gatt.getServices().size());
+            Ble.println(Connection.class, Log.DEBUG, String.format(Locale.US, "SERVICES DISCOVERED[name: %s, mac: %s, size: %d]",
+                    gatt.getDevice().getName(), gatt.getDevice().getAddress(), gatt.getServices().size()));
             if (services.isEmpty()) {
                 doClearTaskAndRefresh(true);
             } else {
@@ -250,8 +252,8 @@ public class Connection extends BaseConnection {
             }
         } else {
             doClearTaskAndRefresh(true);
-            Ble.println(Connection.class, Log.ERROR, "gatt error, status: " + status + ", " +
-                    gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress());
+            Ble.println(Connection.class, Log.ERROR, String.format(Locale.US, "GATT ERROR[status: %d, name: %s, mac: %s]",
+                    status, gatt.getDevice().getName(), gatt.getDevice().getAddress()));
         }
     }
     
@@ -272,7 +274,7 @@ public class Connection extends BaseConnection {
                 //超时
                 if (System.currentTimeMillis() - connStartTime > Ble.getInstance().getConfiguration().getConnectTimeoutMillis()) {
                     connStartTime = System.currentTimeMillis();
-                    Ble.println(Connection.class, Log.ERROR, "connect timeout, " + device.name + ", " + device.addr);
+                    Ble.println(Connection.class, Log.ERROR, String.format(Locale.US, "CONNECT TIMEOUT[name: %s, mac: %s]", device.name, device.addr));
                     int type;
                     if (device.connectionState == STATE_RECONNECTING) {
                         type = TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE;
@@ -288,7 +290,8 @@ public class Connection extends BaseConnection {
                     } else {
                         doDisconnect(false, true);
                         notifyConnectFailed(device, CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION, stateChangeListener);
-                        Ble.println(Connection.class, Log.ERROR, "connect failed: maximun reconnection");
+                        Ble.println(Connection.class, Log.ERROR, String.format(Locale.US, "CONNECT FAILED[type: maximun reconnection, name: %s, mac: %s]", 
+                                device.name, device.addr));
                     }
                 }                
             } else if (autoReconnEnable) {
@@ -300,7 +303,7 @@ public class Connection extends BaseConnection {
         
     //处理刷新
     private void doRefresh(boolean isAuto) {
-        Ble.println(Connection.class, Log.DEBUG, "do BluetoothGatt.refresh()");
+        Ble.println(Connection.class, Log.ERROR, String.format(Locale.US, "REFRESH GATT[name: %s, mac: %s]", device.name, device.addr));
 	    connStartTime = System.currentTimeMillis();//防止刷新过程自动重连
         if (bluetoothGatt != null) {
             bluetoothGatt.disconnect();
@@ -318,7 +321,7 @@ public class Connection extends BaseConnection {
     }
     
     private void doConnect() {
-        Ble.println(Connection.class, Log.DEBUG, "connecting");
+        Ble.println(Connection.class, Log.ERROR, String.format(Locale.US, "CONNECTING[name: %s, mac: %s]", device.name, device.addr));
         //连接时需要停止蓝牙扫描
         Ble.getInstance().stopScan();
         handler.postDelayed(new Runnable() {
@@ -341,7 +344,7 @@ public class Connection extends BaseConnection {
         if (isReleased) {//销毁
             device.connectionState = STATE_RELEASED;
             bluetoothGatt = null;
-            Ble.println(Connection.class, Log.DEBUG, "Connection has been released");
+            Ble.println(Connection.class, Log.ERROR, String.format(Locale.US, "CONNECTION RELEASED[name: %s, mac: %s]", device.name, device.addr));
         } else if (reconnect) {
             device.connectionState = STATE_RECONNECTING;
             tryReconnect();
@@ -353,7 +356,7 @@ public class Connection extends BaseConnection {
 
     private void tryReconnect() {        
         if (!isReleased) {
-            Ble.println(Connection.class, Log.DEBUG, "reconnecting");
+            Ble.println(Connection.class, Log.ERROR, String.format(Locale.US, "RECONNECTING[name: %s, mac: %s]", device.name, device.addr));
             connStartTime = System.currentTimeMillis();
             //开启扫描，扫描到才连接
             Ble.getInstance().startScan(context);
@@ -450,57 +453,61 @@ public class Connection extends BaseConnection {
         }
 	}
 
+	private String getHex(byte[] value) {
+        return BleUtils.bytesToHexString(value);
+    }
+	
     @Override
     public void onCharacteristicRead(@NonNull String requestId, BluetoothGattCharacteristic characteristic) {
         Ble.getInstance().postEvent(Events.newCharacteristicRead(device, requestId, characteristic));
-        Ble.println(Connection.class, Log.DEBUG, "read characteristic--mac: " + device.addr + ", value: " + BleUtils.bytesToHexString(characteristic.getValue()));
+        Ble.println(Connection.class, Log.DEBUG, String.format(Locale.US, "CHARACTERISTIC READ[mac: %s, value: %s]", device.addr, getHex(characteristic.getValue())));
     }
 
     @Override
     public void onCharacteristicChanged(BluetoothGattCharacteristic characteristic) {
         Ble.getInstance().postEvent(Events.newCharacteristicChanged(device, characteristic));
-        Ble.println(Connection.class, Log.DEBUG, "characteristic change--mac: " + device.addr + ", value: " + BleUtils.bytesToHexString(characteristic.getValue()));
+        Ble.println(Connection.class, Log.INFO, String.format(Locale.US, "CHARACTERISTIC CHANGE[mac: %s, value: %s]", device.addr, getHex(characteristic.getValue())));
     }
 
     @Override
     public void onReadRemoteRssi(@NonNull String requestId, int rssi) {
         Ble.getInstance().postEvent(Events.newRemoteRssiRead(device, requestId, rssi));
-        Ble.println(Connection.class, Log.DEBUG, "read rssi--mac: " + device.addr + ", rssi: " + rssi);
+        Ble.println(Connection.class, Log.DEBUG, String.format(Locale.US, "RSSI READ[mac: %s, rssi: %d]", device.addr, rssi));
     }
 
     @Override
     public void onMtuChanged(@NonNull String requestId, int mtu) {
         Ble.getInstance().postEvent(Events.newMtuChanged(device, requestId, mtu));
-        Ble.println(Connection.class, Log.DEBUG, "mtu change--mac: " + device.addr + ", mtu: " + mtu);
+        Ble.println(Connection.class, Log.DEBUG, String.format(Locale.US, "MTU CHANGE[mac: %s, mtu: %d]", device.addr, mtu));
     }
 
     @Override
     public void onRequestFialed(@NonNull String requestId, @NonNull Request.RequestType requestType, int failType, byte[] value) {
         Ble.getInstance().postEvent(Events.newRequestFailed(requestId, requestType, failType, value));
-        Ble.println(Connection.class, Log.ERROR, "request failed--mac: " + device.addr + ", request id：" + requestId + ", failType: " + failType);
+        Ble.println(Connection.class, Log.DEBUG, String.format(Locale.US, "REQUEST FAILED[mac: %s, requestId: %s, failType: %d]", device.addr, requestId, failType));
     }
 
     @Override
     public void onDescriptorRead(@NonNull String requestId, BluetoothGattDescriptor descriptor) {
         Ble.getInstance().postEvent(Events.newDescriptorRead(device, requestId, descriptor));
-        Ble.println(Connection.class, Log.DEBUG, "read descriptor--mac：" + device.addr + ", value: " + BleUtils.bytesToHexString(descriptor.getValue()));
+        Ble.println(Connection.class, Log.DEBUG, String.format(Locale.US, "DESCRIPTOR READ[mac: %s, value: %s]", device.addr, getHex(descriptor.getValue())));
     }
 
     @Override
     public void onNotificationChanged(@NonNull String requestId, BluetoothGattDescriptor descriptor, boolean isEnabled) {
         Ble.getInstance().postEvent(Events.newNotificationChanged(device, requestId, descriptor, isEnabled));
-        Ble.println(Connection.class, Log.DEBUG, (isEnabled ? "notification enabled" : "notification disabled") + "--mac: " + device.addr);
+        Ble.println(Connection.class, Log.DEBUG, String.format(Locale.US, (isEnabled ? "NOTIFICATION ENABLED" : "NOTIFICATION DISABLED") + "[mac: %s]", device.addr));
     }
 
     @Override
     public void onIndicationChanged(@NonNull String requestId, BluetoothGattDescriptor descriptor, boolean isEnabled) {
         Ble.getInstance().postEvent(Events.newIndicationChanged(device, requestId, descriptor, isEnabled));
-        Ble.println(Connection.class, Log.DEBUG, (isEnabled ? "indication enabled" : "indication disabled") + "--mac: " + device.addr);
+        Ble.println(Connection.class, Log.DEBUG, String.format(Locale.US, (isEnabled ? "INDICATION ENABLED" : "INDICATION DISABLED") + "[mac: %s]", device.addr));
     }
 
     @Override
     public void onCharacteristicWrite(@NonNull String requestId, byte[] value) {
-        Ble.getInstance().postEvent(Events.newCharacteristicWrite(device, requestId, value));       
-        Ble.println(Connection.class, Log.DEBUG, "write success--mac: " + device.addr + "value: "+ BleUtils.bytesToHexString(value));
+        Ble.getInstance().postEvent(Events.newCharacteristicWrite(device, requestId, value));
+        Ble.println(Connection.class, Log.DEBUG, String.format(Locale.US, "WRITE SUCCESS[mac: %s, value: %s]", device.addr, getHex(value)));
     }
 }

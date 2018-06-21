@@ -27,6 +27,7 @@ import org.greenrobot.eventbus.EventBus;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -272,29 +273,36 @@ public class Ble {
         if (noLocationPermission(context)) {
             println(Ble.class, Log.ERROR, "Lack of location permissions, may not scan the bluetooth device.");
         }
-        if (!isInited || bluetoothAdapter == null || !bluetoothAdapter.isEnabled() || scanning) {
-            return;
+        synchronized (this) {
+            if (!isInited || bluetoothAdapter == null || !bluetoothAdapter.isEnabled() || scanning) {
+                return;
+            }
+            scanning = true;
         }
-        getSystemConnectedDevices();
-        
-        //如果是高版本使用新的搜索方法
-        if (configuration.isUseBluetoothLeScanner() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            if (bleScanner == null) {
-                bleScanner = bluetoothAdapter.getBluetoothLeScanner();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                getSystemConnectedDevices();
+
+                //如果是高版本使用新的搜索方法
+                if (configuration.isUseBluetoothLeScanner() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    if (bleScanner == null) {
+                        bleScanner = bluetoothAdapter.getBluetoothLeScanner();
+                    }
+                    if (scanCallback == null) {
+                        scanCallback = new MyScanCallback();
+                    }
+                    bleScanner.startScan(scanCallback);
+                } else {
+                    if (leScanCallback == null) {
+                        leScanCallback = new MyLeScanCallback();
+                    }
+                    bluetoothAdapter.startLeScan(leScanCallback);
+                }                
+                handleScanCallback(true, null);
+                mainThreadHandler.postDelayed(stopScanRunnable, configuration.getScanPeriodMillis());
             }
-            if (scanCallback == null) {
-                scanCallback = new MyScanCallback();
-            }
-            bleScanner.startScan(scanCallback);
-        } else {
-            if (leScanCallback == null) {
-                leScanCallback = new MyLeScanCallback();
-            }
-            bluetoothAdapter.startLeScan(leScanCallback);
-        }
-        scanning = true;
-        handleScanCallback(true, null);       
-        mainThreadHandler.postDelayed(stopScanRunnable, configuration.getScanPeriodMillis());
+        }).start();
     }
 
     private void handleScanCallback(final boolean start, final Device device) {
@@ -415,7 +423,7 @@ public class Ble {
             dev.scanRecord = scanRecord;
             handleScanCallback(false, dev);
         }
-        println(Ble.class, Log.DEBUG, "found device：" + deviceName + "  " + device.getAddress());
+        println(Ble.class, Log.DEBUG, String.format(Locale.US, "FOUND DEVICE[name: %s, mac: %s]", deviceName, device.getAddress()));
     }
             
     /**
