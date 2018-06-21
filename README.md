@@ -3,7 +3,7 @@
 ## 代码托管
 [![JitPack](https://img.shields.io/badge/JitPack-blecore-green.svg?style=flat)](https://jitpack.io/#fszeng2011/blecore)
 [![Download](https://api.bintray.com/packages/fszeng2017/maven/blecore/images/download.svg) ](https://bintray.com/fszeng2017/maven/blecore/_latestVersion)
-[![JCenter](https://img.shields.io/badge/JCenter-2.2.0-green.svg?style=flat)](http://jcenter.bintray.com/com/github/fszeng2011/blecore/2.2.0/)
+[![JCenter](https://img.shields.io/badge/JCenter-2.2.1-green.svg?style=flat)](http://jcenter.bintray.com/com/github/fszeng2011/blecore/2.2.1/)
 
 ## 配置
 	
@@ -22,7 +22,8 @@
                 .setScanPeriodMillis(10000)//扫描周期
                 .setUseBluetoothLeScanner(true)//是否使用新版api的扫描器
                 .setWaitWriteResult(true)//写入时是否等待写入回调后再写下一包
-                .setWriteDelayMillis(10)//每包的写入延时
+                .setPackageWriteDelayMillis(10)//每包的写入延时
+				.setRequestWriteDelayMillis(10)//第个请求延时
                 .setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)//写入类型
 
 ## 搜索设备
@@ -55,8 +56,8 @@
 
 ## 建立连接
 
-	//第一个参数：上下文；第二个参数：蓝牙设备；第三个参数：是否自动重连
-	Ble.getInstance().connect(this, device, true)
+	//第一个参数：上下文；第二个参数：蓝牙设备；第三个参数：是否自动重连；第四个参数：连接状态回调
+	Ble.getInstance().connect(this, device, true, listener)
 
 ## 监听连接状态
 
@@ -87,8 +88,8 @@
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onConnectionCreateFailed(e: Events.ConnectionCreateFailed) {
-        ToastUtils.showShort("无法建立连接： ${e.error}")
+    fun onConnectFailed(e: Events.ConnectFailed) {
+        tvState.text = "连接失败： ${e.type}"
     }    
 
 ## 其他请求结果
@@ -99,24 +100,7 @@
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onNotificationRegistered(e: Events.NotificationRegistered) {
-        //notifycation开启成功
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onNotificationUnregistered(e: Events.NotificationUnregistered) {
-        //notifycation关闭成功
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onIndicationRegistered(e: Events.IndicationRegistered) {
-        //Indication开启成功
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onIndicationUnregistered(e: Events.IndicationUnregistered) {
-        //Indication关闭成功
-    }
+    fun onNotificationChanged(e: Events.NotificationChanged) {}
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onDescriptorRead(e: Events.DescriptorRead) {
@@ -138,4 +122,12 @@
 
 ## 开启notifycation
 
-	Ble.getInstance().getConnection(device)?.requestCharacteristicNotification("1", serviceUuid, characteristicUuid, true)
+	Ble.getInstance().getConnection(device)?.toggleNotification("1", serviceUuid, characteristicUuid, true)
+
+## 示例效果
+![image](https://github.com/fszeng2011/common/blob/master/screenshot/device-2018-06-20-170935.png)
+![image](https://github.com/fszeng2011/common/blob/master/screenshot/device-2018-06-20-171118.png)
+![image](https://github.com/fszeng2011/common/blob/master/screenshot/device-2018-06-20-171141.png)
+![image](https://github.com/fszeng2011/common/blob/master/screenshot/device-2018-06-20-171316.png)
+![image](https://github.com/fszeng2011/common/blob/master/screenshot/device-2018-06-20-171412.png)
+![image](https://github.com/fszeng2011/common/blob/master/screenshot/device-2018-06-20-173852.png)
