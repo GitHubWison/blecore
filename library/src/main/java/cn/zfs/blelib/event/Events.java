@@ -73,15 +73,17 @@ public class Events {
     /**
      * 连接创建失败
      */
-    public static class ConnectionCreateFailed {
-        /** 设备 */
-        public Device device;
-        /** 失败详情 */
-        public String error;
+    public static class ConnectFailed extends DeviceEvent<Device> {
+        /**
+         * 错误类型
+         * <br>{@link Connection#CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION}
+         * <br>{@link Connection#CONNECT_FAIL_TYPE_UNSPECIFIED_MAC_ADDRESS}
+         */
+        public int type;
 
-        private ConnectionCreateFailed(Device device, String error) {
-            this.device = device;
-            this.error = error;
+        private ConnectFailed(@NonNull Device device, int type) {
+            super(device);
+            this.type = type;
         }
     }
 
@@ -198,9 +200,9 @@ public class Events {
         public byte[] src;
 
         /**
-         * {@link BaseConnection#FAIL_TYPE_REQUEST_FAILED}<br>{@link BaseConnection#FAIL_TYPE_NULL_CHARACTERISTIC}<br>{@link BaseConnection#FAIL_TYPE_NULL_DESCRIPTOR},
-         * <br>{@link BaseConnection#FAIL_TYPE_NULL_SERVICE}<br>{@link BaseConnection#FAIL_TYPE_GATT_STATUS_FAILED}<br>{@link BaseConnection#FAIL_TYPE_GATT_IS_NULL}
-         * <br>{@link BaseConnection#FAIL_TYPE_API_LEVEL_TOO_LOW}<br>{@link BaseConnection#FAIL_TYPE_BLUETOOTH_ADAPTER_DISABLED}
+         * {@link BaseConnection#REQUEST_FAIL_TYPE_REQUEST_FAILED}<br>{@link BaseConnection#REQUEST_FAIL_TYPE_NULL_CHARACTERISTIC}<br>{@link BaseConnection#REQUEST_FAIL_TYPE_NULL_DESCRIPTOR},
+         * <br>{@link BaseConnection#REQUEST_FAIL_TYPE_NULL_SERVICE}<br>{@link BaseConnection#REQUEST_FAIL_TYPE_GATT_STATUS_FAILED}<br>{@link BaseConnection#REQUEST_FAIL_TYPE_GATT_IS_NULL}
+         * <br>{@link BaseConnection#REQUEST_FAIL_TYPE_API_LEVEL_TOO_LOW}<br>{@link BaseConnection#REQUEST_FAIL_TYPE_BLUETOOTH_ADAPTER_DISABLED}
          */
         public int failType;
 
@@ -240,8 +242,8 @@ public class Events {
         return new CharacteristicWrite(device, requestId, value);
     }
 
-    public static ConnectionCreateFailed newConnectionCreateFailed(Device device, String error) {
-        return new ConnectionCreateFailed(device, error);
+    public static ConnectFailed newConnectFailed(Device device, int code) {
+        return new ConnectFailed(device, code);
     }
 
     public static ConnectionStateChanged newConnectionStateChanged(@NonNull Device device, int state) {

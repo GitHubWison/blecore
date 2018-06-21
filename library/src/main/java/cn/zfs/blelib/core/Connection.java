@@ -46,15 +46,20 @@ public class Connection extends BaseConnection {
     public static final int TIMEOUT_TYPE_CANNOT_CONNECT = 1;
     /**能连接上，无法发现服务*/
     public static final int TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES = 2;
+    
+    //连接失败类型
+    /** 非法的设备MAC地址 */
+    public static final int CONNECT_FAIL_TYPE_UNSPECIFIED_MAC_ADDRESS = 1;
+    /** 达到最大重连次数 */
+    public static final int CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION = 2;
 
     @IntDef({STATE_DISCONNECTED, STATE_CONNECTING, STATE_RECONNECTING, STATE_CONNECTED, STATE_SERVICE_DISCOVERING, STATE_SERVICE_DISCOVERED})
     @Retention(RetentionPolicy.SOURCE)
     public @interface STATE {}
     
     private static final int MSG_ARG_NONE = 0;
-    private static final int MSG_ARG_RELEASE = 1;
-    private static final int MSG_ARG_RECONNECT = 2;
-    private static final int MSG_ARG_NOTIFY = 3;
+    private static final int MSG_ARG_RECONNECT = 1;
+    private static final int MSG_ARG_NOTIFY = 2;
     
     private static final int MSG_CONNECT = 1;
     private static final int MSG_DISCONNECT = 2;
@@ -74,7 +79,6 @@ public class Connection extends BaseConnection {
     private boolean autoReconnEnable = true;//重连控制
 	private int refreshTimes;//记录刷新次数，如果成功发现服务器，则清零
     private int tryReconnectTimes;
-    private boolean notifyTimeout;
 	    
     private Connection(BluetoothDevice bluetoothDevice) {
         super(bluetoothDevice);
@@ -88,8 +92,8 @@ public class Connection extends BaseConnection {
 	synchronized static Connection newInstance(@NonNull BluetoothAdapter bluetoothAdapter, @NonNull Context context, @NonNull Device device,
                                                long connectDelay, ConnectionStateChangeListener stateChangeListener) {
 		if (device.addr == null || !device.addr.matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
-			Ble.println(Connection.class, Log.ERROR, "unspecified address.");
-			Ble.getInstance().postEvent(Events.newConnectionCreateFailed(device, "unspecified address."));
+			Ble.println(Connection.class, Log.ERROR, "connect failed: unspecified mac address.");
+			notifyConnectFailed(device, CONNECT_FAIL_TYPE_UNSPECIFIED_MAC_ADDRESS, stateChangeListener);
 			return null;
 		}
 		//初始化并建立连接
@@ -142,9 +146,7 @@ public class Connection extends BaseConnection {
                     tryReconnectTimes < Ble.getInstance().getConfiguration().getTryReconnectTimes()) {
 	            tryReconnectTimes++;
                 tryReconnect();
-	        } else {
-                notifyDisconnected();
-	        }	        
+	        }        
 	    }
     }
 
@@ -162,16 +164,13 @@ public class Connection extends BaseConnection {
             if (conn == null) {
                 return;
             }
-            if (!conn.bluetoothAdapter.isEnabled()) {
-                conn.notifyDisconnected();
-            } else {
+            if (conn.bluetoothAdapter.isEnabled()) {
                 switch(msg.what) {
                     case MSG_CONNECT://连接
-                        conn.notifyTimeout = true;
                         conn.doConnect();
                 		break;
                     case MSG_DISCONNECT://处理断开
-                        conn.doDisconnect(msg.arg2 == MSG_ARG_RECONNECT, msg.arg1 == MSG_ARG_RELEASE, true);
+                        conn.doDisconnect(msg.arg2 == MSG_ARG_RECONNECT, true);
                 		break;
                     case MSG_REFRESH://手动刷新
                         conn.doRefresh(false);
@@ -181,7 +180,7 @@ public class Connection extends BaseConnection {
                         break;
                     case MSG_RELEASE://销毁连接
                         conn.autoReconnEnable = false;//停止重连
-                        conn.doDisconnect(false, true, msg.arg1 == MSG_ARG_NOTIFY);
+                        conn.doDisconnect(false, msg.arg1 == MSG_ARG_NOTIFY);
                         break;
                     case MSG_TIMER://定时器
                         conn.doTimer();
@@ -210,12 +209,14 @@ public class Connection extends BaseConnection {
         sendConnectionCallback();
     }
     
-    private void doOnConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-        if (isReleased) {
-            gatt.disconnect();
-            gatt.close();
-            return;
+    private static void notifyConnectFailed(Device device, int type, ConnectionStateChangeListener listener) {
+        if (listener != null) {
+            listener.onConnectFailed(device, type);
         }
+        Ble.getInstance().postEvent(Events.newConnectFailed(device, type));
+    }
+    
+    private void doOnConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
         if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
             Ble.println(Connection.class, Log.DEBUG, "connected: " +
                     gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress());            
@@ -227,11 +228,6 @@ public class Connection extends BaseConnection {
             Ble.println(Connection.class, Log.DEBUG, "disconnected: " +
                     gatt.getDevice().getName() + ", " + gatt.getDevice().getAddress() + ", autoReconnEnable: " + autoReconnEnable);
             notifyDisconnected();
-            //如果连接上马上又断开，直接把连接开始时间往前推到可以重连的范围
-            if (System.currentTimeMillis() - connStartTime < 1000) {
-                connStartTime = System.currentTimeMillis() - Ble.getInstance().getConfiguration().getConnectTimeoutMillis() - 1;
-                notifyTimeout = false;
-            }
         } else if (status == 133) {
             doClearTaskAndRefresh(true);
             Ble.println(Connection.class, Log.ERROR, "gatt error, status: " + status + ", " +
@@ -239,12 +235,7 @@ public class Connection extends BaseConnection {
         }
     }
     
-    private void doOnServicesDiscovered(BluetoothGatt gatt, int status) {
-        if (isReleased) {
-            gatt.disconnect();
-            gatt.close();
-            return;
-        }
+    private void doOnServicesDiscovered(BluetoothGatt gatt, int status) {        
         List<BluetoothGattService> services = gatt.getServices();
         if (status == BluetoothGatt.GATT_SUCCESS) {
             Ble.println(Connection.class, Log.DEBUG, "services discovered. " + gatt.getDevice().getName() + ", " +
@@ -275,39 +266,41 @@ public class Connection extends BaseConnection {
     }
     
     private void doTimer() {
-        if (isReleased) {
-            return;
-        }
-        //连接超时。
-        if (device.connectionState != STATE_SERVICE_DISCOVERED && System.currentTimeMillis() - connStartTime > 
-                Ble.getInstance().getConfiguration().getConnectTimeoutMillis()) {
+        //只处理不在连接状态的
+        if (!isReleased && device.connectionState != STATE_SERVICE_DISCOVERED) {
             if (device.connectionState != STATE_DISCONNECTED) {
-                connStartTime = System.currentTimeMillis();
-                Ble.println(Connection.class, Log.ERROR, "connect timeout, " + device.name + ", " + device.addr);
-                int type;
-                if (device.connectionState == STATE_RECONNECTING) {
-                    type = TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE;
-                } else if (device.connectionState == STATE_CONNECTING) {
-                    type = TIMEOUT_TYPE_CANNOT_CONNECT;
-                } else {
-                    type = TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES;
-                }
-                if (notifyTimeout) {
+                //超时
+                if (System.currentTimeMillis() - connStartTime > Ble.getInstance().getConfiguration().getConnectTimeoutMillis()) {
+                    connStartTime = System.currentTimeMillis();
+                    Ble.println(Connection.class, Log.ERROR, "connect timeout, " + device.name + ", " + device.addr);
+                    int type;
+                    if (device.connectionState == STATE_RECONNECTING) {
+                        type = TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE;
+                    } else if (device.connectionState == STATE_CONNECTING) {
+                        type = TIMEOUT_TYPE_CANNOT_CONNECT;
+                    } else {
+                        type = TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES;
+                    }
                     Ble.getInstance().postEvent(Events.newConnectTimeout(device, type));
-                }
-                notifyTimeout = true;
-            }
-            if (autoReconnEnable) {
-                doDisconnect(true, false, true);
-            } else {
-                doDisconnect(false, false, true);
+                    if (autoReconnEnable && Ble.getInstance().getConfiguration().getTryReconnectTimes() == Configuration.TRY_RECONNECT_TIMES_INFINITE ||
+                            tryReconnectTimes < Ble.getInstance().getConfiguration().getTryReconnectTimes()) {
+                        doDisconnect(true, true);
+                    } else {
+                        doDisconnect(false, true);
+                        notifyConnectFailed(device, CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION, stateChangeListener);
+                        Ble.println(Connection.class, Log.ERROR, "connect failed: maximun reconnection");
+                    }
+                }                
+            } else if (autoReconnEnable) {
+                doDisconnect(true, true);
             }
         }
         handler.sendEmptyMessageDelayed(MSG_TIMER, 500);
     }
-    
+        
     //处理刷新
     private void doRefresh(boolean isAuto) {
+        Ble.println(Connection.class, Log.DEBUG, "do BluetoothGatt.refresh()");
 	    connStartTime = System.currentTimeMillis();//防止刷新过程自动重连
         if (bluetoothGatt != null) {
             bluetoothGatt.disconnect();
@@ -325,6 +318,7 @@ public class Connection extends BaseConnection {
     }
     
     private void doConnect() {
+        Ble.println(Connection.class, Log.DEBUG, "connecting");
         //连接时需要停止蓝牙扫描
         Ble.getInstance().stopScan();
         handler.postDelayed(new Runnable() {
@@ -337,14 +331,14 @@ public class Connection extends BaseConnection {
         }, 500);
     }
     
-    private void doDisconnect(boolean reconnect, boolean release, boolean notify) {
+    private void doDisconnect(boolean reconnect, boolean notify) {
 	    doClearTaskAndRefresh(false);
         if (bluetoothGatt != null) {
             bluetoothGatt.disconnect();
             bluetoothGatt.close();
         }
         device.connectionState = STATE_DISCONNECTED;
-        if (release) {//销毁
+        if (isReleased) {//销毁
             device.connectionState = STATE_RELEASED;
             bluetoothGatt = null;
             Ble.println(Connection.class, Log.DEBUG, "Connection has been released");
@@ -359,6 +353,7 @@ public class Connection extends BaseConnection {
 
     private void tryReconnect() {        
         if (!isReleased) {
+            Ble.println(Connection.class, Log.DEBUG, "reconnecting");
             connStartTime = System.currentTimeMillis();
             //开启扫描，扫描到才连接
             Ble.getInstance().startScan(context);
@@ -437,12 +432,22 @@ public class Connection extends BaseConnection {
 	
 	@Override
 	public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-	    handler.sendMessage(Message.obtain(handler, MSG_ON_CONNECTION_STATE_CHANGE, status, newState, gatt));
+        if (isReleased) {
+            gatt.disconnect();
+            gatt.close();
+        } else {
+            handler.sendMessage(Message.obtain(handler, MSG_ON_CONNECTION_STATE_CHANGE, status, newState, gatt));
+        }	    
 	}  
     
 	@Override
 	public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-        handler.sendMessage(Message.obtain(handler, MSG_ON_SERVICES_DISCOVERED, status, 0, gatt));
+        if (isReleased) {
+            gatt.disconnect();
+            gatt.close();
+        } else {
+            handler.sendMessage(Message.obtain(handler, MSG_ON_SERVICES_DISCOVERED, status, 0, gatt));
+        }
 	}
 
     @Override

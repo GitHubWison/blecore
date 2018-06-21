@@ -131,11 +131,6 @@ class GattServiesCharacteristicsActivity : BaseActivity() {
         }
         invalidateOptionsMenu()
     }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onConnectionCreateFailed(e: Events.ConnectionCreateFailed) {
-        ToastUtils.showShort(getString(R.string.connection_create_failed, e.error))
-    }
     
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onRequestFialed(e: Events.RequestFailed) {

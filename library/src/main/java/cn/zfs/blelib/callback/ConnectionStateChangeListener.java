@@ -19,4 +19,10 @@ public interface ConnectionStateChangeListener {
      *              {@link Connection#STATE_SERVICE_DISCOVERING}<br> {@link Connection#STATE_SERVICE_DISCOVERED}
      */
     void onConnectionStateChanged(@NonNull Device device);
+
+    /**
+     * 连接失败
+     * @param type 失败类型。<br>{@link Connection#CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION}<br> {@link Connection#CONNECT_FAIL_TYPE_UNSPECIFIED_MAC_ADDRESS}
+     */
+    void onConnectFailed(@NonNull Device device, int type);
 }
