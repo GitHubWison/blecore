@@ -23,7 +23,7 @@
                 .setUseBluetoothLeScanner(true)//是否使用新版api的扫描器
                 .setWaitWriteResult(true)//写入时是否等待写入回调后再写下一包
                 .setPackageWriteDelayMillis(10)//每包的写入延时
-				.setRequestWriteDelayMillis(10)//第个请求延时
+		.setRequestWriteDelayMillis(10)//第个请求延时
                 .setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)//写入类型
 
 ## 搜索设备
@@ -125,9 +125,9 @@
 	Ble.getInstance().getConnection(device)?.toggleNotification("1", serviceUuid, characteristicUuid, true)
 
 ## 示例效果
-![image](https://github.com/fszeng2011/common/blob/master/screenshot/device-2018-06-20-170935.png)
-![image](https://github.com/fszeng2011/common/blob/master/screenshot/device-2018-06-20-171118.png)
-![image](https://github.com/fszeng2011/common/blob/master/screenshot/device-2018-06-20-171141.png)
-![image](https://github.com/fszeng2011/common/blob/master/screenshot/device-2018-06-20-171316.png)
-![image](https://github.com/fszeng2011/common/blob/master/screenshot/device-2018-06-20-171412.png)
-![image](https://github.com/fszeng2011/common/blob/master/screenshot/device-2018-06-20-173852.png)
+![image](https://github.com/fszeng2011/blecore/blob/master/screenshot/device-2018-06-20-170935.png)
+![image](https://github.com/fszeng2011/blecore/blob/master/screenshot/device-2018-06-20-171118.png)
+![image](https://github.com/fszeng2011/blecore/blob/master/screenshot/device-2018-06-20-171141.png)
+![image](https://github.com/fszeng2011/blecore/blob/master/screenshot/device-2018-06-20-171316.png)
+![image](https://github.com/fszeng2011/blecore/blob/master/screenshot/device-2018-06-20-171412.png)
+![image](https://github.com/fszeng2011/blecore/blob/master/screenshot/device-2018-06-20-173852.png)
