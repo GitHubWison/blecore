@@ -22,6 +22,7 @@
     <string name="filter_keywords">过滤关键字</string>
     <string name="receive_data">收到数据↓：</string>
     <string name="clear">清空</string>
+    <string name="print">打印</string>
     <string name="resume">继续</string>
     <string name="pause">暂停</string>
     <string name="input_demo">格式：a5 5a 12 34 56 78</string>

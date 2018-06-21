@@ -8,8 +8,8 @@ android {
         applicationId "cn.zfs.bledebugger"
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 7
-        versionName "1.6"
+        versionCode 6
+        versionName "1.5"
     }
     lintOptions {
         abortOnError false

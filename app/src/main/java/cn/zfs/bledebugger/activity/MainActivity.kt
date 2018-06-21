@@ -17,6 +17,8 @@ import android.widget.TextView
 import cn.zfs.bledebugger.Consts
 import cn.zfs.bledebugger.MyApp
 import cn.zfs.bledebugger.R
+import cn.zfs.bledebugger.R.id.layoutEmpty
+import cn.zfs.bledebugger.R.id.refreshLayout
 import cn.zfs.bledebugger.entity.LogSaver
 import cn.zfs.blelib.callback.ScanListener
 import cn.zfs.blelib.core.Ble
@@ -198,12 +200,12 @@ class MainActivity : CheckPermissionsActivity() {
                 val files = file.listFiles()
                 if (files != null && !files.isEmpty()) {
                     logSaver.flush()
-                    val dates = arrayOf("")
-                    files.forEachIndexed { index, f ->
-                        dates[index] = FileUtils.getFileNameWithoutSuffix(f.absolutePath)
+                    val dates = ArrayList<String>()
+                    files.forEach { 
+                        dates.add(FileUtils.getFileNameWithoutSuffix(it.absolutePath))
                     }
                     AlertDialog.Builder(this)
-                            .setItems(dates) { _, which ->
+                            .setItems(dates.toTypedArray()) { _, which ->
                                 val intent = Intent(this, LogActivity::class.java)
                                 intent.putExtra(Consts.EXTRA_LOG_PATH, files[which].absolutePath)
                                 startActivity(intent)
