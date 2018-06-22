@@ -423,7 +423,7 @@ public class Ble {
             dev.scanRecord = scanRecord;
             handleScanCallback(false, dev);
         }
-        println(Ble.class, Log.DEBUG, String.format(Locale.US, "FOUND DEVICE[name: %s, mac: %s]", deviceName, device.getAddress()));
+        println(Ble.class, Log.DEBUG, String.format(Locale.US, "FOUND DEVICE [name: %s, mac: %s]", deviceName, device.getAddress()));
     }
             
     /**
