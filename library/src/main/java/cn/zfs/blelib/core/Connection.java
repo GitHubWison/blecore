@@ -29,28 +29,6 @@ import cn.zfs.blelib.util.BleUtils;
  * 作者: zengfansheng
  */
 public class Connection extends BaseConnection {
-    //----------蓝牙连接状态-------------   
-    public static final int STATE_DISCONNECTED = 0;
-    public static final int STATE_CONNECTING = 1;
-    public static final int STATE_RECONNECTING = 2;
-    public static final int STATE_CONNECTED = 3;
-    public static final int STATE_SERVICE_DISCOVERING = 4;
-    public static final int STATE_SERVICE_DISCOVERED = 5;
-    public static final int STATE_RELEASED = 6;
-    //----------连接超时类型---------
-    /**搜索不到设备*/
-    public static final int TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE = 0;
-    /**能搜到，连接不上*/
-    public static final int TIMEOUT_TYPE_CANNOT_CONNECT = 1;
-    /**能连接上，无法发现服务*/
-    public static final int TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES = 2;
-    
-    //连接失败类型
-    /** 非法的设备MAC地址 */
-    public static final int CONNECT_FAIL_TYPE_UNSPECIFIED_MAC_ADDRESS = 1;
-    /** 达到最大重连次数 */
-    public static final int CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION = 2;
-    
     private static final int MSG_ARG_NONE = 0;
     private static final int MSG_ARG_RECONNECT = 1;
     private static final int MSG_ARG_NOTIFY = 2;

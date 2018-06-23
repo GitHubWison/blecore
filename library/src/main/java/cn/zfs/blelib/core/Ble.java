@@ -64,7 +64,7 @@ public class Ble {
         connectionMap = new ConcurrentHashMap<>();
         mainThreadHandler = new Handler(Looper.getMainLooper());
         scanListeners = new ArrayList<>();
-        executorService = Executors.newCachedThreadPool();
+        executorService = Executors.newFixedThreadPool(5);
         publisher = EventBus.builder().build();
         logger = new BleLogger();
     }
@@ -203,7 +203,7 @@ public class Ble {
         return isInited;
     }
     
-    public ExecutorService getExecutorService() {
+    ExecutorService getExecutorService() {
         return executorService;
     }
     

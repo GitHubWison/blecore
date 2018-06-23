@@ -1,9 +1,9 @@
 package cn.zfs.bledebugger.entity
 
-import cn.zfs.blelib.core.Ble
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
+import kotlin.concurrent.thread
 
 /**
  * 描述:
@@ -14,7 +14,7 @@ class LogSaver(dir: String) {
     private val file = File(dir, SimpleDateFormat("yyyyMMdd").format(System.currentTimeMillis()) + ".txt")
     private val outputStream = FileOutputStream(file, true)
     private val cache = StringBuilder()
-    
+        
     fun write(log: String) {
         val text = "${SimpleDateFormat("HH:mm:ss.SSS").format(System.currentTimeMillis())}> $log\n"
         cache.append(text)
@@ -26,7 +26,7 @@ class LogSaver(dir: String) {
     fun flush() {
         val cacheStr = cache.toString()
         cache.setLength(0)//清空
-        Ble.getInstance().executorService.execute {
+        thread {
             try {
                 outputStream.write(cacheStr.toByteArray())
                 outputStream.flush()
