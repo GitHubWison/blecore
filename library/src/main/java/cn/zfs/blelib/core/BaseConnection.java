@@ -384,10 +384,11 @@ public abstract class BaseConnection extends BluetoothGattCallback {
         public boolean handleMessage(Message msg) {
             switch(msg.what) {
                 case MSG_ENQUEUE_REQUEST:
+                    Request request = (Request) msg.obj;
                     if (currentRequest == null) {
-                        executeRequest((Request) msg.obj);
+                        executeRequest(request);
                     } else {
-                        requestQueue.add(currentRequest);
+                        requestQueue.add(request);
                     }
             		break;
                 case MSG_NEXT_REQUEST:
