@@ -11,12 +11,9 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,10 +50,6 @@ public class Connection extends BaseConnection {
     public static final int CONNECT_FAIL_TYPE_UNSPECIFIED_MAC_ADDRESS = 1;
     /** 达到最大重连次数 */
     public static final int CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION = 2;
-
-    @IntDef({STATE_DISCONNECTED, STATE_CONNECTING, STATE_RECONNECTING, STATE_CONNECTED, STATE_SERVICE_DISCOVERING, STATE_SERVICE_DISCOVERED})
-    @Retention(RetentionPolicy.SOURCE)
-    public @interface STATE {}
     
     private static final int MSG_ARG_NONE = 0;
     private static final int MSG_ARG_RECONNECT = 1;
@@ -80,6 +73,7 @@ public class Connection extends BaseConnection {
     private boolean autoReconnEnable = true;//重连控制
 	private int refreshTimes;//记录刷新次数，如果成功发现服务器，则清零
     private int tryReconnectTimes;
+    private int lastConnectState = -1;
 	    
     private Connection(BluetoothDevice bluetoothDevice) {
         super(bluetoothDevice);
@@ -205,7 +199,7 @@ public class Connection extends BaseConnection {
             }
         }
     }
-    
+        
     private void notifyDisconnected() {
         device.connectionState = STATE_DISCONNECTED;
         sendConnectionCallback();
@@ -229,6 +223,7 @@ public class Connection extends BaseConnection {
         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
             Ble.println(Connection.class, Log.DEBUG, String.format(Locale.US, "DISCONNECTED [name: %s, mac: %s, autoReconnEnable: %s]",
                     gatt.getDevice().getName(), gatt.getDevice().getAddress(), String.valueOf(autoReconnEnable)));
+            clearRequestQueue();
             notifyDisconnected();
         } else if (status == 133) {
             doClearTaskAndRefresh(true);
@@ -371,10 +366,13 @@ public class Connection extends BaseConnection {
     }
     
     private void sendConnectionCallback() {
-	    if (stateChangeListener != null) {
-	        stateChangeListener.onConnectionStateChanged(device);
+	    if (lastConnectState != device.connectionState) {
+            if (stateChangeListener != null) {
+                stateChangeListener.onConnectionStateChanged(device);
+            }
+            Ble.getInstance().postEvent(Events.newConnectionStateChanged(device, device.connectionState));
 	    }
-        Ble.getInstance().postEvent(Events.newConnectionStateChanged(device, device.connectionState));
+	    lastConnectState = device.connectionState;
     }
     
     void setAutoReconnectEnable(boolean enable) {

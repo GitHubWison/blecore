@@ -9,6 +9,9 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
 import android.support.annotation.NonNull;
 
 import java.lang.reflect.Method;
@@ -38,22 +41,31 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     public static final int REQUEST_FAIL_TYPE_API_LEVEL_TOO_LOW = 6;
     public static final int REQUEST_FAIL_TYPE_BLUETOOTH_ADAPTER_DISABLED = 7;
     public static final int REQUEST_FAIL_TYPE_REQUEST_TIMEOUT = 8;
+    public static final int REQUEST_FAIL_TYPE_CONNECTION_DISCONNECTED = 9;
+    public static final int REQUEST_FAIL_TYPE_CONNECTION_RELEASED = 10;
+    public static final int REQUEST_FAIL_TYPE_VALUE_IS_NULL_OR_EMPTY = 11;
+    
+    private static final int MSG_ENQUEUE_REQUEST = 1;
+    private static final int MSG_NEXT_REQUEST = 2;
+    private static final int MSG_TIMER = 3;
     
     protected BluetoothDevice bluetoothDevice;
     protected BluetoothGatt bluetoothGatt;
     protected Queue<Request> requestQueue = new ConcurrentLinkedQueue<>();
     protected Request currentRequest;
-    private Request lastRequest;
     private BluetoothGattCharacteristic pendingCharacteristic;
     protected BluetoothAdapter bluetoothAdapter;
     protected boolean isReleased;
-    private volatile boolean executorRunning;
-    private RequestRunnable requestRunnalbe;
     private BluetoothGattCallback bluetoothGattCallback;
+    private HandlerThread requestThread;
+    private Handler requestHandler;
 
     BaseConnection(BluetoothDevice bluetoothDevice) {
         this.bluetoothDevice = bluetoothDevice;
-        requestRunnalbe = new RequestRunnable();
+        requestThread = new HandlerThread("Connection: " + bluetoothDevice.getAddress());
+        requestThread.start();
+        requestHandler = new Handler(requestThread.getLooper(), new HandlerCallback());
+        requestHandler.sendEmptyMessageDelayed(MSG_TIMER, 250);
     }
 
     /**
@@ -64,13 +76,16 @@ public abstract class BaseConnection extends BluetoothGattCallback {
     }
     
     public void clearRequestQueue() {
+        for (Request request : requestQueue) {
+            handleFaildCallback(request.requestId, request.type, REQUEST_FAIL_TYPE_CONNECTION_DISCONNECTED, request.value, false);
+        }
         requestQueue.clear();
-        currentRequest = null;
     }
 
     public void release() {
         isReleased = true;
         clearRequestQueue();
+        requestThread.quit();
     }
 
     public abstract void onCharacteristicRead(@NonNull String requestId, BluetoothGattCharacteristic characteristic);
@@ -123,7 +138,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                 } else {
                     handleFaildCallback(currentRequest.requestId, currentRequest.type, REQUEST_FAIL_TYPE_GATT_STATUS_FAILED, currentRequest.value, false);
                 }
-                processNextRequest();
+                executeNextRequest();
             }
         }
     }
@@ -143,14 +158,16 @@ public abstract class BaseConnection extends BluetoothGattCallback {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (currentRequest.remainQueue == null || currentRequest.remainQueue.isEmpty()) {
                     onCharacteristicWrite(currentRequest.requestId, currentRequest.value);
-                    processNextRequest();
+                    executeNextRequest();
                 } else {
                     try {
                         Thread.sleep(currentRequest.writeDelay);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    doWrite(characteristic, currentRequest.remainQueue.remove());
+                    if (writeFail(characteristic, currentRequest.remainQueue.remove())) {
+                        performWriteFailed(currentRequest);
+                    }
                 }
             } else {
                 handleFaildCallback(currentRequest.requestId, currentRequest.type, REQUEST_FAIL_TYPE_GATT_STATUS_FAILED, currentRequest.value, true);
@@ -189,7 +206,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                 } else {
                     handleFaildCallback(currentRequest.requestId, currentRequest.type, REQUEST_FAIL_TYPE_GATT_STATUS_FAILED, currentRequest.value, false);
                 }
-                processNextRequest();
+                executeNextRequest();
             }
         }
     }
@@ -230,7 +247,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                 } else {
                     handleFaildCallback(currentRequest.requestId, currentRequest.type, REQUEST_FAIL_TYPE_GATT_STATUS_FAILED, currentRequest.value, false);
                 }
-                processNextRequest();
+                executeNextRequest();
             }
         }
     }
@@ -256,7 +273,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                         onNotificationChanged(currentRequest.requestId, descriptor, false);
                     }
                 }
-                processNextRequest();
+                executeNextRequest();
             } else if (currentRequest.type == Request.RequestType.TOGGLE_INDICATION) {
                 if (status != BluetoothGatt.GATT_SUCCESS) {
                     handleFaildCallback(currentRequest.requestId, currentRequest.type, REQUEST_FAIL_TYPE_GATT_STATUS_FAILED, currentRequest.value, false);
@@ -267,7 +284,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                         onIndicationChanged(currentRequest.requestId, descriptor, false);
                     }
                 }
-                processNextRequest();
+                executeNextRequest();
             }
         }
     }
@@ -290,22 +307,24 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                 } else {
                     handleFaildCallback(currentRequest.requestId, currentRequest.type, REQUEST_FAIL_TYPE_GATT_STATUS_FAILED, currentRequest.value, false);
                 }
-                processNextRequest();
+                executeNextRequest();
             }
         }
     }
 
-    private void handleFaildCallback(String requestId, Request.RequestType requestType, int failType, byte[] value, boolean processNext) {
+    private void handleFaildCallback(String requestId, Request.RequestType requestType, int failType, byte[] value, boolean executeNext) {
         onRequestFialed(requestId, requestType, failType, value);
-        if (processNext) {
-            processNextRequest();
+        if (executeNext) {
+            executeNextRequest();
         }
     }
 
     public void changeMtu(@NonNull String requestId, int mtu) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             enqueue(Request.newChangeMtuRequest(requestId, mtu));
-        }      
+        } else {
+            handleFaildCallback(requestId, Request.RequestType.CHANGE_MTU, REQUEST_FAIL_TYPE_API_LEVEL_TOO_LOW, BleUtils.numberToBytes(false, mtu, 4), false);
+        }
     }
 
     /*
@@ -338,6 +357,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
 
     public void writeCharacteristic(@NonNull String requestId, UUID service, UUID characteristic, byte[] value) {
         if (value == null || value.length == 0) {
+            handleFaildCallback(requestId, Request.RequestType.WRITE_CHARACTERISTIC, REQUEST_FAIL_TYPE_VALUE_IS_NULL_OR_EMPTY, value, false);
             return;
         }
         enqueue(Request.newWriteCharacteristicRequest(requestId, service, characteristic, value));
@@ -347,51 +367,50 @@ public abstract class BaseConnection extends BluetoothGattCallback {
         enqueue(Request.newReadRssiRequest(requestId));
     }
     
-    private void enqueue(Request request) {
-        if (!isReleased) {
-            synchronized (this) {
-                requestQueue.add(request);
-                if (!executorRunning) {
-                    executorRunning = true;
-                    processNextRequest();
-                    Ble.getInstance().getExecutorService().execute(requestRunnalbe);
-                }
-            }            
-        }
-    }
-    
-    private class RequestRunnable implements Runnable {
-        @Override
-        public void run() {
-            try {
-                while (true) {
-                    Request request = currentRequest;
-                    if (request == null) {
-                        synchronized (this) {
-                            request = currentRequest;
-                            if (request == null) {
-                                executorRunning = false;
-                                return;
-                            }
-                        }
-                    }
-                    if (lastRequest != request) {
-                        lastRequest = request;
-                        request.startTime = System.currentTimeMillis();
-                        executeRequest(request);
-                    } else if (System.currentTimeMillis() - request.startTime > 1000) {//请求超时
-                        handleFaildCallback(request.requestId, request.type, REQUEST_FAIL_TYPE_REQUEST_TIMEOUT, request.value, true);
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                executorRunning = false;
-            }
+    private void enqueue(Request request) {        
+        if (isReleased) {
+            handleFaildCallback(request.requestId, request.type, REQUEST_FAIL_TYPE_CONNECTION_RELEASED, request.value, false);
+        } else {
+            Message.obtain(requestHandler, MSG_ENQUEUE_REQUEST, request).sendToTarget();            
         }
     }
 
+    private void executeNextRequest() {
+        requestHandler.sendEmptyMessage(MSG_NEXT_REQUEST);
+    }
+    
+    private class HandlerCallback implements Handler.Callback {
+        @Override
+        public boolean handleMessage(Message msg) {
+            switch(msg.what) {
+                case MSG_ENQUEUE_REQUEST:
+                    if (currentRequest == null) {
+                        executeRequest((Request) msg.obj);
+                    } else {
+                        requestQueue.add(currentRequest);
+                    }
+            		break;
+                case MSG_NEXT_REQUEST:
+                    if (requestQueue.isEmpty()) {
+                        currentRequest = null;
+                    } else {
+                        executeRequest(requestQueue.remove());
+                    }                    
+            		break;
+                case MSG_TIMER:
+                    if (currentRequest != null && System.currentTimeMillis() - currentRequest.startTime > 1000) {//请求超时
+                        handleFaildCallback(currentRequest.requestId, currentRequest.type, REQUEST_FAIL_TYPE_REQUEST_TIMEOUT, currentRequest.value, true);
+                    }
+                    requestHandler.sendEmptyMessageDelayed(MSG_TIMER, 250);
+                    break;
+            }
+            return true;
+        }
+    }
+    
     private void executeRequest(Request request) {
+        currentRequest = request;
+        currentRequest.startTime = System.currentTimeMillis();
         if (bluetoothAdapter.isEnabled()) {
             if (bluetoothGatt != null) {
                 switch(request.type) {                    
@@ -437,14 +456,6 @@ public abstract class BaseConnection extends BluetoothGattCallback {
         }
     }
     
-    private synchronized void processNextRequest() {
-        if (requestQueue.isEmpty()) {
-            currentRequest = null;
-            return;
-        }
-        currentRequest = requestQueue.remove();
-    }
-    
     private void executeChangeMtu(Request request) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             if (!bluetoothGatt.requestMtu((int) BleUtils.bytesToLong(false, request.value))) {
@@ -472,8 +483,8 @@ public abstract class BaseConnection extends BluetoothGattCallback {
             request.waitWriteResult = Ble.getInstance().getConfiguration().isWaitWriteResult();
             request.writeDelay = Ble.getInstance().getConfiguration().getPackageWriteDelayMillis();
             int packSize = Ble.getInstance().getConfiguration().getPackageSize();
-            int packWriteDelay = Ble.getInstance().getConfiguration().getPackageWriteDelayMillis();
-            Thread.sleep(packWriteDelay > 0 ? packWriteDelay : request.writeDelay);
+            int requestWriteDelayMillis = Ble.getInstance().getConfiguration().getRequestWriteDelayMillis();
+            Thread.sleep(requestWriteDelayMillis > 0 ? requestWriteDelayMillis : request.writeDelay);
             if (request.value.length > packSize) {
                 List<byte[]> list = BleUtils.splitPackage(request.value, packSize);  
                 if (!request.waitWriteResult) {//不等待则遍历发送
@@ -482,7 +493,7 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                         if (i > 0) {
                             Thread.sleep(request.writeDelay);
                         }
-                        if (!doWrite(gattCharacteristic, bytes)) {//写失败
+                        if (writeFail(gattCharacteristic, bytes)) {//写失败
                             performWriteFailed(request);
                             return;
                         }
@@ -490,20 +501,18 @@ public abstract class BaseConnection extends BluetoothGattCallback {
                 } else {//等待则只直接发送第一包，剩下的添加到队列等待回调
                     request.remainQueue = new ConcurrentLinkedQueue<>();
                     request.remainQueue.addAll(list);
-                    if (!doWrite(gattCharacteristic, request.remainQueue.remove())) {//写失败
+                    if (writeFail(gattCharacteristic, request.remainQueue.remove())) {//写失败
                         performWriteFailed(request);
                         return;
                     }
                 }
-            } else {                
-                if (!doWrite(gattCharacteristic, request.value)) {
-                    performWriteFailed(request);
-                    return;
-                }
+            } else if (writeFail(gattCharacteristic, request.value)) {
+                performWriteFailed(request);
+                return;
             }                       
             if (!request.waitWriteResult) {
                 onCharacteristicWrite(request.requestId, request.value);
-                processNextRequest();
+                executeNextRequest();
             }
         } catch (InterruptedException e) {
             performWriteFailed(request);
@@ -515,14 +524,14 @@ public abstract class BaseConnection extends BluetoothGattCallback {
         handleFaildCallback(request.requestId, Request.RequestType.WRITE_CHARACTERISTIC, REQUEST_FAIL_TYPE_REQUEST_FAILED, request.value, true);        
     }
 
-    private boolean doWrite(BluetoothGattCharacteristic gattCharacteristic, byte[] value) {
+    private boolean writeFail(BluetoothGattCharacteristic gattCharacteristic, byte[] value) {
         gattCharacteristic.setValue(value);
         int writeType = Ble.getInstance().getConfiguration().getWriteType();
         if (writeType == BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT || writeType == BluetoothGattCharacteristic.WRITE_TYPE_SIGNED ||
                 writeType == BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) {
             gattCharacteristic.setWriteType(writeType);
         }
-        return bluetoothGatt.writeCharacteristic(gattCharacteristic);
+        return !bluetoothGatt.writeCharacteristic(gattCharacteristic);
     }
     
     private void executeReadDescriptor(BluetoothGattCharacteristic characteristic, UUID descriptor, String requestId) {

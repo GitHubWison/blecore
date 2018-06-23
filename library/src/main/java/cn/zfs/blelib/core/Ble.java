@@ -279,30 +279,25 @@ public class Ble {
             }
             scanning = true;
         }
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                getSystemConnectedDevices();
+        getSystemConnectedDevices();
 
-                //如果是高版本使用新的搜索方法
-                if (configuration.isUseBluetoothLeScanner() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    if (bleScanner == null) {
-                        bleScanner = bluetoothAdapter.getBluetoothLeScanner();
-                    }
-                    if (scanCallback == null) {
-                        scanCallback = new MyScanCallback();
-                    }
-                    bleScanner.startScan(scanCallback);
-                } else {
-                    if (leScanCallback == null) {
-                        leScanCallback = new MyLeScanCallback();
-                    }
-                    bluetoothAdapter.startLeScan(leScanCallback);
-                }                
-                handleScanCallback(true, null);
-                mainThreadHandler.postDelayed(stopScanRunnable, configuration.getScanPeriodMillis());
+        //如果是高版本使用新的搜索方法
+        if (configuration.isUseBluetoothLeScanner() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (bleScanner == null) {
+                bleScanner = bluetoothAdapter.getBluetoothLeScanner();
             }
-        }).start();
+            if (scanCallback == null) {
+                scanCallback = new MyScanCallback();
+            }
+            bleScanner.startScan(scanCallback);
+        } else {
+            if (leScanCallback == null) {
+                leScanCallback = new MyLeScanCallback();
+            }
+            bluetoothAdapter.startLeScan(leScanCallback);
+        }
+        handleScanCallback(true, null);
+        mainThreadHandler.postDelayed(stopScanRunnable, configuration.getScanPeriodMillis());
     }
 
     private void handleScanCallback(final boolean start, final Device device) {

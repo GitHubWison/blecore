@@ -8,8 +8,8 @@ android {
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 53
-        versionName "2.2.3"
+        versionCode 54
+        versionName "2.2.4"
 
     }
 
@@ -33,7 +33,7 @@ dependencies {
 //class包在终端执行gradlew makeJar
 task makeJar(type: Jar, dependsOn:['build']) {
     from file('build/intermediates/classes/release')
-    archiveName = 'blecore-2.2.3.jar'
+    archiveName = 'blecore-2.2.4.jar'
     destinationDir = file('build/libs')
     //过滤不需要的class
     exclude "**/**/BuildConfig.class"
@@ -56,7 +56,7 @@ publish {
     userOrg = 'fszeng2017' //bintray.com用户名  
     groupId = 'com.github.fszeng2011' //jcenter上的路径  
     artifactId = 'blecore' //项目名称  
-    publishVersion = '2.2.3' //版本号  
+    publishVersion = '2.2.4' //版本号  
     desc = 'android ble lib'
     website = 'https://github.com/fszeng2011'
 }
